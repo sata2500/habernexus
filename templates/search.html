@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}Arama: "{{ query }}" - Haber Nexus{% endblock %}
+{% block meta_description %}"{{ query }}" için arama sonuçları. Yapay zeka destekli profesyonel haberler.{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="mb-8">
+    <div class="flex items-center space-x-4 mb-4">
+        <a href="{% url 'home' %}" class="text-blue-600 hover:text-blue-800">
+            <i class="fas fa-home"></i> Ana Sayfa
+        </a>
+        <span class="text-gray-500">/</span>
+        <span class="text-gray-800 font-semibold">Arama Sonuçları</span>
+    </div>
+    
+    <h1 class="text-4xl md:text-5xl font-bold mb-2">Arama Sonuçları</h1>
+    {% if query %}
+    <p class="text-gray-600 text-lg">
+        <i class="fas fa-search mr-2"></i>
+        "<span class="font-semibold">{{ query }}</span>" için 
+        <span class="font-semibold">{{ page_obj.paginator.count }}</span> sonuç bulundu
+    </p>
+    {% else %}
+    <p class="text-gray-600 text-lg">Lütfen arama yapmak için bir kelime girin.</p>
+    {% endif %}
+</div>
+
+<!-- Search Bar -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-8">
+    <form method="get" action="{% url 'search' %}" class="flex flex-col md:flex-row gap-4">
+        <input type="text" name="q" value="{{ query }}" placeholder="Haberlerde ara..." 
+               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-lg">
+        <button type="submit" class="btn-primary">
+            <i class="fas fa-search mr-2"></i>Ara
+        </button>
+    </form>
+</div>
+
+<!-- Results -->
+{% if articles %}
+<div class="space-y-4 mb-8">
+    {% for article in articles %}
+    <article class="card p-6 hover:shadow-lg transition duration-200">
+        <div class="flex gap-6">
+            {% if article.featured_image %}
+            <div class="flex-shrink-0 w-40 h-40 hidden md:block">
+                <img src="{{ article.featured_image.url }}" alt="{{ article.featured_image_alt }}" 
+                     class="w-full h-full object-cover rounded-lg">
+            </div>
+            {% endif %}
+            
+            <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="badge badge-primary text-xs">{{ article.category }}</span>
+                        {% if article.is_ai_generated %}
+                        <span class="badge badge-success text-xs">
+                            <i class="fas fa-robot mr-1"></i>AI
+                        </span>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs text-gray-500">{{ article.published_at|date:"d M Y H:i" }}</span>
+                </div>
+                
+                <h3 class="text-2xl font-bold mb-2 hover:text-blue-600 transition">
+                    <a href="{{ article.get_absolute_url }}">{{ article.title }}</a>
+                </h3>
+                
+                <!-- Highlight matching text -->
+                <p class="text-gray-600 text-sm mb-4 line-clamp-3">{{ article.excerpt }}</p>
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        {% if article.author.profile_image %}
+                        <img src="{{ article.author.profile_image.url }}" alt="{{ article.author.name }}" 
+                             class="w-8 h-8 rounded-full object-cover">
+                        {% else %}
+                        <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                            {{ article.author.name|first }}
+                        </div>
+                        {% endif %}
+                        <div>
+                            <p class="text-sm font-semibold">
+                                <a href="{% url 'author_detail' slug=article.author.slug %}" class="hover:text-blue-600">
+                                    {{ article.author.name }}
+                                </a>
+                            </p>
+                            <p class="text-xs text-gray-500">{{ article.author.expertise }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-gray-500 text-xs">
+                            <i class="fas fa-eye mr-1"></i>{{ article.views_count }}
+                        </span>
+                        <a href="{{ article.get_absolute_url }}" class="text-blue-600 hover:text-blue-800 font-semibold text-sm">
+                            Oku <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="flex justify-center items-center space-x-2 mb-8">
+    {% if page_obj.has_previous %}
+    <a href="?q={{ query }}&page=1" class="btn-secondary">
+        <i class="fas fa-chevron-left"></i> İlk
+    </a>
+    <a href="?q={{ query }}&page={{ page_obj.previous_page_number }}" class="btn-secondary">
+        <i class="fas fa-chevron-left"></i> Önceki
+    </a>
+    {% endif %}
+    
+    <span class="px-4 py-2 text-gray-600">
+        Sayfa {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+    </span>
+    
+    {% if page_obj.has_next %}
+    <a href="?q={{ query }}&page={{ page_obj.next_page_number }}" class="btn-secondary">
+        Sonraki <i class="fas fa-chevron-right"></i>
+    </a>
+    <a href="?q={{ query }}&page={{ page_obj.paginator.num_pages }}" class="btn-secondary">
+        Son <i class="fas fa-chevron-right"></i>
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% elif query %}
+<!-- No Results -->
+<div class="bg-blue-50 border border-blue-200 rounded-lg p-12 text-center">
+    <i class="fas fa-search text-5xl text-blue-600 mb-4"></i>
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">Sonuç Bulunamadı</h2>
+    <p class="text-gray-600 mb-6">
+        "<span class="font-semibold">{{ query }}</span>" için sonuç bulunamadı. 
+        Lütfen başka bir arama terimi deneyin.
+    </p>
+    <a href="{% url 'home' %}" class="btn-primary">
+        <i class="fas fa-arrow-left mr-2"></i>Ana Sayfaya Dön
+    </a>
+</div>
+
+{% else %}
+<!-- Empty Search -->
+<div class="bg-blue-50 border border-blue-200 rounded-lg p-12 text-center">
+    <i class="fas fa-search text-5xl text-blue-600 mb-4"></i>
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">Arama Yapın</h2>
+    <p class="text-gray-600 mb-6">Haberlerde arama yapmak için yukarıdaki arama kutusunu kullanın.</p>
+    <a href="{% url 'home' %}" class="btn-primary">
+        <i class="fas fa-arrow-left mr-2"></i>Ana Sayfaya Dön
+    </a>
+</div>
+{% endif %}
+
+<!-- Search Tips -->
+<div class="mt-12 pt-8 border-t border-gray-200">
+    <h2 class="text-2xl font-bold mb-6">Arama İpuçları</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card p-6">
+            <i class="fas fa-lightbulb text-2xl text-blue-600 mb-3"></i>
+            <h3 class="font-bold mb-2">Anahtar Kelimeler Kullanın</h3>
+            <p class="text-sm text-gray-600">Spesifik anahtar kelimeler kullanarak daha iyi sonuçlar alın.</p>
+        </div>
+        <div class="card p-6">
+            <i class="fas fa-filter text-2xl text-blue-600 mb-3"></i>
+            <h3 class="font-bold mb-2">Kategorileri Filtreleyin</h3>
+            <p class="text-sm text-gray-600">Belirli bir kategoride arama yapmak için kategori sayfalarını ziyaret edin.</p>
+        </div>
+        <div class="card p-6">
+            <i class="fas fa-user text-2xl text-blue-600 mb-3"></i>
+            <h3 class="font-bold mb-2">Yazarları Takip Edin</h3>
+            <p class="text-sm text-gray-600">Favori yazarlarınızın tüm yazılarını yazar sayfalarından görebilirsiniz.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}
