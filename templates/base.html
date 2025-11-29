@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="{% block meta_description %}Haber Nexus - Yapay zeka destekli profesyonel haber ajansı{% endblock %}">
+    <meta name="description" content="{% block meta_description %}Haber Nexus - Profesyonel haber ajansı, 7/24 kusursuz haberler{% endblock %}">
     <meta name="keywords" content="{% block meta_keywords %}haber, yapay zeka, teknoloji{% endblock %}">
     <meta property="og:title" content="{% block og_title %}Haber Nexus{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}Yapay zeka destekli profesyonel haber ajansı{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Profesyonel haber ajansı, 7/24 kusursuz haberler{% endblock %}">
     <meta property="og:image" content="{% block og_image %}{% endblock %}">
     <meta property="og:type" content="website">
     
@@ -70,22 +70,23 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Logo -->
                 <div class="flex-shrink-0">
-                    <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-600">
+                    <a href="{% url 'news:home' %}" class="text-2xl font-bold text-blue-600">
                         <i class="fas fa-newspaper mr-2"></i>Haber Nexus
                     </a>
+                    <p class="text-xs text-gray-500 mt-1">Profesyonel Haber Ajansı</p>
                 </div>
                 
                 <!-- Menu -->
                 <div class="hidden md:flex space-x-8">
-                    <a href="{% url 'home' %}" class="text-gray-700 hover:text-blue-600 transition">Ana Sayfa</a>
-                    <a href="{% url 'article_list' %}" class="text-gray-700 hover:text-blue-600 transition">Haberler</a>
-                    <a href="{% url 'about' %}" class="text-gray-700 hover:text-blue-600 transition">Hakkımızda</a>
-                    <a href="{% url 'contact' %}" class="text-gray-700 hover:text-blue-600 transition">İletişim</a>
+                    <a href="{% url 'news:home' %}" class="text-gray-700 hover:text-blue-600 transition">Ana Sayfa</a>
+                    <a href="{% url 'news:article_list' %}" class="text-gray-700 hover:text-blue-600 transition">Haberler</a>
+                    <a href="{% url 'news:about' %}" class="text-gray-700 hover:text-blue-600 transition">Hakkımızda</a>
+                    <a href="{% url 'news:contact' %}" class="text-gray-700 hover:text-blue-600 transition">İletişim</a>
                 </div>
                 
                 <!-- Search -->
                 <div class="hidden md:flex">
-                    <form method="get" action="{% url 'search' %}" class="flex">
+                    <form method="get" action="{% url 'news:search' %}" class="flex">
                         <input type="text" name="q" placeholder="Haber ara..." 
                                class="px-4 py-2 rounded-l-lg border border-gray-300 focus:outline-none focus:border-blue-600">
                         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700">
@@ -104,11 +105,11 @@
             
             <!-- Mobile Menu -->
             <div id="mobile-menu" class="hidden md:hidden pb-4">
-                <a href="{% url 'home' %}" class="block py-2 text-gray-700 hover:text-blue-600">Ana Sayfa</a>
-                <a href="{% url 'article_list' %}" class="block py-2 text-gray-700 hover:text-blue-600">Haberler</a>
-                <a href="{% url 'about' %}" class="block py-2 text-gray-700 hover:text-blue-600">Hakkımızda</a>
-                <a href="{% url 'contact' %}" class="block py-2 text-gray-700 hover:text-blue-600">İletişim</a>
-                <form method="get" action="{% url 'search' %}" class="mt-4 flex">
+                <a href="{% url 'news:home' %}" class="block py-2 text-gray-700 hover:text-blue-600">Ana Sayfa</a>
+                <a href="{% url 'news:article_list' %}" class="block py-2 text-gray-700 hover:text-blue-600">Haberler</a>
+                <a href="{% url 'news:about' %}" class="block py-2 text-gray-700 hover:text-blue-600">Hakkımızda</a>
+                <a href="{% url 'news:contact' %}" class="block py-2 text-gray-700 hover:text-blue-600">İletişim</a>
+                <form method="get" action="{% url 'news:search' %}" class="mt-4 flex">
                     <input type="text" name="q" placeholder="Haber ara..." 
                            class="flex-1 px-4 py-2 rounded-l-lg border border-gray-300 focus:outline-none">
                     <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-r-lg">
@@ -153,10 +154,10 @@
                 <div>
                     <h3 class="text-white font-bold mb-4">Hızlı Bağlantılar</h3>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="{% url 'home' %}" class="hover:text-white transition">Ana Sayfa</a></li>
-                        <li><a href="{% url 'article_list' %}" class="hover:text-white transition">Haberler</a></li>
-                        <li><a href="{% url 'about' %}" class="hover:text-white transition">Hakkımızda</a></li>
-                        <li><a href="{% url 'contact' %}" class="hover:text-white transition">İletişim</a></li>
+                        <li><a href="{% url 'news:home' %}" class="hover:text-white transition">Ana Sayfa</a></li>
+                        <li><a href="{% url 'news:article_list' %}" class="hover:text-white transition">Haberler</a></li>
+                        <li><a href="{% url 'news:about' %}" class="hover:text-white transition">Hakkımızda</a></li>
+                        <li><a href="{% url 'news:contact' %}" class="hover:text-white transition">İletişim</a></li>
                     </ul>
                 </div>
                 
@@ -164,10 +165,10 @@
                 <div>
                     <h3 class="text-white font-bold mb-4">Kategoriler</h3>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="{% url 'category' category='teknoloji' %}" class="hover:text-white transition">Teknoloji</a></li>
-                        <li><a href="{% url 'category' category='spor' %}" class="hover:text-white transition">Spor</a></li>
-                        <li><a href="{% url 'category' category='siyaset' %}" class="hover:text-white transition">Siyaset</a></li>
-                        <li><a href="{% url 'category' category='ekonomi' %}" class="hover:text-white transition">Ekonomi</a></li>
+                        <li><a href="{% url 'news:category' category='teknoloji' %}" class="hover:text-white transition">Teknoloji</a></li>
+                        <li><a href="{% url 'news:category' category='spor' %}" class="hover:text-white transition">Spor</a></li>
+                        <li><a href="{% url 'news:category' category='siyaset' %}" class="hover:text-white transition">Siyaset</a></li>
+                        <li><a href="{% url 'news:category' category='ekonomi' %}" class="hover:text-white transition">Ekonomi</a></li>
                     </ul>
                 </div>
                 
@@ -188,7 +189,7 @@
             <div class="text-center text-sm">
                 <p>&copy; 2024 Haber Nexus. Tüm hakları saklıdır.</p>
                 <p class="mt-2 text-xs text-gray-500">
-                    <span class="badge badge-primary">🤖 AI Destekli</span>
+                    
                     <span class="ml-2 badge badge-success">✨ Profesyonel</span>
                 </p>
             </div>

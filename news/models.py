@@ -168,4 +168,4 @@ class Article(models.Model):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('article_detail', kwargs={'slug': self.slug})
+        return reverse('news:article_detail', kwargs={'slug': self.slug})

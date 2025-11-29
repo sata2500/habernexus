@@ -24,11 +24,6 @@
             <div class="relative overflow-hidden h-48">
                 <img src="{{ article.featured_image.url }}" alt="{{ article.featured_image_alt }}" 
                      class="w-full h-full object-cover hover:scale-105 transition duration-300">
-                {% if article.is_ai_generated %}
-                <div class="absolute top-2 right-2 badge badge-primary">
-                    <i class="fas fa-robot mr-1"></i>AI
-                </div>
-                {% endif %}
             </div>
             {% endif %}
             
@@ -71,11 +66,6 @@
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center space-x-2">
                         <span class="badge badge-primary text-xs">{{ article.category }}</span>
-                        {% if article.is_ai_generated %}
-                        <span class="badge badge-success text-xs">
-                            <i class="fas fa-robot mr-1"></i>AI
-                        </span>
-                        {% endif %}
                     </div>
                     <span class="text-xs text-gray-500">{{ article.published_at|date:"d M Y H:i" }}</span>
                 </div>
@@ -98,7 +88,7 @@
                         {% endif %}
                         <div>
                             <p class="text-sm font-semibold">
-                                <a href="{% url 'author_detail' slug=article.author.slug %}" class="hover:text-blue-600">
+                                <a href="{% url 'news:author_detail' slug=article.author.slug %}" class="hover:text-blue-600">
                                     {{ article.author.name }}
                                 </a>
                             </p>

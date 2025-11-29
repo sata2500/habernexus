@@ -54,4 +54,4 @@ class Author(models.Model):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('author_detail', kwargs={'slug': self.slug})
+        return reverse('news:author_detail', kwargs={'slug': self.slug})
