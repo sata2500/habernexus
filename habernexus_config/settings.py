@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     
     # Third-party apps
     'tailwind',
+    'django_celery_beat',
     
     # Local apps
     'core.apps.CoreConfig',
@@ -148,6 +149,18 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Europe/Istanbul'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 dakika
+
+# Celery Kuyrukları (Queues)
+CELERY_QUEUES = {
+    'default': {'exchange': 'default', 'routing_key': 'default'},
+    'video_processing': {'exchange': 'video_processing', 'routing_key': 'video_processing'},
+}
+
+CELERY_DEFAULT_QUEUE = 'default'
+CELERY_DEFAULT_EXCHANGE = 'default'
+CELERY_DEFAULT_ROUTING_KEY = 'default'
 
 # Tailwind Configuration
 NPM_BIN_PATH = '/usr/local/bin/npm'
