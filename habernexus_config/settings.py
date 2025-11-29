@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     # Third-party apps
     'tailwind',
     'django_celery_beat',
+    'django.contrib.sites',
+    'django.contrib.sitemaps',
     
     # Local apps
     'core.apps.CoreConfig',
@@ -164,6 +166,26 @@ CELERY_DEFAULT_ROUTING_KEY = 'default'
 
 # Tailwind Configuration
 NPM_BIN_PATH = '/usr/local/bin/npm'
+
+# Sites Framework
+SITE_ID = 1
+
+# Cache Configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'habernexus',
+        'TIMEOUT': 300,
+    }
+}
+
+# Session Cache
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
 
 # Security Settings
 SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'

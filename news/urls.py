@@ -1,5 +1,7 @@
 from django.urls import path
+from django.contrib.sitemaps.views import sitemap
 from . import views
+from .sitemaps import sitemaps
 
 app_name = 'news'
 
@@ -26,4 +28,7 @@ urlpatterns = [
     # Statik Sayfalar
     path('hakkimizda/', views.about, name='about'),
     path('iletisim/', views.contact, name='contact'),
+    
+    # Sitemap
+    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='sitemap'),
 ]

@@ -30,3 +30,4 @@ gunicorn==23.0.0
 # Utilities
 python-slugify==8.0.1
 django-celery-beat==2.5.0
+django-redis==5.4.0

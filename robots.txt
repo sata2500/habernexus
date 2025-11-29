@@ -1,0 +1,46 @@
+# Haber Nexus - robots.txt
+# Arama motorları için yapılandırma
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /static/
+Disallow: /media/
+Disallow: /api/
+Disallow: /*?*
+Allow: /$
+Allow: /haber/
+Allow: /kategori/
+Allow: /yazar/
+Allow: /etiket/
+Allow: /ara/
+Allow: /hakkimizda/
+Allow: /iletisim/
+
+# Sitemap
+Sitemap: https://habernexus.com/sitemap.xml
+
+# Crawl delay (saniye)
+Crawl-delay: 1
+
+# Request rate (saniye başına istekler)
+Request-rate: 30/60
+
+# Specific bot rules
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Yasak botlar
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
