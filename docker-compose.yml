@@ -1,0 +1,148 @@
+version: '3.9'
+
+services:
+  # Nginx - Web Sunucusu ve Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: habernexus_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./staticfiles:/app/staticfiles:ro
+      - ./media:/app/media:ro
+      - ./config/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    networks:
+      - habernexus_network
+    restart: unless-stopped
+
+  # Django Uygulaması - Gunicorn ile
+  app:
+    build: .
+    container_name: habernexus_app
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn habernexus_config.wsgi:application --bind 0.0.0.0:8000 --workers 4"
+    environment:
+      - DEBUG=False
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key-change-in-production}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,habernexus.com}
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=${DB_NAME:-habernexus}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+    volumes:
+      - .:/app
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
+    depends_on:
+      - db
+      - redis
+    networks:
+      - habernexus_network
+    restart: unless-stopped
+
+  # PostgreSQL Veritabanı
+  db:
+    image: postgres:16-alpine
+    container_name: habernexus_db
+    environment:
+      - POSTGRES_DB=${DB_NAME:-habernexus}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - habernexus_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Celery Broker ve Cache
+  redis:
+    image: redis:7-alpine
+    container_name: habernexus_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - habernexus_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Celery Worker - Arka Plan Görevleri
+  celery:
+    build: .
+    container_name: habernexus_celery
+    command: celery -A habernexus_config worker -l info
+    environment:
+      - DEBUG=False
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key-change-in-production}
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=${DB_NAME:-habernexus}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+    volumes:
+      - .:/app
+      - ./media:/app/media
+    depends_on:
+      - db
+      - redis
+    networks:
+      - habernexus_network
+    restart: unless-stopped
+
+  # Celery Beat - Zamanlayıcı (Periyodik Görevler)
+  celery_beat:
+    build: .
+    container_name: habernexus_celery_beat
+    command: celery -A habernexus_config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      - DEBUG=False
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key-change-in-production}
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=${DB_NAME:-habernexus}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    networks:
+      - habernexus_network
+    restart: unless-stopped
+
+networks:
+  habernexus_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
