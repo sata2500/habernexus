@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ article.title }} - Haber Nexus{% endblock %}
+{% block meta_description %}{{ article.excerpt }}{% endblock %}
+{% block og_title %}{{ article.title }}{% endblock %}
+{% block og_description %}{{ article.excerpt }}{% endblock %}
+{% block og_image %}{{ article.featured_image.url }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2">
+        <!-- Article Header -->
+        <article>
+            <!-- Breadcrumb -->
+            <nav class="mb-6 text-sm">
+                <a href="{% url 'home' %}" class="text-blue-600 hover:text-blue-800">Ana Sayfa</a>
+                <span class="mx-2 text-gray-500">/</span>
+                <a href="{% url 'category' category=article.category %}" class="text-blue-600 hover:text-blue-800">
+                    {{ article.category }}
+                </a>
+                <span class="mx-2 text-gray-500">/</span>
+                <span class="text-gray-600">{{ article.title|truncatewords:5 }}</span>
+            </nav>
+            
+            <!-- Title -->
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">{{ article.title }}</h1>
+            
+            <!-- Meta Info -->
+            <div class="flex flex-wrap items-center gap-4 mb-6 pb-6 border-b border-gray-200">
+                <!-- Author -->
+                <div class="flex items-center space-x-3">
+                    {% if article.author.profile_image %}
+                    <img src="{{ article.author.profile_image.url }}" alt="{{ article.author.name }}" 
+                         class="w-12 h-12 rounded-full object-cover">
+                    {% else %}
+                    <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+                        {{ article.author.name|first }}
+                    </div>
+                    {% endif %}
+                    <div>
+                        <p class="font-semibold">
+                            <a href="{% url 'author_detail' slug=article.author.slug %}" class="hover:text-blue-600">
+                                {{ article.author.name }}
+                            </a>
+                        </p>
+                        <p class="text-sm text-gray-500">{{ article.author.expertise }}</p>
+                    </div>
+                </div>
+                
+                <!-- Date -->
+                <div class="text-gray-600">
+                    <i class="fas fa-calendar mr-2"></i>
+                    <span>{{ article.published_at|date:"d M Y" }}</span>
+                </div>
+                
+                <!-- Category -->
+                <span class="badge badge-primary">{{ article.category }}</span>
+                
+                <!-- AI Badge -->
+                {% if article.is_ai_generated %}
+                <span class="badge badge-success">
+                    <i class="fas fa-robot mr-1"></i>AI Destekli
+                </span>
+                {% endif %}
+                
+                <!-- Views -->
+                <div class="text-gray-600">
+                    <i class="fas fa-eye mr-2"></i>
+                    <span>{{ article.views_count }} görüntülenme</span>
+                </div>
+            </div>
+            
+            <!-- Featured Image -->
+            {% if article.featured_image %}
+            <figure class="mb-8">
+                <img src="{{ article.featured_image.url }}" alt="{{ article.featured_image_alt }}" 
+                     class="w-full rounded-lg shadow-lg">
+                {% if article.featured_image_alt %}
+                <figcaption class="text-center text-sm text-gray-600 mt-2">{{ article.featured_image_alt }}</figcaption>
+                {% endif %}
+            </figure>
+            {% endif %}
+            
+            <!-- Article Content -->
+            <div class="prose prose-lg max-w-none mb-8">
+                {{ article.content|safe }}
+            </div>
+            
+            <!-- Tags -->
+            {% if article.tags %}
+            <div class="mb-8 pb-8 border-b border-gray-200">
+                <h3 class="font-semibold mb-3">Etiketler:</h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for tag in article.tags.split:',' %}
+                    <a href="{% url 'tag_detail' tag=tag|slugify %}" class="badge badge-primary hover:bg-blue-200 transition">
+                        #{{ tag|strip }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Share Buttons -->
+            <div class="mb-8 pb-8 border-b border-gray-200">
+                <h3 class="font-semibold mb-3">Paylaş:</h3>
+                <div class="flex gap-4">
+                    <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text={{ article.title }}" 
+                       target="_blank" class="text-blue-400 hover:text-blue-600 text-2xl">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" 
+                       target="_blank" class="text-blue-600 hover:text-blue-800 text-2xl">
+                        <i class="fab fa-facebook"></i>
+                    </a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}" 
+                       target="_blank" class="text-blue-700 hover:text-blue-900 text-2xl">
+                        <i class="fab fa-linkedin"></i>
+                    </a>
+                    <a href="mailto:?subject={{ article.title }}&body={{ request.build_absolute_uri }}" 
+                       class="text-gray-600 hover:text-gray-800 text-2xl">
+                        <i class="fas fa-envelope"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Author Bio -->
+            <div class="card p-6 mb-8">
+                <h3 class="text-xl font-bold mb-4">Yazar Hakkında</h3>
+                <div class="flex gap-4">
+                    {% if article.author.profile_image %}
+                    <img src="{{ article.author.profile_image.url }}" alt="{{ article.author.name }}" 
+                         class="w-20 h-20 rounded-full object-cover flex-shrink-0">
+                    {% else %}
+                    <div class="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
+                        {{ article.author.name|first }}
+                    </div>
+                    {% endif %}
+                    <div>
+                        <h4 class="font-semibold text-lg mb-1">{{ article.author.name }}</h4>
+                        <p class="text-sm text-blue-600 font-semibold mb-2">{{ article.author.expertise }}</p>
+                        <p class="text-gray-600 text-sm">{{ article.author.bio }}</p>
+                        {% if article.author.website %}
+                        <a href="{{ article.author.website }}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block">
+                            Web Sitesi <i class="fas fa-external-link-alt ml-1"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </article>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="lg:col-span-1">
+        <!-- Related Articles -->
+        {% if related_articles %}
+        <div class="card p-6 mb-8">
+            <h3 class="text-xl font-bold mb-4">İlgili Haberler</h3>
+            <div class="space-y-4">
+                {% for related in related_articles %}
+                <div class="border-b border-gray-200 pb-4 last:border-b-0">
+                    <h4 class="font-semibold text-sm mb-2 hover:text-blue-600 transition">
+                        <a href="{{ related.get_absolute_url }}">{{ related.title|truncatewords:10 }}</a>
+                    </h4>
+                    <p class="text-xs text-gray-500">{{ related.published_at|date:"d M Y" }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Categories -->
+        <div class="card p-6 mb-8">
+            <h3 class="text-xl font-bold mb-4">Kategoriler</h3>
+            <div class="space-y-2">
+                <a href="{% url 'category' category='teknoloji' %}" class="block text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-chevron-right mr-2"></i>Teknoloji
+                </a>
+                <a href="{% url 'category' category='spor' %}" class="block text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-chevron-right mr-2"></i>Spor
+                </a>
+                <a href="{% url 'category' category='siyaset' %}" class="block text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-chevron-right mr-2"></i>Siyaset
+                </a>
+                <a href="{% url 'category' category='ekonomi' %}" class="block text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-chevron-right mr-2"></i>Ekonomi
+                </a>
+            </div>
+        </div>
+        
+        <!-- Newsletter -->
+        <div class="card p-6 bg-blue-50 border-2 border-blue-600">
+            <h3 class="text-lg font-bold mb-3">Bültene Abone Ol</h3>
+            <p class="text-sm text-gray-600 mb-4">En son haberleri e-posta ile alın</p>
+            <form class="space-y-3">
+                <input type="email" placeholder="E-posta adresiniz..." 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-sm">
+                <button type="submit" class="w-full btn-primary text-sm">
+                    Abone Ol
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="mt-12 pt-8 border-t border-gray-200">
+    <div class="grid grid-cols-2 gap-4">
+        {% if previous_article %}
+        <a href="{{ previous_article.get_absolute_url }}" class="card p-4 hover:shadow-lg transition">
+            <p class="text-xs text-gray-500 mb-1">← Önceki Haber</p>
+            <p class="font-semibold text-sm">{{ previous_article.title|truncatewords:5 }}</p>
+        </a>
+        {% else %}
+        <div></div>
+        {% endif %}
+        
+        {% if next_article %}
+        <a href="{{ next_article.get_absolute_url }}" class="card p-4 hover:shadow-lg transition text-right">
+            <p class="text-xs text-gray-500 mb-1">Sonraki Haber →</p>
+            <p class="font-semibold text-sm">{{ next_article.title|truncatewords:5 }}</p>
+        </a>
+        {% else %}
+        <div></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .prose {
+        color: #1a202c;
+    }
+    
+    .prose h2 {
+        @apply text-2xl font-bold mt-8 mb-4;
+    }
+    
+    .prose h3 {
+        @apply text-xl font-bold mt-6 mb-3;
+    }
+    
+    .prose p {
+        @apply mb-4 leading-relaxed;
+    }
+    
+    .prose ul, .prose ol {
+        @apply mb-4 ml-6;
+    }
+    
+    .prose li {
+        @apply mb-2;
+    }
+    
+    .prose a {
+        @apply text-blue-600 hover:text-blue-800 underline;
+    }
+    
+    .prose blockquote {
+        @apply border-l-4 border-blue-600 pl-4 italic text-gray-600 my-4;
+    }
+    
+    .prose code {
+        @apply bg-gray-100 px-2 py-1 rounded text-sm font-mono;
+    }
+    
+    .prose pre {
+        @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto mb-4;
+    }
+</style>
+{% endblock %}
