@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.db.models import Q
+from django.utils import timezone
 from .models import Article, RssSource
+from .cache_utils import clear_article_cache, clear_category_cache
 
 
 @admin.register(RssSource)
@@ -92,21 +95,35 @@ class ArticleAdmin(admin.ModelAdmin):
     def ai_badge(self, obj):
         if obj.is_ai_generated:
             return format_html(
-                '<span style="background-color: #0066cc; color: white; padding: 3px 8px; border-radius: 3px;">🤖 AI</span>'
+                '<span style="background-color: #0066cc; color: white; padding: 3px 8px; border-radius: 3px;">AI</span>'
             )
         return format_html(
             '<span style="background-color: #cccccc; color: black; padding: 3px 8px; border-radius: 3px;">Manual</span>'
         )
     ai_badge.short_description = 'Tür'
 
-    actions = ['publish_articles', 'archive_articles']
+    actions = ['publish_articles', 'archive_articles', 'mark_as_ai', 'mark_as_manual']
 
     def publish_articles(self, request, queryset):
         updated = queryset.update(status='published')
+        for article in queryset:
+            clear_article_cache(article.id)
         self.message_user(request, f'{updated} makale yayınlandı.')
     publish_articles.short_description = 'Seçili makaleleri yayınla'
 
     def archive_articles(self, request, queryset):
         updated = queryset.update(status='archived')
+        for article in queryset:
+            clear_article_cache(article.id)
         self.message_user(request, f'{updated} makale arşivlendi.')
     archive_articles.short_description = 'Seçili makaleleri arşivle'
+
+    def mark_as_ai(self, request, queryset):
+        updated = queryset.update(is_ai_generated=True)
+        self.message_user(request, f'{updated} makale AI olarak işaretlendi.')
+    mark_as_ai.short_description = 'Seçili makaleleri AI olarak işaretle'
+
+    def mark_as_manual(self, request, queryset):
+        updated = queryset.update(is_ai_generated=False)
+        self.message_user(request, f'{updated} makale manuel olarak işaretlendi.')
+    mark_as_manual.short_description = 'Seçili makaleleri manuel olarak işaretle'
