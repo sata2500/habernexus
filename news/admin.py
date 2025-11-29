@@ -33,8 +33,8 @@ class RssSourceAdmin(admin.ModelAdmin):
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'category', 'status_badge', 'ai_badge', 'published_at', 'views_count')
-    list_filter = ('status', 'is_ai_generated', 'category', 'published_at', 'created_at')
+    list_display = ('title', 'author', 'category', 'status_badge', 'published_at', 'views_count')
+    list_filter = ('status', 'category', 'published_at', 'created_at')
     search_fields = ('title', 'content', 'tags')
     prepopulated_fields = {'slug': ('title',)}
     readonly_fields = ('created_at', 'updated_at', 'views_count', 'slug')
@@ -54,10 +54,7 @@ class ArticleAdmin(admin.ModelAdmin):
             'fields': ('tags',),
             'classes': ('collapse',)
         }),
-        ('Yapay Zeka Bilgileri', {
-            'fields': ('is_ai_generated', 'is_ai_image'),
-            'classes': ('collapse',)
-        }),
+
         ('RSS Kaynağı', {
             'fields': ('rss_source', 'original_url'),
             'classes': ('collapse',)
@@ -92,17 +89,7 @@ class ArticleAdmin(admin.ModelAdmin):
         )
     status_badge.short_description = 'Durum'
 
-    def ai_badge(self, obj):
-        if obj.is_ai_generated:
-            return format_html(
-                '<span style="background-color: #0066cc; color: white; padding: 3px 8px; border-radius: 3px;">AI</span>'
-            )
-        return format_html(
-            '<span style="background-color: #cccccc; color: black; padding: 3px 8px; border-radius: 3px;">Manual</span>'
-        )
-    ai_badge.short_description = 'Tür'
-
-    actions = ['publish_articles', 'archive_articles', 'mark_as_ai', 'mark_as_manual']
+    actions = ['publish_articles', 'archive_articles']
 
     def publish_articles(self, request, queryset):
         updated = queryset.update(status='published')
@@ -118,12 +105,4 @@ class ArticleAdmin(admin.ModelAdmin):
         self.message_user(request, f'{updated} makale arşivlendi.')
     archive_articles.short_description = 'Seçili makaleleri arşivle'
 
-    def mark_as_ai(self, request, queryset):
-        updated = queryset.update(is_ai_generated=True)
-        self.message_user(request, f'{updated} makale AI olarak işaretlendi.')
-    mark_as_ai.short_description = 'Seçili makaleleri AI olarak işaretle'
 
-    def mark_as_manual(self, request, queryset):
-        updated = queryset.update(is_ai_generated=False)
-        self.message_user(request, f'{updated} makale manuel olarak işaretlendi.')
-    mark_as_manual.short_description = 'Seçili makaleleri manuel olarak işaretle'
