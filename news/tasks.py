@@ -3,6 +3,7 @@ import traceback
 from celery import shared_task
 from django.utils import timezone
 from django.utils.text import slugify
+from django.db import transaction
 import feedparser
 import requests
 from PIL import Image
@@ -92,8 +93,10 @@ def fetch_single_rss(source):
             
             fetched_count += 1
             
-            # AI ile içerik üretimini tetikle
-            generate_ai_content.delay(article.id)
+            # AI ile içerik üretimini tetikle (transaction commit olduktan sonra)
+            transaction.on_commit(
+                lambda article_id=article.id: generate_ai_content.delay(article_id)
+            )
         
         # Son tarama zamanını güncelle
         source.last_checked = timezone.now()
@@ -132,14 +135,33 @@ def download_article_image(article, image_url):
         raise
 
 
-@shared_task
-def generate_ai_content(article_id):
+@shared_task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={'max_retries': 3, 'countdown': 5},
+    retry_backoff=True,
+    retry_backoff_max=600,
+    retry_jitter=True
+)
+def generate_ai_content(self, article_id):
     """
     Yapay zeka kullanarak haber içeriğini oluştur.
     RSS'den çekilen ham veriyi profesyonel bir metne dönüştür.
+    
+    Idempotent: Bu task birden fazla çalıştırılsa bile aynı sonucu verir.
+    Retry stratejisi: API hataları durumunda otomatik yeniden deneme.
     """
     try:
         article = Article.objects.get(id=article_id)
+        
+        # Idempotency kontrolü: Eğer makale zaten AI tarafından üretilmişse, tekrar işleme
+        if article.is_ai_generated and article.status == 'published':
+            log_info(
+                'generate_ai_content',
+                f'Makale zaten AI tarafından üretilmiş: {article.title}',
+                related_id=article_id
+            )
+            return f'Makale zaten işlenmiş: {article.title}'
         
         # Google Gemini API anahtarını al
         try:

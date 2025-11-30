@@ -68,6 +68,26 @@ dist/
 logs/
 *.log
 
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+celerybeat-schedule.db
+
+# Security
+*.pem
+*.key
+*.crt
+ssl/
+
 # OS
 .DS_Store
 Thumbs.db

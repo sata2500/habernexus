@@ -53,7 +53,7 @@ class ArticleDetailView(DetailView):
         context['related_articles'] = Article.objects.filter(
             status='published',
             category=article.category
-        ).exclude(id=article.id).order_by('-published_at')[:5]
+        ).exclude(id=article.id).select_related('author').order_by('-published_at')[:5]
         
         # Önceki ve sonraki makaleler
         previous_article = Article.objects.filter(
@@ -78,11 +78,11 @@ def home(request):
     """
     featured_articles = Article.objects.filter(
         status='published'
-    ).order_by('-views_count')[:3]
+    ).select_related('author', 'rss_source').order_by('-views_count')[:3]
     
     latest_articles = Article.objects.filter(
         status='published'
-    ).order_by('-published_at')[:10]
+    ).select_related('author', 'rss_source').order_by('-published_at')[:10]
     
     context = {
         'featured_articles': featured_articles,
@@ -99,7 +99,7 @@ def category_view(request, category):
     articles = Article.objects.filter(
         status='published',
         category=category
-    ).order_by('-published_at')
+    ).select_related('author', 'rss_source').order_by('-published_at')
     
     paginator = Paginator(articles, 10)
     page_number = request.GET.get('page')
@@ -124,7 +124,7 @@ def author_detail(request, slug):
     articles = Article.objects.filter(
         status='published',
         author=author
-    ).order_by('-published_at')
+    ).select_related('rss_source').order_by('-published_at')
     
     paginator = Paginator(articles, 10)
     page_number = request.GET.get('page')
@@ -154,7 +154,7 @@ def search(request):
             Q(content__icontains=query) |
             Q(excerpt__icontains=query) |
             Q(tags__icontains=query)
-        ).order_by('-published_at')
+        ).select_related('author', 'rss_source').order_by('-published_at')
     
     paginator = Paginator(articles, 10)
     page_number = request.GET.get('page')
@@ -194,7 +194,7 @@ def tag_detail(request, tag):
     articles = Article.objects.filter(
         status='published',
         tags__icontains=tag
-    ).order_by('-published_at')
+    ).select_related('author', 'rss_source').order_by('-published_at')
     
     paginator = Paginator(articles, 10)
     page_number = request.GET.get('page')

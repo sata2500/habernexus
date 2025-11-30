@@ -96,6 +96,15 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
+        'OPTIONS': {
+            # PostgreSQL Connection Pooling (Django 5.1+)
+            # Bağlantı havuzu kullanarak performansı artırır
+            'pool': {
+                'min_size': 2,  # Minimum bağlantı sayısı
+                'max_size': 10,  # Maximum bağlantı sayısı (worker sayısına göre ayarlanabilir)
+                'timeout': 10,  # Bağlantı bekleme süresi (saniye)
+            }
+        },
     }
 }
 
@@ -152,17 +161,52 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Europe/Istanbul'
 CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 dakika
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 dakika (hard limit)
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 dakika (soft limit)
 
-# Celery Kuyrukları (Queues)
-CELERY_QUEUES = {
-    'default': {'exchange': 'default', 'routing_key': 'default'},
-    'video_processing': {'exchange': 'video_processing', 'routing_key': 'video_processing'},
+# Celery Broker Transport Options
+# Redis broker için ek güvenlik ve performans ayarları
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'visibility_timeout': 3600,  # 1 saat (saniye cinsinden)
+    'fanout_prefix': True,
+    'fanout_patterns': True,
 }
 
-CELERY_DEFAULT_QUEUE = 'default'
-CELERY_DEFAULT_EXCHANGE = 'default'
-CELERY_DEFAULT_ROUTING_KEY = 'default'
+# Celery Result Backend Options
+CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {
+    'retry_policy': {
+        'timeout': 5.0
+    }
+}
+
+# Task sonuçlarının ne kadar süre saklanacağı
+CELERY_RESULT_EXPIRES = 3600  # 1 saat
+
+# Task acknowledgement ayarları
+CELERY_TASK_ACKS_LATE = True  # Task tamamlandıktan sonra acknowledge et
+CELERY_WORKER_PREFETCH_MULTIPLIER = 4  # Her worker 4 task önceden alacak
+
+# Celery Kuyrukları (Queues)
+from kombu import Queue, Exchange
+
+CELERY_TASK_QUEUES = (
+    Queue('default', Exchange('default'), routing_key='default'),
+    Queue('high_priority', Exchange('high_priority'), routing_key='high_priority'),
+    Queue('low_priority', Exchange('low_priority'), routing_key='low_priority'),
+    Queue('video_processing', Exchange('video_processing'), routing_key='video_processing'),
+)
+
+CELERY_TASK_DEFAULT_QUEUE = 'default'
+CELERY_TASK_DEFAULT_EXCHANGE = 'default'
+CELERY_TASK_DEFAULT_ROUTING_KEY = 'default'
+
+# Task routing - Belirli taskları belirli kuyruklara yönlendir
+CELERY_TASK_ROUTES = {
+    'news.tasks.generate_ai_content': {'queue': 'high_priority'},
+    'news.tasks.fetch_rss_feeds': {'queue': 'default'},
+    'news.tasks.process_video_content': {'queue': 'video_processing'},
+    'core.tasks.cleanup_old_logs': {'queue': 'low_priority'},
+}
 
 # Tailwind Configuration
 NPM_BIN_PATH = '/usr/local/bin/npm'

@@ -74,7 +74,13 @@ services:
   redis:
     image: redis:7-alpine
     container_name: habernexus_redis
-    command: redis-server --appendonly yes
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy noeviction
+      --save 60 1000
+      --loglevel warning
     volumes:
       - redis_data:/data
     networks:
@@ -90,7 +96,7 @@ services:
   celery:
     build: .
     container_name: habernexus_celery
-    command: celery -A habernexus_config worker -l info
+    command: celery -A habernexus_config worker -l info --concurrency=4 --prefetch-multiplier=4
     environment:
       - DEBUG=False
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key-change-in-production}
@@ -135,6 +141,23 @@ services:
     depends_on:
       - db
       - redis
+    networks:
+      - habernexus_network
+    restart: unless-stopped
+
+  # Flower - Celery Monitoring Tool
+  flower:
+    build: .
+    container_name: habernexus_flower
+    command: celery -A habernexus_config flower --port=5555
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery
     networks:
       - habernexus_network
     restart: unless-stopped

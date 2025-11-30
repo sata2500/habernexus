@@ -31,7 +31,7 @@
                 <!-- Author -->
                 <div class="flex items-center space-x-3">
                     {% if article.author.profile_image %}
-                    <img src="{{ article.author.profile_image.url }}" alt="{{ article.author.name }}" 
+                    <img src="{{ article.author.profile_image.url }}" alt="{{ article.author.name }}" loading="lazy" 
                          class="w-12 h-12 rounded-full object-cover">
                     {% else %}
                     <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
@@ -69,7 +69,7 @@
             <!-- Featured Image -->
             {% if article.featured_image %}
             <figure class="mb-8">
-                <img src="{{ article.featured_image.url }}" alt="{{ article.featured_image_alt }}" 
+                <img src="{{ article.featured_image.url }}" alt="{{ article.featured_image_alt }}" loading="lazy" 
                      class="w-full rounded-lg shadow-lg">
                 {% if article.featured_image_alt %}
                 <figcaption class="text-center text-sm text-gray-600 mt-2">{{ article.featured_image_alt }}</figcaption>
@@ -124,7 +124,7 @@
                 <h3 class="text-xl font-bold mb-4">Yazar Hakkında</h3>
                 <div class="flex gap-4">
                     {% if article.author.profile_image %}
-                    <img src="{{ article.author.profile_image.url }}" alt="{{ article.author.name }}" 
+                    <img src="{{ article.author.profile_image.url }}" alt="{{ article.author.name }}" loading="lazy" 
                          class="w-20 h-20 rounded-full object-cover flex-shrink-0">
                     {% else %}
                     <div class="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
