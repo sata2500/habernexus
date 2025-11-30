@@ -1,0 +1,35 @@
+[Unit]
+Description=Haber Nexus Celery Beat Scheduler
+After=network.target redis-server.service postgresql.service
+Wants=habernexus.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/habernexus
+
+Environment="PATH=/var/www/habernexus/venv/bin"
+Environment="DJANGO_SETTINGS_MODULE=habernexus_config.settings"
+
+ExecStart=/var/www/habernexus/venv/bin/celery -A habernexus_config beat \
+    --loglevel=info \
+    --logfile=/var/log/habernexus/celery-beat.log \
+    --pidfile=/var/run/habernexus/celery-beat.pid \
+    --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=habernexus-celery-beat
+
+# Timeouts
+StartLimitInterval=60
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target

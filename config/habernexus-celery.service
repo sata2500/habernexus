@@ -1,0 +1,37 @@
+[Unit]
+Description=Haber Nexus Celery Worker
+After=network.target redis-server.service postgresql.service
+Wants=habernexus.service
+
+[Service]
+Type=forking
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/habernexus
+
+Environment="PATH=/var/www/habernexus/venv/bin"
+Environment="DJANGO_SETTINGS_MODULE=habernexus_config.settings"
+
+ExecStart=/var/www/habernexus/venv/bin/celery -A habernexus_config worker \
+    --loglevel=info \
+    --concurrency=4 \
+    --logfile=/var/log/habernexus/celery-worker.log \
+    --pidfile=/var/run/habernexus/celery-worker.pid
+
+ExecStop=/var/www/habernexus/venv/bin/celery -A habernexus_config control shutdown
+
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=habernexus-celery
+
+# Timeouts
+StartLimitInterval=60
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target

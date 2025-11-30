@@ -1,0 +1,38 @@
+[Unit]
+Description=Haber Nexus Django Application
+After=network.target postgresql.service redis-server.service
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/habernexus
+
+Environment="PATH=/var/www/habernexus/venv/bin"
+Environment="DJANGO_SETTINGS_MODULE=habernexus_config.settings"
+
+ExecStart=/var/www/habernexus/venv/bin/gunicorn \
+    --config /var/www/habernexus/config/gunicorn_config.py \
+    --workers 4 \
+    --bind 127.0.0.1:8000 \
+    habernexus_config.wsgi:application
+
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGQUIT
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=habernexus
+
+# Timeouts
+StartLimitInterval=60
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target
