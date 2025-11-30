@@ -20,9 +20,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    path('', include('core.urls')),
     path('admin/', admin.site.urls),
     path('', include('news.urls')),
-    path('', include('core.urls')),
 ]
 
 # Media dosyalarını servis et (geliştirme ortamında)

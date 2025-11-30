@@ -141,14 +141,14 @@ def generate_ai_content(article_id):
     try:
         article = Article.objects.get(id=article_id)
         
-        # Google AI API anahtarını al
+        # Google Gemini API anahtarını al
         try:
-            api_key_setting = Setting.objects.get(key='GOOGLE_API_KEY')
+            api_key_setting = Setting.objects.get(key='GOOGLE_GEMINI_API_KEY')
             api_key = api_key_setting.value
         except Setting.DoesNotExist:
             log_error(
                 'generate_ai_content',
-                'Google API anahtarı bulunamadı',
+                'Google Gemini API anahtarı bulunamadı',
                 related_id=article_id
             )
             return
@@ -156,7 +156,7 @@ def generate_ai_content(article_id):
         if not api_key:
             log_error(
                 'generate_ai_content',
-                'Google API anahtarı boş',
+                'Google Gemini API anahtarı boş',
                 related_id=article_id
             )
             return
