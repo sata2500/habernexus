@@ -105,7 +105,7 @@ Detaylı bilgi için `docs` klasörünü inceleyin:
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md):** Sistem mimarisi ve bileşenler
 - **[DEVELOPMENT.md](docs/DEVELOPMENT.md):** Geliştirme rehberi ve standartlar
 - **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md):** Sık karşılaşılan sorunlar ve çözümleri
-- **[CHANGELOG.md](docs/CHANGELOG.md):** Versiyon geçmişi ve değişiklikler
+- **[CHANGELOG.md](CHANGELOG.md):** Versiyon geçmişi ve değişiklikler
 
 ---
 
