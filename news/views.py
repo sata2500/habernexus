@@ -222,3 +222,17 @@ def tag_detail(request, tag):
     }
 
     return render(request, "tag_detail.html", context)
+
+
+def privacy_policy(request):
+    """
+    Gizlilik Politikası sayfası.
+    """
+    return render(request, "privacy_policy.html")
+
+
+def terms_of_service(request):
+    """
+    Kullanım Koşulları sayfası.
+    """
+    return render(request, "terms_of_service.html")

@@ -132,4 +132,6 @@ Lütfen kod standartları için `docs/DEVELOPMENT.md` dosyasını inceleyin.
 
 ## 📄 Lisans
 
-Tüm hakları saklıdır.
+Copyright (c) 2026 Haber Nexus. Tüm hakları saklıdır.
+
+Bu proje tescilli (proprietary) lisans altındadır. Daha fazla bilgi için [LICENSE](LICENSE) dosyasına bakınız.

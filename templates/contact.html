@@ -1,196 +1,68 @@
 {% extends 'base.html' %}
 
 {% block title %}İletişim - Haber Nexus{% endblock %}
-{% block meta_description %}Haber Nexus ile iletişime geçin. Sorularınız, önerileriniz ve işbirliği için bize yazın.{% endblock %}
 
 {% block content %}
-<!-- Header -->
-<div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-12 mb-12 text-center">
-    <h1 class="text-5xl font-bold mb-4">İletişim</h1>
-    <p class="text-xl opacity-90">Bize yazın, sorularınızı sorun, önerilerinizi paylaşın</p>
-</div>
+<div class="container mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto text-center mb-12">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900">Bize Ulaşın</h1>
+        <p class="mt-4 text-lg text-gray-600">Sorularınız, geri bildirimleriniz veya işbirliği talepleriniz için buradayız.</p>
+    </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-    <!-- Contact Form -->
-    <div class="lg:col-span-2">
-        <div class="card p-8">
-            <h2 class="text-2xl font-bold mb-6">İletişim Formu</h2>
-            <form method="post" class="space-y-6">
+    <div class="grid md:grid-cols-2 gap-12 bg-white shadow-xl rounded-lg overflow-hidden p-8">
+        <!-- Contact Info -->
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">İletişim Bilgileri</h2>
+            <div class="space-y-6 text-gray-700">
+                <div class="flex items-start">
+                    <i class="fas fa-map-marker-alt text-blue-600 mt-1 mr-4"></i>
+                    <div>
+                        <h3 class="font-semibold">Adres</h3>
+                        <p>Kurtuluş Mahallesi Orhan Gazi Caddesi, Yakutiye/Erzurum, Türkiye</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <i class="fas fa-envelope text-blue-600 mt-1 mr-4"></i>
+                    <div>
+                        <h3 class="font-semibold">E-posta</h3>
+                        <p><a href="mailto:info@habernexus.com" class="hover:underline">Genel Sorular: info@habernexus.com</a></p>
+                        <p><a href="mailto:help@habernexus.com" class="hover:underline">Teknik Destek: help@habernexus.com</a></p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <i class="fas fa-phone-alt text-blue-600 mt-1 mr-4"></i>
+                    <div>
+                        <h3 class="font-semibold">Telefon</h3>
+                        <p>+90 531 679 91 27</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Form -->
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Mesaj Gönderin</h2>
+            <form action="{% url 'news:contact' %}" method="post" class="space-y-4">
                 {% csrf_token %}
-                
                 <div>
-                    <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Adınız *</label>
-                    <input type="text" id="name" name="name" required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600">
+                    <label for="name" class="block text-sm font-medium text-gray-700">Adınız</label>
+                    <input type="text" name="name" id="name" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                
                 <div>
-                    <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">E-posta *</label>
-                    <input type="email" id="email" name="email" required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600">
+                    <label for="email" class="block text-sm font-medium text-gray-700">E-posta Adresiniz</label>
+                    <input type="email" name="email" id="email" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                
                 <div>
-                    <label for="subject" class="block text-sm font-semibold text-gray-700 mb-2">Konu *</label>
-                    <select id="subject" name="subject" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600">
-                        <option value="">-- Seçiniz --</option>
-                        <option value="question">Soru</option>
-                        <option value="suggestion">Öneri</option>
-                        <option value="complaint">Şikayet</option>
-                        <option value="partnership">İşbirliği</option>
-                        <option value="other">Diğer</option>
-                    </select>
+                    <label for="message" class="block text-sm font-medium text-gray-700">Mesajınız</label>
+                    <textarea name="message" id="message" rows="5" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
                 </div>
-                
                 <div>
-                    <label for="message" class="block text-sm font-semibold text-gray-700 mb-2">Mesaj *</label>
-                    <textarea id="message" name="message" rows="6" required
-                              placeholder="Mesajınızı yazınız..."
-                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 resize-none"></textarea>
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Gönder
+                    </button>
                 </div>
-                
-                <div class="flex items-center">
-                    <input type="checkbox" id="privacy" name="privacy" required
-                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-600">
-                    <label for="privacy" class="ml-2 text-sm text-gray-600">
-                        <a href="#" class="text-blue-600 hover:text-blue-800">Gizlilik Politikasını</a> kabul ediyorum *
-                    </label>
-                </div>
-                
-                <button type="submit" class="w-full btn-primary py-3 text-lg">
-                    <i class="fas fa-paper-plane mr-2"></i>Gönder
-                </button>
             </form>
         </div>
     </div>
-    
-    <!-- Contact Info -->
-    <div class="space-y-6">
-        <!-- Email -->
-        <div class="card p-6">
-            <i class="fas fa-envelope text-3xl text-blue-600 mb-3"></i>
-            <h3 class="text-xl font-bold mb-2">E-posta</h3>
-            <p class="text-gray-600 mb-3">Sorularınız için bize e-posta gönderin.</p>
-            <a href="mailto:salihtanriseven25@gmail.com" class="text-blue-600 hover:text-blue-800 font-semibold">
-                salihtanriseven25@gmail.com
-            </a>
-        </div>
-        
-        <!-- Phone -->
-        <div class="card p-6">
-            <i class="fas fa-phone text-3xl text-blue-600 mb-3"></i>
-            <h3 class="text-xl font-bold mb-2">Telefon</h3>
-            <p class="text-gray-600 mb-3">Bizi arayın (Pazartesi-Cuma, 09:00-18:00)</p>
-            <p class="text-blue-600 font-semibold">+90 (XXX) XXX-XXXX</p>
-        </div>
-        
-        <!-- Address -->
-        <div class="card p-6">
-            <i class="fas fa-map-marker-alt text-3xl text-blue-600 mb-3"></i>
-            <h3 class="text-xl font-bold mb-2">Adres</h3>
-            <p class="text-gray-600">
-                Haber Nexus<br>
-                İstanbul, Türkiye
-            </p>
-        </div>
-        
-        <!-- Social Media -->
-        <div class="card p-6">
-            <i class="fas fa-share-alt text-3xl text-blue-600 mb-3"></i>
-            <h3 class="text-xl font-bold mb-2">Sosyal Medya</h3>
-            <div class="flex gap-4">
-                <a href="#" class="text-blue-400 hover:text-blue-600 text-2xl transition">
-                    <i class="fab fa-twitter"></i>
-                </a>
-                <a href="#" class="text-blue-600 hover:text-blue-800 text-2xl transition">
-                    <i class="fab fa-facebook"></i>
-                </a>
-                <a href="#" class="text-pink-600 hover:text-pink-800 text-2xl transition">
-                    <i class="fab fa-instagram"></i>
-                </a>
-                <a href="#" class="text-blue-700 hover:text-blue-900 text-2xl transition">
-                    <i class="fab fa-linkedin"></i>
-                </a>
-            </div>
-        </div>
-    </div>
 </div>
-
-<!-- FAQ -->
-<section>
-    <h2 class="text-3xl font-bold mb-6">Sık Sorulan Sorular</h2>
-    <div class="space-y-4">
-        <details class="card p-6 cursor-pointer group">
-            <summary class="font-bold text-lg flex items-center justify-between">
-                <span>Haber Nexus nedir?</span>
-                <i class="fas fa-chevron-down group-open:rotate-180 transition"></i>
-            </summary>
-            <p class="text-gray-600 mt-4">
-                Haber Nexus, tam otomatik bir haber ajansıdır. 
-                Profesyonel yazarlar tarafından özgün ve profesyonel haberler üretir.
-            </p>
-        </details>
-        
-        <details class="card p-6 cursor-pointer group">
-            <summary class="font-bold text-lg flex items-center justify-between">
-                <span>Haberler gerçek mi?</span>
-                <i class="fas fa-chevron-down group-open:rotate-180 transition"></i>
-            </summary>
-            <p class="text-gray-600 mt-4">
-                Haberler, güvenilir RSS kaynakları kullanılarak oluşturulur. 
-                Profesyonel olarak özgün içeriğe dönüştürülür, ancak gerçek veriler kullanılır.
-            </p>
-        </details>
-        
-        <details class="card p-6 cursor-pointer group">
-            <summary class="font-bold text-lg flex items-center justify-between">
-                <span>Haberler ne sıklıkta güncellenir?</span>
-                <i class="fas fa-chevron-down group-open:rotate-180 transition"></i>
-            </summary>
-            <p class="text-gray-600 mt-4">
-                Sistem 7/24 çalışır ve her 15 dakikada bir RSS kaynaklarını tarar. 
-                Yeni haberler otomatik olarak üretilir ve yayınlanır.
-            </p>
-        </details>
-        
-        <details class="card p-6 cursor-pointer group">
-            <summary class="font-bold text-lg flex items-center justify-between">
-                <span>Yazarlar gerçek mi?</span>
-                <i class="fas fa-chevron-down group-open:rotate-180 transition"></i>
-            </summary>
-            <p class="text-gray-600 mt-4">
-                Yazarlar, sistem tarafından oluşturulan profiller olup, 
-                her haberin profesyonel bir yazarın kaleminden çıkmış gibi görünmesini sağlar.
-            </p>
-        </details>
-        
-        <details class="card p-6 cursor-pointer group">
-            <summary class="font-bold text-lg flex items-center justify-between">
-                <span>Görseller nereden geliyor?</span>
-                <i class="fas fa-chevron-down group-open:rotate-180 transition"></i>
-            </summary>
-            <p class="text-gray-600 mt-4">
-                Görseller, RSS kaynaklarından çekilen orijinal görseller veya 
-                Profesyonel oluşturulan profesyonel görseller olabilir.
-            </p>
-        </details>
-    </div>
-</section>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Form validation
-    document.querySelector('form').addEventListener('submit', function(e) {
-        const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const message = document.getElementById('message').value.trim();
-        
-        if (!name || !email || !message) {
-            e.preventDefault();
-            alert('Lütfen tüm gerekli alanları doldurunuz.');
-        }
-    });
-</script>
 {% endblock %}

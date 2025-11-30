@@ -23,6 +23,8 @@ urlpatterns = [
     # Statik Sayfalar
     path("hakkimizda/", views.about, name="about"),
     path("iletisim/", views.contact, name="contact"),
+    path("gizlilik-politikasi/", views.privacy_policy, name="privacy_policy"),
+    path("kullanim-kosullari/", views.terms_of_service, name="terms_of_service"),
     # Sitemap
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
 ]
