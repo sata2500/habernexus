@@ -103,15 +103,15 @@ DATABASES = {
         "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
         "HOST": os.getenv("DB_HOST", "localhost"),
         "PORT": os.getenv("DB_PORT", "5432"),
-        "OPTIONS": {
-            # PostgreSQL Connection Pooling (Django 5.1+)
-            # Bağlantı havuzu kullanarak performansı artırır
-            "pool": {
-                "min_size": 2,  # Minimum bağlantı sayısı
-                "max_size": 10,  # Maximum bağlantı sayısı (worker sayısına göre ayarlanabilir)
-                "timeout": 10,  # Bağlantı bekleme süresi (saniye)
-            }
-        },
+        # NOT: Connection pooling psycopg2 ile çalışmıyor, psycopg3 gerekiyor
+        # Gelecekte psycopg3'e geçildiğinde aşağıdaki yapılandırma aktif edilebilir:
+        # "OPTIONS": {
+        #     "pool": {
+        #         "min_size": 2,
+        #         "max_size": 10,
+        #         "timeout": 10,
+        #     }
+        # },
     }
 }
 

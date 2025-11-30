@@ -52,7 +52,7 @@ class TestArticleModel:
         article = Article.objects.create(title="Test Makale", slug="test-makale", content="Test içerik", author=author)
 
         url = article.get_absolute_url()
-        assert url == f"/article/{article.slug}/"
+        assert url == f"/haber/{article.slug}/"
 
     def test_article_ordering(self):
         """Makale sıralama testi."""
