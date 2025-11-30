@@ -64,7 +64,7 @@ def api_settings_view(request):
             )
             messages.success(request, f"✓ İçerik üretim sıklığı {content_frequency} dakika olarak ayarlandı.")
 
-        return redirect("admin:core_settings")
+        return redirect("core:api_settings")
 
     # Mevcut ayarları getir
     settings_dict = {}
