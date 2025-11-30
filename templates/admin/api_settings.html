@@ -1,0 +1,323 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}API Ayarları - Django Yönetimi{% endblock %}
+
+{% block extrahead %}
+<style>
+    .api-settings-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .settings-section {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .settings-section h2 {
+        margin-top: 0;
+        color: #333;
+        border-bottom: 2px solid #417690;
+        padding-bottom: 10px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 13px;
+    }
+    
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #417690;
+        box-shadow: 0 0 5px rgba(65, 118, 144, 0.3);
+    }
+    
+    .help-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-left: 10px;
+    }
+    
+    .status-set {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .status-not-set {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .button-group {
+        margin-top: 30px;
+        text-align: center;
+    }
+    
+    .button-group button {
+        background-color: #417690;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+    }
+    
+    .button-group button:hover {
+        background-color: #2e5266;
+    }
+    
+    .info-box {
+        background-color: #e7f3ff;
+        border-left: 4px solid #2196F3;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    
+    .info-box h3 {
+        margin-top: 0;
+        color: #1976D2;
+    }
+    
+    .info-box p {
+        margin: 5px 0;
+        color: #333;
+    }
+    
+    .warning-box {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    
+    .warning-box h3 {
+        margin-top: 0;
+        color: #856404;
+    }
+    
+    .warning-box p {
+        margin: 5px 0;
+        color: #333;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="api-settings-container">
+    <h1>API Ayarları</h1>
+    
+    {% if messages %}
+    <div class="messagelist">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="info-box">
+        <h3>🔑 Google AI API Anahtarlarını Buradan Yönetin</h3>
+        <p>
+            Haber Nexus'un yapay zeka destekli içerik üretim sistemini kullanmak için 
+            Google Gemini ve Imagen API anahtarlarını buraya ekleyin.
+        </p>
+        <p>
+            <strong>Not:</strong> API anahtarları şifreli olarak saklanır ve yönetim panelinde maskelenmiş şekilde gösterilir.
+        </p>
+    </div>
+    
+    <form method="post" class="form">
+        {% csrf_token %}
+        
+        <!-- Google Gemini API Anahtarı -->
+        <div class="settings-section">
+            <h2>
+                Google Gemini API
+                {% if gemini_key_set %}
+                <span class="status-badge status-set">✓ AYARLANMIŞ</span>
+                {% else %}
+                <span class="status-badge status-not-set">✗ AYARLANMAMIŞ</span>
+                {% endif %}
+            </h2>
+            
+            <div class="info-box" style="margin-bottom: 15px;">
+                <p>
+                    <strong>Kullanım:</strong> Haber içeriklerini profesyonel olarak yazıp düzenlemek için kullanılır.
+                </p>
+                <p>
+                    <strong>API Anahtarı Nasıl Alınır?</strong>
+                </p>
+                <ol style="margin: 10px 0; padding-left: 20px;">
+                    <li><a href="https://ai.google.dev/" target="_blank">Google AI Studio</a>'ya gidin</li>
+                    <li>"Get API Key" butonuna tıklayın</li>
+                    <li>Yeni API anahtarı oluşturun veya mevcut olanı kopyalayın</li>
+                    <li>Anahtarı aşağıya yapıştırın</li>
+                </ol>
+            </div>
+            
+            <div class="form-group">
+                <label for="gemini_api_key">Google Gemini API Anahtarı</label>
+                <textarea name="gemini_api_key" id="gemini_api_key" placeholder="sk-..." 
+                          autocomplete="off"></textarea>
+                <div class="help-text">
+                    Mevcut anahtar varsa, yeni bir anahtar girerek eski olanı değiştirebilirsiniz.
+                </div>
+            </div>
+        </div>
+        
+        <!-- Google Imagen API Anahtarı -->
+        <div class="settings-section">
+            <h2>
+                Google Imagen API
+                {% if imagen_key_set %}
+                <span class="status-badge status-set">✓ AYARLANMIŞ</span>
+                {% else %}
+                <span class="status-badge status-not-set">✗ AYARLANMAMIŞ</span>
+                {% endif %}
+            </h2>
+            
+            <div class="info-box" style="margin-bottom: 15px;">
+                <p>
+                    <strong>Kullanım:</strong> Haberler için profesyonel görseller otomatik olarak oluşturmak için kullanılır.
+                </p>
+                <p>
+                    <strong>Not:</strong> Imagen API, Gemini API ile aynı API anahtarını kullanabilir.
+                </p>
+            </div>
+            
+            <div class="form-group">
+                <label for="imagen_api_key">Google Imagen API Anahtarı</label>
+                <textarea name="imagen_api_key" id="imagen_api_key" placeholder="sk-..." 
+                          autocomplete="off"></textarea>
+                <div class="help-text">
+                    Gemini API anahtarı ile aynı olabilir. Boş bırakırsanız, RSS kaynağından görsel çekilir.
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tarama Ayarları -->
+        <div class="settings-section">
+            <h2>Otomasyon Ayarları</h2>
+            
+            <div class="warning-box">
+                <p>
+                    <strong>⚠️ Dikkat:</strong> Bu ayarlar sistem performansını etkileyebilir. 
+                    Çok düşük değerler API limitlerini aşabilir.
+                </p>
+            </div>
+            
+            <div class="form-group">
+                <label for="rss_frequency">RSS Tarama Sıklığı (dakika)</label>
+                <input type="number" name="rss_frequency" id="rss_frequency" 
+                       value="{{ rss_frequency }}" min="5" max="1440">
+                <div class="help-text">
+                    RSS kaynakları ne sıklıkta taranacak? (Minimum: 5 dakika, Maksimum: 1440 dakika/1 gün)
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="content_frequency">İçerik Üretim Sıklığı (dakika)</label>
+                <input type="number" name="content_frequency" id="content_frequency" 
+                       value="{{ content_frequency }}" min="10" max="1440">
+                <div class="help-text">
+                    Yapay zeka ile ne sıklıkta yeni içerik üretilecek? (Minimum: 10 dakika, Maksimum: 1440 dakika/1 gün)
+                </div>
+            </div>
+        </div>
+        
+        <!-- Kaydet Butonu -->
+        <div class="button-group">
+            <button type="submit">💾 Ayarları Kaydet</button>
+        </div>
+    </form>
+    
+    <!-- Bilgi -->
+    <div class="info-box" style="margin-top: 30px;">
+        <h3>📚 Daha Fazla Bilgi</h3>
+        <p>
+            <strong>Sistem Günlükleri:</strong> 
+            <a href="/admin/core/systemlog/">Sistem Günlükleri</a> sayfasından 
+            API hataları ve sistem olaylarını izleyebilirsiniz.
+        </p>
+        <p>
+            <strong>Sistem Ayarları:</strong> 
+            <a href="/admin/core/setting/">Sistem Ayarları</a> sayfasından 
+            tüm ayarları yönetebilirsiniz.
+        </p>
+    </div>
+</div>
+
+<style>
+    .alert {
+        padding: 12px 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        border-left: 4px solid;
+    }
+    
+    .alert-success {
+        background-color: #d4edda;
+        border-color: #28a745;
+        color: #155724;
+    }
+    
+    .alert-error {
+        background-color: #f8d7da;
+        border-color: #dc3545;
+        color: #721c24;
+    }
+    
+    .alert-warning {
+        background-color: #fff3cd;
+        border-color: #ffc107;
+        color: #856404;
+    }
+    
+    .alert-info {
+        background-color: #d1ecf1;
+        border-color: #17a2b8;
+        color: #0c5460;
+    }
+</style>
+{% endblock %}
