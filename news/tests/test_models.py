@@ -94,3 +94,14 @@ class TestRssSourceModel:
         source = RssSource.objects.create(name="Test RSS", url="https://example.com/rss", category="Teknoloji")
 
         assert str(source) == "Test RSS (Teknoloji)"
+
+    def test_article_str_representation(self):
+        """Article __str__ metodu title döndürmüş."""
+        author = Author.objects.create(name="Test Author", slug="test-author")
+        article = Article.objects.create(
+            title="Test Article Title",
+            slug="test-article",
+            content="Test content",
+            author=author,
+        )
+        assert str(article) == "Test Article Title"
