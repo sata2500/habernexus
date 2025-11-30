@@ -1,6 +1,9 @@
-from celery import shared_task
-from django.utils import timezone
 from datetime import timedelta
+
+from django.utils import timezone
+
+from celery import shared_task
+
 from .models import SystemLog
 
 
@@ -13,21 +16,12 @@ def cleanup_old_logs():
     try:
         cutoff_date = timezone.now() - timedelta(days=30)
         deleted_count, _ = SystemLog.objects.filter(created_at__lt=cutoff_date).delete()
-        
-        SystemLog.objects.create(
-            level='INFO',
-            task_name='cleanup_old_logs',
-            message=f'{deleted_count} eski log silindi.'
-        )
-        
-        return f'Başarılı: {deleted_count} log silindi'
+
+        SystemLog.objects.create(level="INFO", task_name="cleanup_old_logs", message=f"{deleted_count} eski log silindi.")
+
+        return f"Başarılı: {deleted_count} log silindi"
     except Exception as e:
-        SystemLog.objects.create(
-            level='ERROR',
-            task_name='cleanup_old_logs',
-            message=f'Hata: {str(e)}',
-            traceback=str(e)
-        )
+        SystemLog.objects.create(level="ERROR", task_name="cleanup_old_logs", message=f"Hata: {str(e)}", traceback=str(e))
         raise
 
 
@@ -37,11 +31,7 @@ def log_error(task_name, message, traceback=None, related_id=None):
     Celery görevlerinden çağrılır.
     """
     SystemLog.objects.create(
-        level='ERROR',
-        task_name=task_name,
-        message=message,
-        traceback=traceback or '',
-        related_id=related_id
+        level="ERROR", task_name=task_name, message=message, traceback=traceback or "", related_id=related_id
     )
 
 
@@ -49,9 +39,4 @@ def log_info(task_name, message, related_id=None):
     """
     Bilgi kaydı tutmak için yardımcı fonksiyon.
     """
-    SystemLog.objects.create(
-        level='INFO',
-        task_name=task_name,
-        message=message,
-        related_id=related_id
-    )
+    SystemLog.objects.create(level="INFO", task_name=task_name, message=message, related_id=related_id)

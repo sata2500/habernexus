@@ -10,7 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+# Celery imports
+try:
+    from kombu import Exchange, Queue
+except ImportError:
+    Queue = None
+    Exchange = None
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,88 +29,87 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-mt-=czt$#v)6=4i8b4*kg#ff=rxnyk+8!ln6hi3jelx!y1yseo')
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-mt-=czt$#v)6=4i8b4*kg#ff=rxnyk+8!ln6hi3jelx!y1yseo")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
     # Third-party apps
-    'tailwind',
-    'django_celery_beat',
-    'django.contrib.sites',
-    'django.contrib.sitemaps',
-    
+    "tailwind",
+    "django_celery_beat",
+    "django.contrib.sites",
+    "django.contrib.sitemaps",
     # Local apps
-    'core.apps.CoreConfig',
-    'news.apps.NewsConfig',
-    'authors.apps.AuthorsConfig',
+    "core.apps.CoreConfig",
+    "news.apps.NewsConfig",
+    "authors.apps.AuthorsConfig",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'habernexus_config.urls'
+ROOT_URLCONF = "habernexus_config.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'habernexus_config.wsgi.application'
+WSGI_APPLICATION = "habernexus_config.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'habernexus'),
-        'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-        'OPTIONS': {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("DB_NAME", "habernexus"),
+        "USER": os.getenv("DB_USER", "postgres"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
+        "HOST": os.getenv("DB_HOST", "localhost"),
+        "PORT": os.getenv("DB_PORT", "5432"),
+        "OPTIONS": {
             # PostgreSQL Connection Pooling (Django 5.1+)
             # Bağlantı havuzu kullanarak performansı artırır
-            'pool': {
-                'min_size': 2,  # Minimum bağlantı sayısı
-                'max_size': 10,  # Maximum bağlantı sayısı (worker sayısına göre ayarlanabilir)
-                'timeout': 10,  # Bağlantı bekleme süresi (saniye)
+            "pool": {
+                "min_size": 2,  # Minimum bağlantı sayısı
+                "max_size": 10,  # Maximum bağlantı sayısı (worker sayısına göre ayarlanabilir)
+                "timeout": 10,  # Bağlantı bekleme süresi (saniye)
             }
         },
     }
@@ -114,16 +121,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -131,9 +138,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'tr-tr'
+LANGUAGE_CODE = "tr-tr"
 
-TIME_ZONE = 'Europe/Istanbul'
+TIME_ZONE = "Europe/Istanbul"
 
 USE_I18N = True
 
@@ -143,23 +150,23 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Celery Configuration
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'Europe/Istanbul'
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Europe/Istanbul"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 dakika (hard limit)
 CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 dakika (soft limit)
@@ -167,17 +174,13 @@ CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 dakika (soft limit)
 # Celery Broker Transport Options
 # Redis broker için ek güvenlik ve performans ayarları
 CELERY_BROKER_TRANSPORT_OPTIONS = {
-    'visibility_timeout': 3600,  # 1 saat (saniye cinsinden)
-    'fanout_prefix': True,
-    'fanout_patterns': True,
+    "visibility_timeout": 3600,  # 1 saat (saniye cinsinden)
+    "fanout_prefix": True,
+    "fanout_patterns": True,
 }
 
 # Celery Result Backend Options
-CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {
-    'retry_policy': {
-        'timeout': 5.0
-    }
-}
+CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {"retry_policy": {"timeout": 5.0}}
 
 # Task sonuçlarının ne kadar süre saklanacağı
 CELERY_RESULT_EXPIRES = 3600  # 1 saat
@@ -187,61 +190,60 @@ CELERY_TASK_ACKS_LATE = True  # Task tamamlandıktan sonra acknowledge et
 CELERY_WORKER_PREFETCH_MULTIPLIER = 4  # Her worker 4 task önceden alacak
 
 # Celery Kuyrukları (Queues)
-from kombu import Queue, Exchange
+if Queue and Exchange:
+    CELERY_TASK_QUEUES = (
+        Queue("default", Exchange("default"), routing_key="default"),
+        Queue("high_priority", Exchange("high_priority"), routing_key="high_priority"),
+        Queue("low_priority", Exchange("low_priority"), routing_key="low_priority"),
+        Queue("video_processing", Exchange("video_processing"), routing_key="video_processing"),
+    )
 
-CELERY_TASK_QUEUES = (
-    Queue('default', Exchange('default'), routing_key='default'),
-    Queue('high_priority', Exchange('high_priority'), routing_key='high_priority'),
-    Queue('low_priority', Exchange('low_priority'), routing_key='low_priority'),
-    Queue('video_processing', Exchange('video_processing'), routing_key='video_processing'),
-)
+    # Task routing - Belirli taskları belirli kuyruklara yönlendir
+    CELERY_TASK_ROUTES = {
+        "news.tasks.generate_ai_content": {"queue": "high_priority"},
+        "news.tasks.fetch_rss_feeds": {"queue": "default"},
+        "news.tasks.process_video_content": {"queue": "video_processing"},
+        "core.tasks.cleanup_old_logs": {"queue": "low_priority"},
+    }
 
-CELERY_TASK_DEFAULT_QUEUE = 'default'
-CELERY_TASK_DEFAULT_EXCHANGE = 'default'
-CELERY_TASK_DEFAULT_ROUTING_KEY = 'default'
-
-# Task routing - Belirli taskları belirli kuyruklara yönlendir
-CELERY_TASK_ROUTES = {
-    'news.tasks.generate_ai_content': {'queue': 'high_priority'},
-    'news.tasks.fetch_rss_feeds': {'queue': 'default'},
-    'news.tasks.process_video_content': {'queue': 'video_processing'},
-    'core.tasks.cleanup_old_logs': {'queue': 'low_priority'},
-}
+CELERY_TASK_DEFAULT_QUEUE = "default"
+CELERY_TASK_DEFAULT_EXCHANGE = "default"
+CELERY_TASK_DEFAULT_ROUTING_KEY = "default"
 
 # Tailwind Configuration
-NPM_BIN_PATH = '/usr/local/bin/npm'
+NPM_BIN_PATH = "/usr/local/bin/npm"
 
 # Sites Framework
 SITE_ID = 1
 
 # Cache Configuration
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1'),
-        'KEY_PREFIX': 'habernexus',
-        'TIMEOUT': 300,
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "KEY_PREFIX": "habernexus",
+        "TIMEOUT": 300,
     }
 }
 
 # Session Cache
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 
 # Security Settings
-SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
-SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False') == 'True'
-CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'False') == 'True'
-SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '0'))
-SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False') == 'True'
-SECURE_HSTS_PRELOAD = os.getenv('SECURE_HSTS_PRELOAD', 'False') == 'True'
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False") == "True"
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False") == "True"
+CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "False") == "True"
+SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS", "False") == "True"
+SECURE_HSTS_PRELOAD = os.getenv("SECURE_HSTS_PRELOAD", "False") == "True"
 
 # CSRF Trusted Origins
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    'https://8000-ioj2q4pgbbyvuxjextgwm-02645aba.manus-asia.computer',
-    'https://*.manus-asia.computer',
-    'https://habernexus.com',
-    'https://www.habernexus.com',
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://8000-ioj2q4pgbbyvuxjextgwm-02645aba.manus-asia.computer",
+    "https://*.manus-asia.computer",
+    "https://habernexus.com",
+    "https://www.habernexus.com",
 ]

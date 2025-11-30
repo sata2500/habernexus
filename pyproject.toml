@@ -1,0 +1,48 @@
+[tool.black]
+line-length = 127
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | migrations
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 127
+skip_glob = ["*/migrations/*", "*/venv/*", "*/env/*"]
+known_first_party = ["habernexus_config", "news", "authors", "core"]
+known_django = ["django"]
+sections = ["FUTURE", "STDLIB", "DJANGO", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "habernexus_config.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--strict-markers",
+    "--tb=short",
+]
+testpaths = [
+    "news/tests",
+    "authors/tests",
+    "core/tests",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]

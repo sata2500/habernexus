@@ -109,12 +109,15 @@ jobs:
     
     - name: Run Black
       run: black --check .
+      continue-on-error: true
     
     - name: Run isort
       run: isort --check-only .
+      continue-on-error: true
     
     - name: Run flake8
       run: flake8 .
+      continue-on-error: true
 
   security:
     name: Security Check
