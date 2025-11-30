@@ -1,128 +1,134 @@
-# Haber Nexus - Yapıy Zeka Destekli Otomatik Haber Ajansı
+# Haber Nexus - AI Destekli Otomatik Haber Ajansı
 
-![Haber Nexus](https://img.shields.io/badge/Django-5.0-green) ![Python](https://img.shields.io/badge/Python-3.11-blue) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12+-blue) ![Redis](https://img.shields.io/badge/Redis-6+-red) ![Celery](https://img.shields.io/badge/Celery-5.3-green) ![Nginx](https://img.shields.io/badge/Nginx-1.18-green)
+![Haber Nexus](https://img.shields.io/badge/Django-5.0-green) ![Python](https://img.shields.io/badge/Python-3.11-blue) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue) ![Redis](https://img.shields.io/badge/Redis-7-red) ![Celery](https://img.shields.io/badge/Celery-5.4-green) ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 
-**Haber Nexus**, Google Gemini ve Imagen API'lerini kullanarak tam otomatik, profesyonel haber içeriği üretim, 7/24 kesintisiz çalışan bir haber ajansı uygulamadır.
+**Haber Nexus**, Google Gemini AI kullanarak RSS kaynaklarından tam otomatik, profesyonel haber içeriği üreten, 7/24 kesintisiz çalışan bir haber ajansı platformudur.
 
-## 🌟 Özellikleri
+---
 
-### ✨ Temel Özellikleri
-- **Tam Otomatik İçerik Üretimi**: Google Gemini API ile profesyonel haber yazıları
-- **Otomatik Görsel Oluşturma**: Google Imagen API ile ilgili görseller
-- **RSS Kaynakları**: Birden fazla RSS kaynagından otomatik haber taraması
-- **Profesyonel Yazarlar**: Sistem tarafından oluşturulan yazar profilleri
-- **7/24 Çalışma**: Celery ile periyodik görevler
-- **SEO Optimizasyonu**: Sitemap, robots.txt, yapılandırılmış veriler
+## 🚀 Hızlı Başlangıç (Otomatik Kurulum)
 
-### 🔧 Teknik Özellikleri
-- **Django 5.0**: Modern Python web framework
-- **PostgreSQL**: Güvenilir veritabanı
-- **Redis**: Cache ve message broker
-- **Celery**: Asenkron görev işleme
-- **Nginx**: Yüksek performanslı web server
-- **Tailwind CSS**: Modern responsive tasarım
-- **Docker**: Kolay dağıtım
+### Docker ile (Önerilen)
 
-### 🛡️ Güvenlik
-- CSRF koruması
-- SQL injection koruması
-- XSS koruması
-- HTTPS/SSL
-- Güvenli API anahtarı yönetimi
-- Hata günlüğü ve monitoring
+1.  **Projeyi klonlayın:**
+    ```bash
+    git clone https://github.com/sata2500/habernexus.git
+    cd habernexus
+    ```
 
-## 📋 Sistem Gereksinimleri
+2.  **Ortam değişkenlerini ayarlayın:**
+    ```bash
+    cp .env.example .env
+    nano .env # Gerekli alanları doldurun (SECRET_KEY, GOOGLE_API_KEY)
+    ```
 
-- **OS**: Ubuntu 20.04 LTS veya üstü
-- **Python**: 3.9+
-- **PostgreSQL**: 12+
-- **Redis**: 6+
-- **Nginx**: 1.18+
-- **Node.js**: 14+ (Tailwind CSS için)
+3.  **Docker Compose ile başlatın:**
+    ```bash
+    docker-compose up -d --build
+    ```
 
-## 🚀 Hızlı Başlangıç
+4.  **Admin kullanıcısı oluşturun:**
+    ```bash
+    docker-compose exec app python manage.py createsuperuser
+    ```
 
-### Yerel Geliştirme Ortamı
+5.  **Tarayıcıdan açın:** `http://localhost:80`
 
-```bash
-# Proje klonla
-git clone https://github.com/sata2500/habernexus.git
-cd habernexus
+### Manuel Kurulum (Google Cloud VM / Ubuntu)
 
-# Virtual environment oluştur
-python3 -m venv venv
-source venv/bin/activate
+1.  **Kurulum scriptini indirin:**
+    ```bash
+    wget https://raw.githubusercontent.com/sata2500/habernexus/main/scripts/install.sh
+    chmod +x install.sh
+    ```
 
-# Bağımlılıkları yükle
-pip install -r requirements.txt
+2.  **Scripti çalıştırın:**
+    ```bash
+    sudo bash install.sh
+    ```
 
-# Ortam değişkenlerini ayarla
-cp .env.example .env
+Script, size gerekli tüm bilgileri (domain, şifreler, API anahtarı) sorarak kurulumu otomatikleştirecektir.
 
-# Migrasyonları uygula
-python manage.py migrate
+---
 
-# Superuser oluştur
-python manage.py createsuperuser
+## 🌟 Temel Özellikler
 
-# Development server'ı başlat
-python manage.py runserver
-```
+| Özellik | Açıklama | Durum |
+|---|---|---|
+| **Otomatik İçerik Üretimi** | Google Gemini AI ile SEO uyumlu, profesyonel haber metinleri | ✅ |
+| **RSS Entegrasyonu** | Çoklu RSS kaynağından otomatik haber tarama ve işleme | ✅ |
+| **Asenkron Görevler** | Celery ile 7/24 kesintisiz, performanslı görev işleme | ✅ |
+| **Akıllı Kuyruk Sistemi** | Görevleri önceliklerine göre (high, default, low) ayırma | ✅ |
+| **Görsel Optimizasyonu** | İndirilen görselleri WebP formatına dönüştürme ve optimize etme | ✅ |
+| **Docker Desteği** | Docker Compose ile tek komutla kolay kurulum ve deployment | ✅ |
+| **CI/CD Pipeline** | GitHub Actions ile otomatik test, kod kalitesi ve güvenlik kontrolü | ✅ |
+| **Kapsamlı Testler** | %71+ test coverage ile güvenilir kod tabanı | ✅ |
+| **Admin Paneli** | Django admin üzerinden tam kontrol (API ayarları, kaynaklar, yazarlar) | ✅ |
+| **SEO Optimizasyonu** | Sitemap, robots.txt, slug-based URL, meta etiketler | ✅ |
 
-### Production Dağıtımı
+---
 
-Detaylı deployment rehberi için `docs/DEPLOYMENT.md` dosyasını okuyun.
+## 🛠️ Teknoloji Stack
 
-Otomatik deployment script:
+- **Backend:** Django 5.0, Gunicorn
+- **Veritabanı:** PostgreSQL 16
+- **Cache & Broker:** Redis 7
+- **Task Queue:** Celery 5.4, Celery Beat
+- **AI Engine:** Google Gemini 1.5 Flash
+- **Containerization:** Docker, Docker Compose
+- **Frontend:** Tailwind CSS
+- **Web Server:** Nginx
 
-```bash
-chmod +x scripts/deploy.sh
-sudo ./scripts/deploy.sh
-```
+---
 
-## 📚 Dokümantasyon
-
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Sistem mimarisi ve bileşenler
-- **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Geliştirme rehberi
-- **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Production dağıtım rehberi
-
-## 🔐 API Anahtarı Yapılandırması
-
-Admin panelinden (`/admin/api-settings/`) aşağıdaki API anahtarını ekleyin:
-
-1. **Google Gemini API**: Haber içeriği üretimi için
-2. **Google Imagen API**: Görsel üretimi için (opsiyonel)
-
-## 📁 Proje Yapısı
+## 📂 Proje Yapısı
 
 ```
 habernexus/
-├─ habernexus_config/       # Django ayarları
-├─ news/                    # Haberler uygulaması
-├─ authors/                 # Yazarlar uygulaması
-├─ core/                    # Çekirdek uygulaması
-├─ templates/               # HTML şablonları
-├─ config/                  # Yapılandırma dosyaları
-├─ scripts/                 # Yardımcı scriptler
-├─ docs/                    # Dokümantasyon
-├─ requirements.txt         # Python bağımlılıkları
-├─ manage.py               # Django yönetim komutu
-└─ docker-compose.yml      # Docker Compose yapılandırması
+├── habernexus_config/  # Django ayarları, Celery, WSGI
+├── core/               # Sistem ayarları, loglama, temel modeller
+├── news/               # Haber, RSS, kategori ve etiket yönetimi
+├── authors/            # Yazar profilleri ve yönetimi
+├── templates/          # HTML şablonları (Tailwind CSS)
+├── scripts/            # Kurulum ve bakım scriptleri
+├── docs/               # Detaylı dokümantasyon
+├── docker-compose.yml  # Docker Compose yapılandırması
+└── requirements.txt    # Python bağımlılıkları
 ```
 
-## 🔄 İş Akışı
+---
 
-### RSS Tarama Süreci
-1. Celery Beat periyodik olarak `fetch_rss_feeds` görevini tetikler
-2. RSS kaynakları taranır ve yeni haberler algılanır
-3. Her haber için `generate_ai_content` görevi tetiklenir
-4. Google Gemini API haber içeriğini oluşturur
-5. Google Imagen API (opsiyonel) görsel oluşturur
-6. Haber yayınlanır ve veritabanına kaydedilir
+## 📚 Dokümantasyon
+
+Detaylı bilgi için `docs` klasörünü inceleyin:
+
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md):** Sistem mimarisi ve bileşenler
+- **[DEVELOPMENT.md](docs/DEVELOPMENT.md):** Geliştirme rehberi ve standartlar
+- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md):** Sık karşılaşılan sorunlar ve çözümleri
+- **[CHANGELOG.md](docs/CHANGELOG.md):** Versiyon geçmişi ve değişiklikler
+
+---
+
+## 🤝 Katkıda Bulunma
+
+Katkılarınız için teşekkürler! Lütfen aşağıdaki adımları izleyin:
+
+1.  Projeyi fork edin.
+2.  Yeni bir branch oluşturun: `git checkout -b feature/yeni-ozellik`
+3.  Değişikliklerinizi yapın ve commit edin: `git commit -m 'feat: Yeni özellik eklendi'`
+4.  Fork ettiğiniz repoya push edin: `git push origin feature/yeni-ozellik`
+5.  Bir Pull Request (PR) oluşturun.
+
+Lütfen kod standartları için `docs/DEVELOPMENT.md` dosyasını inceleyin.
+
+---
 
 ## 👥 Geliştirici
 
-Salih TANRISEVEN (salihtanriseven25@gmail.com)
+- **Salih TANRISEVEN**
+- **Email:** salihtanriseven25@gmail.com
+
+---
 
 ## 📄 Lisans
 
