@@ -68,6 +68,12 @@ class ArticleDetailView(DetailView):
         context["previous_article"] = previous_article
         context["next_article"] = next_article
 
+        # Tags'i split et ve template'e gönder
+        if article.tags:
+            context["tags_list"] = [tag.strip() for tag in article.tags.split(",")]
+        else:
+            context["tags_list"] = []
+
         return context
 
 

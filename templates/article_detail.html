@@ -4,7 +4,7 @@
 {% block meta_description %}{{ article.excerpt }}{% endblock %}
 {% block og_title %}{{ article.title }}{% endblock %}
 {% block og_description %}{{ article.excerpt }}{% endblock %}
-{% block og_image %}{{ article.featured_image.url }}{% endblock %}
+{% block og_image %}{% if article.featured_image %}{{ article.featured_image.url }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -83,13 +83,13 @@
             </div>
             
             <!-- Tags -->
-            {% if article.tags %}
+            {% if tags_list %}
             <div class="mb-8 pb-8 border-b border-gray-200">
                 <h3 class="font-semibold mb-3">Etiketler:</h3>
                 <div class="flex flex-wrap gap-2">
-                    {% for tag in article.tags.split:',' %}
+                    {% for tag in tags_list %}
                     <a href="{% url 'news:tag_detail' tag=tag|slugify %}" class="badge badge-primary hover:bg-blue-200 transition">
-                        #{{ tag|strip }}
+                        #{{ tag }}
                     </a>
                     {% endfor %}
                 </div>

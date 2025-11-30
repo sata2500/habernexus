@@ -42,7 +42,6 @@ class TestArticleViews(TestCase):
         assert response.status_code == 200
         assert "articles" in response.context
 
-    @pytest.mark.skip(reason="Template syntax hatası - article.tags.split template'de düzeltilmeli")
     def test_article_detail_view(self):
         """Makale detay view testi."""
         response = self.client.get(reverse("news:article_detail", kwargs={"slug": self.article.slug}))
