@@ -1,4 +1,3 @@
-from django.core.validators import URLValidator
 from django.db import models
 
 

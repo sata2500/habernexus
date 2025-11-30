@@ -1,9 +1,7 @@
 from django.contrib import admin
-from django.db.models import Q
-from django.utils import timezone
 from django.utils.html import format_html
 
-from .cache_utils import clear_article_cache, clear_category_cache
+from .cache_utils import clear_article_cache
 from .models import Article, RssSource
 
 
@@ -59,7 +57,9 @@ class ArticleAdmin(admin.ModelAdmin):
         color = colors.get(obj.status, "#000000")
         label = labels.get(obj.status, obj.status)
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>', color, label
+            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>',
+            color,
+            label,
         )
 
     status_badge.short_description = "Durum"

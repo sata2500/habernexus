@@ -1,6 +1,4 @@
 import logging
-import os
-import traceback
 from io import BytesIO
 
 from django.db import transaction
@@ -37,7 +35,10 @@ def fetch_rss_feeds():
                 total_fetched += fetched
             except Exception as e:
                 log_error(
-                    "fetch_rss_feeds", f"RSS kaynağı taranırken hata: {source.name}", traceback=str(e), related_id=source.id
+                    "fetch_rss_feeds",
+                    f"RSS kaynağı taranırken hata: {source.name}",
+                    traceback=str(e),
+                    related_id=source.id,
                 )
 
         log_info("fetch_rss_feeds", f"Toplam {total_fetched} yeni haber eklendi")
@@ -150,7 +151,9 @@ def generate_ai_content(self, article_id):
 
         # Idempotency kontrolü: Eğer makale zaten AI tarafından üretilmişse, tekrar işleme
         if article.is_ai_generated and article.status == "published":
-            log_info("generate_ai_content", f"Makale zaten AI tarafından üretilmiş: {article.title}", related_id=article_id)
+            log_info(
+                "generate_ai_content", f"Makale zaten AI tarafından üretilmiş: {article.title}", related_id=article_id
+            )
             return f"Makale zaten işlenmiş: {article.title}"
 
         # Google Gemini API anahtarını al
@@ -184,13 +187,13 @@ def generate_ai_content(self, article_id):
 
             # Prompt oluştur
             prompt = f"""
-            Aşağıdaki haber verilerini kullanarak, {author.name} isimli bir {author.expertise} yazarının kaleminden çıkmış gibi,
-            SEO uyumlu, özgün ve profesyonel bir haber metni oluştur.
-            
+            Aşağıdaki haber verilerini kullanarak, {author.name} isimli bir {author.expertise} yazarının
+            kaleminden çıkmış gibi, SEO uyumlu, özgün ve profesyonel bir haber metni oluştur.
+
             Başlık: {article.title}
             Özet: {article.content[:500]}
             Kategori: {article.category}
-            
+
             Lütfen:
             1. Profesyonel ve akıcı bir yazı yaz
             2. 300-500 kelime arasında olsun

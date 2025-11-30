@@ -1,10 +1,9 @@
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
-from django.utils import timezone
 from django.views.generic import DetailView, ListView
 
-from .models import Article, RssSource
+from .models import Article
 
 
 class ArticleListView(ListView):
@@ -18,7 +17,9 @@ class ArticleListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        return Article.objects.filter(status="published").select_related("author", "rss_source").order_by("-published_at")
+        return (
+            Article.objects.filter(status="published").select_related("author", "rss_source").order_by("-published_at")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -58,11 +59,15 @@ class ArticleDetailView(DetailView):
 
         # Önceki ve sonraki makaleler
         previous_article = (
-            Article.objects.filter(status="published", published_at__lt=article.published_at).order_by("-published_at").first()
+            Article.objects.filter(status="published", published_at__lt=article.published_at)
+            .order_by("-published_at")
+            .first()
         )
 
         next_article = (
-            Article.objects.filter(status="published", published_at__gt=article.published_at).order_by("published_at").first()
+            Article.objects.filter(status="published", published_at__gt=article.published_at)
+            .order_by("published_at")
+            .first()
         )
 
         context["previous_article"] = previous_article
@@ -128,7 +133,9 @@ def author_detail(request, slug):
 
     author = get_object_or_404(Author, slug=slug, is_active=True)
 
-    articles = Article.objects.filter(status="published", author=author).select_related("rss_source").order_by("-published_at")
+    articles = (
+        Article.objects.filter(status="published", author=author).select_related("rss_source").order_by("-published_at")
+    )
 
     paginator = Paginator(articles, 10)
     page_number = request.GET.get("page")

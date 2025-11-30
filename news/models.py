@@ -57,7 +57,9 @@ class Article(models.Model):
     excerpt = models.TextField(max_length=500, blank=True, help_text="Haber özeti (SEO için)")
     featured_image = models.ImageField(upload_to="articles/", null=True, blank=True, help_text="Haber başlık görseli")
     featured_image_alt = models.CharField(max_length=255, blank=True, help_text="Görselin alt metni (SEO için)")
-    author = models.ForeignKey(Author, on_delete=models.SET_NULL, null=True, related_name="articles", help_text="Yazarı")
+    author = models.ForeignKey(
+        Author, on_delete=models.SET_NULL, null=True, related_name="articles", help_text="Yazarı"
+    )
     category = models.CharField(max_length=100, help_text="Kategori")
     tags = models.CharField(max_length=500, blank=True, help_text="Etiketler (virgülle ayrılmış)")
     rss_source = models.ForeignKey(

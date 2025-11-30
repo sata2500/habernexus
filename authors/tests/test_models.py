@@ -12,9 +12,7 @@ class TestAuthorModel(TestCase):
 
     def test_author_creation(self):
         """Yazar oluşturma testi."""
-        author = Author.objects.create(
-            name="Ahmet Yılmaz", slug="ahmet-yilmaz", expertise="Teknoloji", bio="Test bio"
-        )
+        author = Author.objects.create(name="Ahmet Yılmaz", slug="ahmet-yilmaz", expertise="Teknoloji", bio="Test bio")
 
         assert author.name == "Ahmet Yılmaz"
         assert author.slug == "ahmet-yilmaz"

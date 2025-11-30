@@ -17,11 +17,15 @@ def cleanup_old_logs():
         cutoff_date = timezone.now() - timedelta(days=30)
         deleted_count, _ = SystemLog.objects.filter(created_at__lt=cutoff_date).delete()
 
-        SystemLog.objects.create(level="INFO", task_name="cleanup_old_logs", message=f"{deleted_count} eski log silindi.")
+        SystemLog.objects.create(
+            level="INFO", task_name="cleanup_old_logs", message=f"{deleted_count} eski log silindi."
+        )
 
         return f"Başarılı: {deleted_count} log silindi"
     except Exception as e:
-        SystemLog.objects.create(level="ERROR", task_name="cleanup_old_logs", message=f"Hata: {str(e)}", traceback=str(e))
+        SystemLog.objects.create(
+            level="ERROR", task_name="cleanup_old_logs", message=f"Hata: {str(e)}", traceback=str(e)
+        )
         raise
 
 

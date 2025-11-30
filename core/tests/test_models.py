@@ -12,9 +12,7 @@ class TestSettingModel(TestCase):
 
     def test_setting_creation(self):
         """Ayar oluşturma testi."""
-        setting = Setting.objects.create(
-            key="TEST_KEY", value="test_value", description="Test ayarı", is_secret=False
-        )
+        setting = Setting.objects.create(key="TEST_KEY", value="test_value", description="Test ayarı", is_secret=False)
 
         assert setting.key == "TEST_KEY"
         assert setting.value == "test_value"

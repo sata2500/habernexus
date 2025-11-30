@@ -1,8 +1,6 @@
 from functools import wraps
 
 from django.core.cache import cache
-from django.utils.text import slugify
-from django.views.decorators.cache import cache_page
 
 # Cache timeout değerleri (saniye cinsinden)
 CACHE_TIMEOUT_HOME = 300  # 5 dakika

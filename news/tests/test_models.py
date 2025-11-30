@@ -59,7 +59,7 @@ class TestArticleModel:
         author = Author.objects.create(name="Test Yazar", slug="test-yazar", expertise="Teknoloji")
 
         # İki makale oluştur
-        article1 = Article.objects.create(
+        _ = Article.objects.create(
             title="Eski Makale",
             content="Test",
             author=author,
