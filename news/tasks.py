@@ -348,15 +348,13 @@ Requirements:
 - Visually engaging and relevant to the topic
             """.strip()
 
-            # Görsel üret
+            # Görsel üret (basitleştirilmiş parametreler)
             response = client.models.generate_images(
                 model=image_model_name,
                 prompt=image_prompt,
                 config=types.GenerateImagesConfig(
                     number_of_images=1,
-                    aspect_ratio='16:9',
-                    safety_filter_level='block_some',
-                    person_generation='allow_adult'
+                    aspect_ratio='16:9'
                 )
             )
 
