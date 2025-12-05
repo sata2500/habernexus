@@ -197,7 +197,7 @@ Description=Haber Nexus Django Application
 After=network.target postgresql.service redis.service
 
 [Service]
-Type=notify
+Type=exec
 User=$SYSTEM_USER
 Group=$SYSTEM_USER
 WorkingDirectory=$PROJECT_PATH
