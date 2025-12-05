@@ -5,11 +5,11 @@
 set -e
 
 # Renk kodları
-RED=\'\033[0;31m\'
-GREEN=\'\033[0;32m\'
-YELLOW=\'\033[1;33m\'
-BLUE=\'\033[0;34m\'
-NC=\'\033[0m\' # No Color
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
 # Fonksiyonlar
 log_info() { echo -e "${GREEN}[✓]${NC} $1"; }
@@ -33,7 +33,7 @@ read -p "PostgreSQL şifresi: " -s DB_PASSWORD; echo
 read -p "Google Gemini API Key: " -s GOOGLE_API_KEY; echo
 
 # Otomatik değerler
-SECRET_KEY=$(python3 -c \'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())\')
+SECRET_KEY=$(openssl rand -base64 50 | tr -d '\n')
 VM_IP=$(curl -s ifconfig.me)
 DB_USER="habernexus_user"
 DB_NAME="habernexus"
