@@ -30,8 +30,8 @@ proc_name = "habernexus"
 daemon = False
 pidfile = "/var/run/habernexus/gunicorn.pid"
 umask = 0o022
-user = None
-group = None
+user = None  # Systemd service tarafından yönetiliyor
+group = None  # Systemd service tarafından yönetiliyor
 tmp_upload_dir = None
 
 # SSL (Nginx tarafından handle edilir, burada gerekli değil)
