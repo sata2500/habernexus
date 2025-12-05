@@ -202,7 +202,15 @@ def generate_ai_content(self, article_id):
             5. Yapay zeka tarafından üretildiğine dair hiçbir işaret verme
             """
 
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            # AI modelini ayarlardan al (varsayılan: gemini-2.5-flash)
+            try:
+                ai_model_setting = Setting.objects.get(key="AI_MODEL")
+                ai_model_name = ai_model_setting.value
+            except Setting.DoesNotExist:
+                ai_model_name = "gemini-2.5-flash"  # Varsayılan model
+                log_info("generate_ai_content", "AI model ayarı bulunamadı, varsayılan kullanılıyor: gemini-2.5-flash", related_id=article_id)
+
+            model = genai.GenerativeModel(ai_model_name)
             response = model.generate_content(prompt)
 
             if response and response.text:
