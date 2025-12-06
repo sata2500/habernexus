@@ -28,6 +28,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create non-root user
 RUN useradd -m -u 1000 appuser
 
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/staticfiles /app/media && \
+    chown -R appuser:appuser /app
+
 # Copy Python dependencies from builder
 COPY --from=builder /root/.local /home/appuser/.local
 
@@ -40,15 +44,31 @@ ENV PATH=/home/appuser/.local/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_SETTINGS_MODULE=habernexus_config.settings
 
+# Create entrypoint script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+echo "Running Django migrations..."\n\
+python manage.py migrate --noinput\n\
+\n\
+echo "Collecting static files..."\n\
+python manage.py collectstatic --noinput\n\
+\n\
+echo "Starting Gunicorn..."\n\
+exec gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 --access-logfile - --error-logfile - habernexus_config.wsgi:application\n\
+' > /app/entrypoint.sh && \
+chmod +x /app/entrypoint.sh && \
+chown appuser:appuser /app/entrypoint.sh
+
 # Switch to non-root user
 USER appuser
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/health/ || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD curl -f http://localhost:8000/admin/ || exit 1
 
 # Expose port
 EXPOSE 8000
 
-# Run gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "habernexus_config.wsgi:application"]
+# Run entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]

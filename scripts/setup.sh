@@ -347,7 +347,7 @@ fi
 
 log_step "Dizinler oluşturuluyor..."
 mkdir -p $PROJECT_PATH $LOG_DIR $BACKUP_DIR 2>&1 | tee -a "$LOG_FILE" > /dev/null || log_error "Dizin oluşturma başarısız oldu."
-chown -R $SYSTEM_USER:$SYSTEM_USER $PROJECT_PATH $LOG_DIR $BACKUP_DIR 2>&1 | tee -a "$LOG_FILE" > /dev/null || log_error "Dizin sahipliği ayarlama başarısız oldu."
+chown -R $SYSTEM_USER:$SYSTEM_USER $LOG_DIR $BACKUP_DIR 2>&1 | tee -a "$LOG_FILE" > /dev/null || log_error "Dizin sahipliği ayarlama başarısız oldu."
 chmod 755 $LOG_DIR $BACKUP_DIR 2>&1 | tee -a "$LOG_FILE" > /dev/null || true
 log_info "Dizinler oluşturuldu."
 
@@ -454,8 +454,9 @@ EOF
 fi
 
 # İzinleri ayarla (ÖNEMLI!)
-chown $SYSTEM_USER:$SYSTEM_USER $PROJECT_PATH/.env 2>&1 | tee -a "$LOG_FILE" > /dev/null || log_error ".env sahipliği ayarlama başarısız oldu."
-chmod 600 $PROJECT_PATH/.env 2>&1 | tee -a "$LOG_FILE" > /dev/null || log_error ".env izinleri ayarlama başarısız oldu."
+# Herkes tarafından okunabilir olmalı (Docker container'lar okuyabilmesi için)
+chown root:root $PROJECT_PATH/.env 2>&1 | tee -a "$LOG_FILE" > /dev/null || log_error ".env sahipliği ayarlama başarısız oldu."
+chmod 644 $PROJECT_PATH/.env 2>&1 | tee -a "$LOG_FILE" > /dev/null || log_error ".env izinleri ayarlama başarısız oldu."
 log_info ".env dosyası oluşturuldu ve izinleri ayarlandı."
 
 # ============================================================================
@@ -477,11 +478,11 @@ docker-compose -f docker-compose.prod.yml up -d 2>&1 | tee -a "$LOG_FILE" || log
 log_info "Docker container'ları başlatıldı."
 
 log_step "Container'ların başlamasını bekleniyor (bu 2-3 dakika sürebilir)..."
-sleep 30
+sleep 15
 
 # PostgreSQL'in hazır olmasını bekle
 log_step "PostgreSQL'in hazır olmasını bekleniyor..."
-MAX_ATTEMPTS=30
+MAX_ATTEMPTS=60
 ATTEMPT=0
 while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
     if docker-compose -f docker-compose.prod.yml exec -T postgres pg_isready -U $DB_USER -d $DB_NAME -h localhost &>/dev/null; then
@@ -492,16 +493,13 @@ while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
     if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
         log_error "PostgreSQL başlamadı. Logları kontrol edin: docker-compose -f docker-compose.prod.yml logs postgres"
     fi
-    sleep 2
+    sleep 1
 done
 
-log_step "Veritabanı migrasyonları çalıştırılıyor..."
-docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate 2>&1 | tee -a "$LOG_FILE" || log_warning "Migrasyonlar sırasında uyarı"
-log_info "Veritabanı migrasyonları çalıştırıldı."
-
-log_step "Statik dosyalar toplanıyor..."
-docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput 2>&1 | tee -a "$LOG_FILE" || log_warning "Statik dosyalar toplanırken uyarı"
-log_info "Statik dosyalar toplandı."
+# Migrasyonlar ve statik dosyalar Dockerfile'da çalışıyor
+log_step "Web container'ın başlamasını bekleniyor..."
+sleep 30
+log_info "Web container başlatıldı."
 
 fi
 
@@ -530,28 +528,25 @@ echo ""
 
 if [ "$INSTALL_METHOD" = "docker" ]; then
     echo "1. Admin kullanıcısı oluştur:"
-    echo "   docker-compose -f $PROJECT_PATH/docker-compose.prod.yml exec web python manage.py createsuperuser"
+    echo "   cd $PROJECT_PATH"
+    echo "   sudo docker-compose -f docker-compose.prod.yml exec web python manage.py createsuperuser"
     echo ""
     echo "2. Container'ların durumunu kontrol et:"
-    echo "   docker-compose -f $PROJECT_PATH/docker-compose.prod.yml ps"
+    echo "   cd $PROJECT_PATH"
+    echo "   sudo docker-compose -f docker-compose.prod.yml ps"
     echo ""
     echo "3. Logları göster:"
-    echo "   docker-compose -f $PROJECT_PATH/docker-compose.prod.yml logs -f"
+    echo "   cd $PROJECT_PATH"
+    echo "   sudo docker-compose -f docker-compose.prod.yml logs -f web"
     echo ""
     echo "4. Web sitesine erişim:"
     echo "   https://$DOMAIN/admin/"
+    echo ""
+    echo "5. Container'ları durdur:"
+    echo "   cd $PROJECT_PATH"
+    echo "   sudo docker-compose -f docker-compose.prod.yml down"
 else
-    echo "1. Sanal ortamı etkinleştir:"
-    echo "   source $PROJECT_PATH/venv/bin/activate"
-    echo ""
-    echo "2. Admin kullanıcısı oluştur:"
-    echo "   python $PROJECT_PATH/manage.py createsuperuser"
-    echo ""
-    echo "3. Geliştirme sunucusunu başlat:"
-    echo "   python $PROJECT_PATH/manage.py runserver"
-    echo ""
-    echo "4. Web sitesine erişim:"
-    echo "   http://localhost:8000/admin/"
+    echo "Traditional kurulum henüz desteklenmiyor. Lütfen Docker Compose'u seçin."
 fi
 
 echo ""
