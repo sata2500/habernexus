@@ -1,0 +1,99 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Google Cloud VM
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USER }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        port: 22
+        script: |
+          set -e
+          
+          echo "=== Starting deployment ==="
+          cd /home/${{ secrets.VM_USER }}/habernexus
+          
+          # Pull latest code
+          echo "Pulling latest code from GitHub..."
+          git fetch origin
+          git reset --hard origin/main
+          
+          # Build and start containers
+          echo "Building Docker images..."
+          docker-compose -f docker-compose.prod.yml build
+          
+          # Stop old containers
+          echo "Stopping old containers..."
+          docker-compose -f docker-compose.prod.yml down || true
+          
+          # Start new containers
+          echo "Starting new containers..."
+          docker-compose -f docker-compose.prod.yml up -d
+          
+          # Run migrations
+          echo "Running database migrations..."
+          docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate
+          
+          # Collect static files
+          echo "Collecting static files..."
+          docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
+          
+          # Health check
+          echo "Waiting for application to be ready..."
+          sleep 10
+          
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/health/ > /dev/null 2>&1; then
+              echo "✅ Application is healthy!"
+              break
+            fi
+            echo "Waiting for application... ($i/30)"
+            sleep 2
+          done
+          
+          # Verify deployment
+          if curl -f http://localhost:8000/health/ > /dev/null 2>&1; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed - application not responding"
+            exit 1
+          fi
+
+    - name: Notify deployment
+      if: success()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '✅ Deployment to production completed successfully!'
+          })
+
+    - name: Notify failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '❌ Deployment to production failed. Please check the logs.'
+          })
