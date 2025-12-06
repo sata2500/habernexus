@@ -1,0 +1,40 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    HABER NEXUS YEDEKLEME BİLGİSİ                          ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+Yedekleme Tarihi: Sat Dec  6 09:06:05 EST 2025
+Yedekleme Adı: habernexus_backup_20251206_090605
+Yedekleme Dizini: ./.backups/habernexus_backup_20251206_090605
+
+SİSTEM BİLGİSİ
+═══════════════════════════════════════════════════════════════════════════
+İşletim Sistemi: Linux
+Hostname: 6d0d6a10339f
+Kernel: 6.1.102
+Python Sürümü: Python 3.11.0rc1
+Django Sürümü: 5.0.7
+
+VERİTABANI BİLGİSİ
+═══════════════════════════════════════════════════════════════════════════
+Veritabanı Tipi: django.db.backends.sqlite3
+Veritabanı Adı: db.sqlite3
+Veritabanı Kullanıcısı: habernexus_user
+Veritabanı Host: localhost
+Veritabanı Port: 5432
+
+YEDEKLENMİŞ DOSYALAR
+═══════════════════════════════════════════════════════════════════════════
+✓ database.sqlite3 - SQLite veritabanı
+✓ .env.backup - Ortam değişkenleri
+✓ staticfiles.tar.gz - Statik dosyalar
+✓ project.tar.gz - Proje dosyaları
+
+GERI YÜKLEME TALİMATLARı
+═══════════════════════════════════════════════════════════════════════════
+Bu yedeklemeyi geri yüklemek için:
+
+  bash scripts/restore-full.sh ./.backups/habernexus_backup_20251206_090605
+
+YEDEKLEME BOYUTU
+═══════════════════════════════════════════════════════════════════════════
+Toplam Boyut: 1.4M
