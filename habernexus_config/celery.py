@@ -15,10 +15,15 @@ app.autodiscover_tasks()
 
 # Periyodik Görevler (Celery Beat)
 app.conf.beat_schedule = {
-    # RSS kaynaklarını her 15 dakikada bir tara
-    "fetch-rss-feeds": {
-        "task": "news.tasks.fetch_rss_feeds",
+    # RSS kaynaklarını her 15 dakikada bir tara (Geliştirilmiş versiyon)
+    "fetch-rss-feeds-v2": {
+        "task": "news.tasks_v2.fetch_rss_feeds_v2",
         "schedule": crontab(minute="*/15"),  # Her 15 dakikada bir
+    },
+    # Başlıkları puanla (her saatte bir)
+    "score-headlines": {
+        "task": "news.tasks_v2.score_headlines",
+        "schedule": crontab(minute=0),  # Her saat başında
     },
     # Sistem loglarını temizle (her hafta)
     "cleanup-old-logs": {

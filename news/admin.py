@@ -81,3 +81,16 @@ class ArticleAdmin(admin.ModelAdmin):
         self.message_user(request, f"{updated} makale arşivlendi.")
 
     archive_articles.short_description = "Seçili makaleleri arşivle"
+
+
+# ============================================================================
+# Geliştirilmiş İçerik Üretim Sistemi - Admin Konfigürasyonu
+# ============================================================================
+
+from .admin_extended import (
+    HeadlineScoreAdmin,
+    ArticleClassificationAdmin,
+    ContentQualityMetricsAdmin,
+    ResearchSourceAdmin,
+    ContentGenerationLogAdmin,
+)
