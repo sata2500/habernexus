@@ -8,6 +8,7 @@
 # Tarih: 2025-12-06
 # 
 # Özellikler:
+# - Ön kontrol mekanizması (disk alanı, portlar, vb.)
 # - Otomatik hata kontrolü ve kurtarma
 # - Port çakışması otomatik çözümü
 # - İzin sorunları otomatik çözümü
@@ -107,6 +108,47 @@ if ! ping -c 1 8.8.8.8 &> /dev/null; then
     log_error "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin."
 fi
 log_info "İnternet bağlantısı kontrol edildi."
+
+# ============================================================================
+# SİSTEM KONTROLLERI
+# ============================================================================
+
+log_section "Sistem Kontrolleri"
+
+# Disk alanı kontrolü (en az 20 GB)
+log_step "Disk alanı kontrol ediliyor..."
+AVAILABLE_DISK=$(df / | awk 'NR==2 {print $4}')
+REQUIRED_DISK=$((20 * 1024 * 1024))  # 20 GB in KB
+
+if [ "$AVAILABLE_DISK" -lt "$REQUIRED_DISK" ]; then
+    log_error "Yetersiz disk alanı. Gerekli: 20 GB, Mevcut: $((AVAILABLE_DISK / 1024 / 1024)) GB"
+fi
+log_info "Disk alanı yeterli ($((AVAILABLE_DISK / 1024 / 1024)) GB)."
+
+# RAM kontrolü (en az 4 GB)
+log_step "RAM kontrol ediliyor..."
+AVAILABLE_RAM=$(free -m | awk 'NR==2 {print $7}')
+if [ "$AVAILABLE_RAM" -lt 2048 ]; then
+    log_warning "Düşük RAM uyarısı. Gerekli: 4 GB, Mevcut: $((AVAILABLE_RAM / 1024)) GB. Kurulum yavaş olabilir."
+fi
+log_info "RAM kontrol edildi ($((AVAILABLE_RAM / 1024)) GB)."
+
+# Port kontrolleri
+log_step "Portlar kontrol ediliyor..."
+PORTS_TO_CHECK=(80 443 5432 6379 8000)
+PORTS_IN_USE=()
+
+for port in "${PORTS_TO_CHECK[@]}"; do
+    if netstat -tuln 2>/dev/null | grep -q ":$port "; then
+        PORTS_IN_USE+=($port)
+    fi
+done
+
+if [ ${#PORTS_IN_USE[@]} -gt 0 ]; then
+    log_warning "Aşağıdaki portlar zaten kullanımda: ${PORTS_IN_USE[*]}"
+    log_warning "Bu portlar otomatik olarak serbest bırakılacak..."
+fi
+log_info "Port kontrolleri tamamlandı."
 
 # ============================================================================
 # KURULUM ÖNCESI AYARLAR
@@ -209,7 +251,7 @@ log_info "Sistem paketleri güncellendi."
 
 log_step "Temel paketler kuruluyor..."
 apt-get install -y -qq \
-    curl wget git nano htop net-tools \
+    curl wget git nano htop net-tools netcat-openbsd \
     build-essential python3-dev python3-pip python3-venv \
     postgresql postgresql-contrib \
     nginx \
@@ -355,7 +397,7 @@ DB_ENGINE=django.db.backends.postgresql
 DB_NAME=$DB_NAME
 DB_USER=$DB_USER
 DB_PASSWORD=$DB_PASSWORD
-DB_HOST=db
+DB_HOST=postgres
 DB_PORT=5432
 
 # Redis & Celery (Docker)
@@ -434,15 +476,31 @@ docker-compose -f docker-compose.prod.yml down 2>&1 | tee -a "$LOG_FILE" > /dev/
 docker-compose -f docker-compose.prod.yml up -d 2>&1 | tee -a "$LOG_FILE" || log_error "Docker container'ları başlatma başarısız oldu."
 log_info "Docker container'ları başlatıldı."
 
-log_step "Container'ların başlamasını bekleniyor..."
-sleep 10
+log_step "Container'ların başlamasını bekleniyor (bu 2-3 dakika sürebilir)..."
+sleep 30
+
+# PostgreSQL'in hazır olmasını bekle
+log_step "PostgreSQL'in hazır olmasını bekleniyor..."
+MAX_ATTEMPTS=30
+ATTEMPT=0
+while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+    if docker-compose -f docker-compose.prod.yml exec -T postgres pg_isready -U $DB_USER -d $DB_NAME -h localhost &>/dev/null; then
+        log_info "PostgreSQL hazır."
+        break
+    fi
+    ATTEMPT=$((ATTEMPT + 1))
+    if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+        log_error "PostgreSQL başlamadı. Logları kontrol edin: docker-compose -f docker-compose.prod.yml logs postgres"
+    fi
+    sleep 2
+done
 
 log_step "Veritabanı migrasyonları çalıştırılıyor..."
-docker-compose -f docker-compose.prod.yml exec -T app python manage.py migrate 2>&1 | tee -a "$LOG_FILE" || log_warning "Migrasyonlar sırasında uyarı"
+docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate 2>&1 | tee -a "$LOG_FILE" || log_warning "Migrasyonlar sırasında uyarı"
 log_info "Veritabanı migrasyonları çalıştırıldı."
 
 log_step "Statik dosyalar toplanıyor..."
-docker-compose -f docker-compose.prod.yml exec -T app python manage.py collectstatic --noinput 2>&1 | tee -a "$LOG_FILE" || log_warning "Statik dosyalar toplanırken uyarı"
+docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput 2>&1 | tee -a "$LOG_FILE" || log_warning "Statik dosyalar toplanırken uyarı"
 log_info "Statik dosyalar toplandı."
 
 fi
@@ -472,7 +530,7 @@ echo ""
 
 if [ "$INSTALL_METHOD" = "docker" ]; then
     echo "1. Admin kullanıcısı oluştur:"
-    echo "   docker-compose -f $PROJECT_PATH/docker-compose.prod.yml exec app python manage.py createsuperuser"
+    echo "   docker-compose -f $PROJECT_PATH/docker-compose.prod.yml exec web python manage.py createsuperuser"
     echo ""
     echo "2. Container'ların durumunu kontrol et:"
     echo "   docker-compose -f $PROJECT_PATH/docker-compose.prod.yml ps"
