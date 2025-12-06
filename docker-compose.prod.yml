@@ -1,5 +1,4 @@
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
     container_name: habernexus-postgres
@@ -7,41 +6,33 @@ services:
       POSTGRES_DB: ${DB_NAME:-habernexus}
       POSTGRES_USER: ${DB_USER:-habernexus_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-habernexus_user} -d ${DB_NAME:-habernexus} -h localhost"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 20s
     restart: unless-stopped
     networks:
       - habernexus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-habernexus_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
 
-  # Redis Cache and Message Broker
   redis:
     image: redis:7-alpine
     container_name: habernexus-redis
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
     ports:
       - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 20s
     restart: unless-stopped
     networks:
       - habernexus-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
 
-  # Django Web Application
   web:
     build:
       context: .
@@ -62,9 +53,8 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
     volumes:
-      - ./:/app
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
     ports:
       - "8000:8000"
     depends_on:
@@ -75,20 +65,13 @@ services:
     restart: unless-stopped
     networks:
       - habernexus-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/admin/" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
 
-  # Celery Worker
   celery_worker:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: habernexus-celery-worker
-    command: celery -A habernexus_config worker -l info --concurrency=4
+    command: celery -A habernexus_config worker -l info --concurrency=2
     environment:
       DEBUG: ${DEBUG:-False}
       DJANGO_SETTINGS_MODULE: habernexus_config.settings
@@ -102,9 +85,6 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
-    volumes:
-      - ./:/app
-      - media_volume:/app/media
     depends_on:
       - postgres
       - redis
@@ -113,7 +93,6 @@ services:
     networks:
       - habernexus-network
 
-  # Celery Beat Scheduler
   celery_beat:
     build:
       context: .
@@ -133,8 +112,6 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
-    volumes:
-      - ./:/app
     depends_on:
       - postgres
       - redis
@@ -143,7 +120,6 @@ services:
     networks:
       - habernexus-network
 
-  # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
     container_name: habernexus-nginx
@@ -154,9 +130,8 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
-      - static_volume:/app/staticfiles:ro
-      - media_volume:/app/media:ro
-      - ./nginx/logs:/var/log/nginx
+      - ./staticfiles:/app/staticfiles:ro
+      - ./media:/app/media:ro
     depends_on:
       - web
     restart: unless-stopped
@@ -165,12 +140,6 @@ services:
 
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  static_volume:
-    driver: local
-  media_volume:
     driver: local
 
 networks:
