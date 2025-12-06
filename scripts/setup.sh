@@ -258,7 +258,12 @@ log_section "Adım 2: Kullanıcı ve Dizinler"
 
 log_step "Sistem kullanıcısı oluşturuluyor..."
 if ! id -u $SYSTEM_USER > /dev/null 2>&1; then 
-    useradd -m -s /bin/bash $SYSTEM_USER
+    # Eğer admin grubu varsa, onu kullan; yoksa oluştur
+    if grep -q "^admin:" /etc/group; then
+        useradd -m -s /bin/bash -g admin $SYSTEM_USER 2>/dev/null || true
+    else
+        useradd -m -s /bin/bash $SYSTEM_USER 2>/dev/null || true
+    fi
     log_info "Kullanıcı $SYSTEM_USER oluşturuldu."
 else
     log_info "Kullanıcı $SYSTEM_USER zaten mevcut."
