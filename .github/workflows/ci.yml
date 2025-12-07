@@ -87,7 +87,7 @@ jobs:
         DJANGO_SECRET_KEY: test-secret-key-for-ci
         ALLOWED_HOSTS: 'localhost,127.0.0.1'
       run: |
-        python manage.py test news --verbosity=2
+        python manage.py test --verbosity=2
 
     - name: Run pytest with coverage
       env:
@@ -190,5 +190,10 @@ jobs:
 
     - name: Test Docker image
       run: |
-        docker run --rm habernexus:latest python manage.py check
+        docker run --rm \
+          -e DJANGO_SECRET_KEY=test-secret-key-for-ci \
+          -e DEBUG=False \
+          -e DB_HOST=localhost \
+          -e ALLOWED_HOSTS='localhost,127.0.0.1' \
+          habernexus:latest python manage.py check
       continue-on-error: true

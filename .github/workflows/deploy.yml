@@ -26,7 +26,7 @@ jobs:
           set -e
           
           echo "=== Starting deployment ==="
-          cd /home/${{ secrets.VM_USER }}/habernexus
+          cd /opt/habernexus
           
           # Pull latest code
           echo "Pulling latest code from GitHub..."
@@ -44,6 +44,10 @@ jobs:
           # Start new containers
           echo "Starting new containers..."
           docker-compose -f docker-compose.prod.yml up -d
+          
+          # Wait for services to be ready
+          echo "Waiting for services to be ready..."
+          sleep 15
           
           # Run migrations
           echo "Running database migrations..."
@@ -74,26 +78,14 @@ jobs:
             exit 1
           fi
 
-    - name: Notify deployment
+    - name: Deployment Success Notification
       if: success()
-      uses: actions/github-script@v7
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '✅ Deployment to production completed successfully!'
-          })
+      run: |
+        echo "✅ Deployment to production completed successfully!"
+        echo "Application is now live at https://habernexus.com"
 
-    - name: Notify failure
+    - name: Deployment Failure Notification
       if: failure()
-      uses: actions/github-script@v7
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '❌ Deployment to production failed. Please check the logs.'
-          })
+      run: |
+        echo "❌ Deployment to production failed!"
+        echo "Please check the logs above for details."
