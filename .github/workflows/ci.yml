@@ -152,7 +152,7 @@ jobs:
 
     - name: Run pylint on news app
       run: |
-        pylint news/models_extended.py news/tasks_v2.py news/quality_utils.py news/admin_extended.py news/monitoring.py --disable=all --enable=E,F
+        pylint news/models_advanced.py news/content_utils.py news/tasks_advanced.py news/media_processor.py news/quality_monitoring.py --disable=all --enable=E,F
       continue-on-error: true
 
   security:

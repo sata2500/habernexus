@@ -40,3 +40,19 @@ pytest==8.0.0
 pytest-django==4.8.0
 pytest-cov==4.1.0
 factory-boy==3.3.0
+
+# NLP ve Text Processing
+spacy==3.7.2
+textblob==0.17.1
+beautifulsoup4==4.12.2
+
+# Video Processing
+opencv-python==4.8.1.78
+
+# Code Quality
+flake8==7.0.0
+black==23.12.1
+isort==5.13.2
+pylint==3.0.3
+safety==2.3.5
+bandit==1.7.5
