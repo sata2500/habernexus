@@ -9,11 +9,39 @@ jobs:
   deploy:
     name: Deploy to Google Cloud VM
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Create .env file
+      run: |
+        cat > /tmp/.env << 'DOTENV'
+        DEBUG=False
+        ALLOWED_HOSTS=habernexus.com,www.habernexus.com,35.198.132.19,localhost,127.0.0.1
+        DB_ENGINE=django.db.backends.postgresql
+        DB_HOST=postgres
+        SECURE_SSL_REDIRECT=True
+        SESSION_COOKIE_SECURE=True
+        CSRF_COOKIE_SECURE=True
+        SECURE_HSTS_SECONDS=31536000
+        SECURE_HSTS_INCLUDE_SUBDOMAINS=True
+        SECURE_HSTS_PRELOAD=True
+        DOMAIN=habernexus.com
+        MEDIA_ROOT=/media
+        STATIC_ROOT=/static
+        DOTENV
+        echo "DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" >> /tmp/.env
+        echo "DB_NAME=${{ vars.DB_NAME }}" >> /tmp/.env
+        echo "DB_USER=${{ vars.DB_USER }}" >> /tmp/.env
+        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> /tmp/.env
+        echo "DB_PORT=${{ vars.DB_PORT }}" >> /tmp/.env
+        echo "CELERY_BROKER_URL=${{ vars.CELERY_BROKER_URL }}" >> /tmp/.env
+        echo "CELERY_RESULT_BACKEND=${{ vars.CELERY_RESULT_BACKEND }}" >> /tmp/.env
+        echo "GOOGLE_GEMINI_API_KEY=${{ secrets.GOOGLE_GEMINI_API_KEY }}" >> /tmp/.env
+        echo "AI_MODEL=${{ vars.AI_MODEL }}" >> /tmp/.env
+        echo "IMAGE_MODEL=${{ vars.IMAGE_MODEL }}" >> /tmp/.env
+        echo "VIDEO_MODEL=${{ vars.VIDEO_MODEL }}" >> /tmp/.env
 
     - name: Deploy via SSH
       uses: appleboy/ssh-action@master
@@ -24,100 +52,45 @@ jobs:
         port: 22
         script: |
           set -e
-          
           echo "=== Starting deployment ==="
           cd /opt/habernexus
           
-          # Create .env file if not exists
-          if [ ! -f .env ]; then
-            echo "Creating .env file..."
-            cat > .env << 'ENVEOF'
-DEBUG=False
-DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
-ALLOWED_HOSTS=habernexus.com,www.habernexus.com,35.198.132.19,localhost,127.0.0.1
-DB_ENGINE=django.db.backends.postgresql
-DB_NAME=${{ vars.DB_NAME }}
-DB_USER=${{ vars.DB_USER }}
-DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-DB_HOST=postgres
-DB_PORT=${{ vars.DB_PORT }}
-CELERY_BROKER_URL=${{ vars.CELERY_BROKER_URL }}
-CELERY_RESULT_BACKEND=${{ vars.CELERY_RESULT_BACKEND }}
-GOOGLE_GEMINI_API_KEY=${{ secrets.GOOGLE_GEMINI_API_KEY }}
-AI_MODEL=${{ vars.AI_MODEL }}
-IMAGE_MODEL=${{ vars.IMAGE_MODEL }}
-VIDEO_MODEL=${{ vars.VIDEO_MODEL }}
-SECURE_SSL_REDIRECT=True
-SESSION_COOKIE_SECURE=True
-CSRF_COOKIE_SECURE=True
-SECURE_HSTS_SECONDS=31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS=True
-SECURE_HSTS_PRELOAD=True
-DOMAIN=habernexus.com
-MEDIA_ROOT=/media
-STATIC_ROOT=/static
-ENVEOF
-          fi
-          
-          # Pull latest code
-          echo "Pulling latest code from GitHub..."
           git fetch origin
           git reset --hard origin/main
           
-          # Build and start containers
-          echo "Building Docker images..."
           docker-compose -f docker-compose.prod.yml build
-          
-          # Stop old containers
-          echo "Stopping old containers..."
           docker-compose -f docker-compose.prod.yml down || true
-          
-          # Start new containers
-          echo "Starting new containers..."
           docker-compose -f docker-compose.prod.yml up -d
           
-          # Wait for services to be ready
-          echo "Waiting for services to be ready..."
           sleep 20
           
-          # Run migrations
-          echo "Running database migrations..."
           docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate
-          
-          # Collect static files
-          echo "Collecting static files..."
           docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
           
-          # Health check
-          echo "Waiting for application to be ready..."
           sleep 15
           
-          for i in {1..60}; do
-            if curl -f -s -o /dev/null -w "%{http_code}" http://localhost:8000/health/ | grep -q "200"; then
-              echo "✅ Application is healthy!"
-              break
-            fi
-            echo "Waiting for application... ($i/60)"
-            sleep 2
-          done
-          
-          # Verify deployment
-          if curl -f -s -o /dev/null -w "%{http_code}" http://localhost:8000/health/ | grep -q "200"; then
+          if curl -f http://localhost:8000/health/; then
             echo "✅ Deployment successful!"
           else
-            echo "❌ Deployment failed - application not responding"
+            echo "❌ Deployment failed"
             docker-compose -f docker-compose.prod.yml logs web
             exit 1
           fi
 
-    - name: Deployment Success Notification
-      if: success()
-      run: |
-        echo "✅ Deployment to production completed successfully!"
-        echo "Application is now live at https://habernexus.com"
+    - name: Copy .env file to VM
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USER }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        port: 22
+        source: "/tmp/.env"
+        target: "/opt/habernexus/.env"
 
-    - name: Deployment Failure Notification
+    - name: Deployment Success
+      if: success()
+      run: echo "✅ Deployment completed successfully!"
+
+    - name: Deployment Failure
       if: failure()
-      run: |
-        echo "❌ Deployment to production failed!"
-        echo "Please check the logs above for details."
+      run: echo "❌ Deployment failed!"
