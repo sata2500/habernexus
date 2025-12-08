@@ -71,6 +71,9 @@ jobs:
         CELERY_RESULT_BACKEND: redis://localhost:6379/0
         DJANGO_SECRET_KEY: test-secret-key-for-ci
         ALLOWED_HOSTS: 'localhost,127.0.0.1'
+        GOOGLE_GEMINI_API_KEY: test-key-for-ci
+        AI_MODEL: gemini-2.5-flash
+        IMAGE_MODEL: imagen-4.0-ultra-generate-001
       run: |
         python manage.py migrate --noinput
 
@@ -86,6 +89,9 @@ jobs:
         CELERY_RESULT_BACKEND: redis://localhost:6379/0
         DJANGO_SECRET_KEY: test-secret-key-for-ci
         ALLOWED_HOSTS: 'localhost,127.0.0.1'
+        GOOGLE_GEMINI_API_KEY: test-key-for-ci
+        AI_MODEL: gemini-2.5-flash
+        IMAGE_MODEL: imagen-4.0-ultra-generate-001
       run: |
         python manage.py test --verbosity=2
 
@@ -101,6 +107,9 @@ jobs:
         CELERY_RESULT_BACKEND: redis://localhost:6379/0
         DJANGO_SECRET_KEY: test-secret-key-for-ci
         ALLOWED_HOSTS: 'localhost,127.0.0.1'
+        GOOGLE_GEMINI_API_KEY: test-key-for-ci
+        AI_MODEL: gemini-2.5-flash
+        IMAGE_MODEL: imagen-4.0-ultra-generate-001
       run: |
         pytest --cov=news --cov-report=xml --cov-report=html
       continue-on-error: true
@@ -195,5 +204,8 @@ jobs:
           -e DEBUG=False \
           -e DB_HOST=localhost \
           -e ALLOWED_HOSTS='localhost,127.0.0.1' \
+          -e GOOGLE_GEMINI_API_KEY=test-key-for-ci \
+          -e AI_MODEL=gemini-2.5-flash \
+          -e IMAGE_MODEL=imagen-4.0-ultra-generate-001 \
           habernexus:latest python manage.py check
       continue-on-error: true
