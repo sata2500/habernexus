@@ -28,6 +28,37 @@ jobs:
           echo "=== Starting deployment ==="
           cd /opt/habernexus
           
+          # Create .env file if not exists
+          if [ ! -f .env ]; then
+            echo "Creating .env file..."
+            cat > .env << 'ENVEOF'
+DEBUG=False
+DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+ALLOWED_HOSTS=habernexus.com,www.habernexus.com,35.198.132.19,localhost,127.0.0.1
+DB_ENGINE=django.db.backends.postgresql
+DB_NAME=${{ vars.DB_NAME }}
+DB_USER=${{ vars.DB_USER }}
+DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+DB_HOST=postgres
+DB_PORT=${{ vars.DB_PORT }}
+CELERY_BROKER_URL=${{ vars.CELERY_BROKER_URL }}
+CELERY_RESULT_BACKEND=${{ vars.CELERY_RESULT_BACKEND }}
+GOOGLE_GEMINI_API_KEY=${{ secrets.GOOGLE_GEMINI_API_KEY }}
+AI_MODEL=${{ vars.AI_MODEL }}
+IMAGE_MODEL=${{ vars.IMAGE_MODEL }}
+VIDEO_MODEL=${{ vars.VIDEO_MODEL }}
+SECURE_SSL_REDIRECT=True
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+SECURE_HSTS_SECONDS=31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS=True
+SECURE_HSTS_PRELOAD=True
+DOMAIN=habernexus.com
+MEDIA_ROOT=/media
+STATIC_ROOT=/static
+ENVEOF
+          fi
+          
           # Pull latest code
           echo "Pulling latest code from GitHub..."
           git fetch origin
