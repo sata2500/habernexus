@@ -1,0 +1,48 @@
+erDiagram
+    Author ||--o{ Article : "yazar"
+    RssSource ||--o{ Article : "kaynak"
+    Article {
+        int id PK
+        string title
+        string slug
+        text content
+        string excerpt
+        string featured_image
+        int author_id FK
+        string category
+        string tags
+        int rss_source_id FK
+        string status
+        bool is_ai_generated
+        datetime published_at
+    }
+
+    Author {
+        int id PK
+        string name
+        string slug
+        text bio
+    }
+
+    RssSource {
+        int id PK
+        string name
+        string url
+        string category
+        int frequency_minutes
+        bool is_active
+    }
+
+    Setting {
+        int id PK
+        string key
+        string value
+        string description
+    }
+
+    SystemLog {
+        int id PK
+        string level
+        string task_name
+        text message
+    }

@@ -1,0 +1,13 @@
+graph TD
+    A[RSS Kaynakları] --> B(1. Besleme Tarama)
+    B --> C(2. Başlık Puanlaması)
+    C --> D(3. Haber Sınıflandırması)
+    D --> E(4. İçerik Üretimi)
+    subgraph Paralel Görevler
+        E --> F[Araştırma Yapma]
+        E --> G[Prompt Oluşturma]
+        E --> H[AI Çağrısı]
+    end
+    H --> I(5. Kalite Kontrol)
+    I --> J(6. Görsel Üretimi)
+    J --> K(7. Yayınlama)

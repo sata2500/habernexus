@@ -1,0 +1,9 @@
+graph TD
+    A[İnternet Kullanıcıları] --> B{Nginx Reverse Proxy}
+    B --> C[Django Gunicorn]
+    C --> D[PostgreSQL]
+    C --> E[Redis]
+    C --> F[Celery Worker]
+    F --> E
+    G[Celery Beat] --> E
+    F --> H[Google Gemini AI]

@@ -4,41 +4,7 @@ Bu belge, Haber Nexus projesinin teknik mimarisini ve bileşenlerini açıklamak
 
 ## Genel Mimari
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      İnternet                               │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Nginx (Reverse Proxy)                    │
-│  • SSL/TLS Sonlandırması                                    │
-│  • Statik Dosyaları Servis Etme                             │
-│  • Gzip Sıkıştırması                                        │
-│  • Load Balancing (İsteğe Bağlı)                            │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Django Uygulaması (Gunicorn)                   │
-│  • Web Arayüzü (Admin Panel)                                │
-│  • REST API (İsteğe Bağlı)                                  │
-│  • Ziyaretçi Arayüzü                                        │
-└─────────────────────────────────────────────────────────────┘
-         │                    │                    │
-         ▼                    ▼                    ▼
-    ┌────────────┐       ┌────────────┐      ┌────────────┐
-    │ PostgreSQL │       │   Redis    │      │   Celery   │
-    │ Veritabanı │       │   Cache    │      │   Worker   │
-    │            │       │   Broker   │      │            │
-    └────────────┘       └────────────┘      └────────────┘
-                              │
-                              ▼
-                    ┌─────────────────────┐
-                    │  Celery Beat        │
-                    │  (Zamanlayıcı)      │
-                    └─────────────────────┘
-```
+![Sistem Mimarisi](images/system_architecture.png)
 
 ## Bileşenler
 
@@ -126,110 +92,11 @@ Bu belge, Haber Nexus projesinin teknik mimarisini ve bileşenlerini açıklamak
 
 ### RSS'den İçerik Üretimi Süreci
 
-```
-1. Celery Beat (Her 15 dakikada bir)
-   │
-   ▼
-2. fetch_rss_feeds() Görevi Tetiklenir
-   │
-   ├─ RSS kaynağını indir
-   ├─ Yeni haberleri parse et
-   ├─ Veritabanına ham veri olarak kaydet
-   │
-   ▼
-3. generate_ai_content() Görevi Tetiklenir (Her haber için)
-   │
-   ├─ Google AI API'ye bağlan
-   ├─ Prompt oluştur (yazar profili + haber verisi)
-   ├─ AI'dan özgün içerik al
-   ├─ Görseli indir ve optimize et (WebP)
-   ├─ Veritabanına kaydet
-   │
-   ▼
-4. Haber Yayınlandı
-   │
-   ├─ Ziyaretçiler tarafından görülebilir
-   ├─ SEO indexing için hazır
-   │
-   ▼
-5. Hata Oluşursa
-   │
-   └─ SystemLog'a kaydedilir
-      (Yönetici tarafından kontrol edilebilir)
-```
+![İçerik Üretim Pipeline](images/content_pipeline.png)
 
 ## Veritabanı Şeması (Basitleştirilmiş)
 
-### Article (Haberler)
-```
-- id (PK)
-- title (Başlık)
-- slug (URL slug)
-- content (İçerik)
-- excerpt (Özet)
-- featured_image (Başlık görseli)
-- author_id (FK → Author)
-- category (Kategori)
-- tags (Etiketler)
-- rss_source_id (FK → RssSource)
-- status (draft, published, archived)
-- is_ai_generated (Boolean)
-- is_ai_image (Boolean)
-- views_count (Görüntülenme)
-- published_at (Yayınlanma tarihi)
-- created_at (Oluşturulma tarihi)
-- updated_at (Güncelleme tarihi)
-```
-
-### Author (Yazarlar)
-```
-- id (PK)
-- name (Ad)
-- slug (URL slug)
-- bio (Biyografi)
-- expertise (Uzmanlık alanı)
-- profile_image (Profil resmi)
-- email (E-posta)
-- website (Web sitesi)
-- is_active (Aktif mi)
-- created_at (Oluşturulma tarihi)
-- updated_at (Güncelleme tarihi)
-```
-
-### RssSource (RSS Kaynakları)
-```
-- id (PK)
-- name (Ad)
-- url (RSS URL)
-- category (Kategori)
-- frequency_minutes (Tarama sıklığı)
-- is_active (Aktif mi)
-- last_checked (Son tarama zamanı)
-- created_at (Oluşturulma tarihi)
-- updated_at (Güncelleme tarihi)
-```
-
-### Setting (Sistem Ayarları)
-```
-- id (PK)
-- key (Anahtar)
-- value (Değer)
-- description (Açıklama)
-- is_secret (Gizli mi)
-- created_at (Oluşturulma tarihi)
-- updated_at (Güncelleme tarihi)
-```
-
-### SystemLog (Sistem Günlükleri)
-```
-- id (PK)
-- level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-- task_name (Görev adı)
-- message (Mesaj)
-- traceback (Stack trace)
-- related_id (İlgili nesne ID)
-- created_at (Oluşturulma tarihi)
-```
+![Veritabanı Şeması](images/database_schema.png)
 
 ## Güvenlik Mimarisi
 
