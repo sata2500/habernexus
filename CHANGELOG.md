@@ -1,6 +1,16 @@
 # Haber Nexus - Değişiklik Günlüğü
 
-Tüm önemli değişiklikler bu dosyada belgelenecektir.
+Bu proje için tüm önemli değişiklikler bu dosyada belgelenmektedir.
+
+---
+
+## [2.0.0] - 2025-12-11
+
+### 🚀 Yeniden Yapılandırma
+
+- **Profesyonel Dokümantasyon:** Projenin tüm dokümantasyonu yeniden düzenlendi. Tekrarlayan ve eski dosyalar `docs/archive` klasörüne taşındı, önemli rehberler birleştirildi ve `docs/` klasörü altında profesyonel bir yapıya kavuşturuldu.
+- **Yeni Rehberler:** `CONFIGURATION.md` ve `CONTRIBUTING.md` gibi yeni rehberler eklenerek projenin anlaşılırlığı ve geliştirici deneyimi artırıldı.
+- **README Güncellemesi:** Projenin ana `README.md` dosyası, yeni dokümantasyon yapısını yansıtacak şekilde tamamen yeniden yazıldı ve daha profesyonel bir görünüme kavuşturuldu.
 
 ---
 
