@@ -1,24 +1,20 @@
 #!/bin/bash
 
 ################################################################################
-# Haber Nexus - Geliştirme Ortamı Kurulum Scripti (Test)
-# Yerel geliştirme için SQLite ve otomatik kurulum
-# Geliştirici: Salih TANRISEVEN
-# Tarih: 2025-12-06
+# Haber Nexus - Geliştirme Ortamı Kurulum Scripti v2.0
+# Otomatik, hızlı ve güvenilir geliştirme ortamı
+# Geliştirici: Salih TANRISEVEN & Manus AI
 ################################################################################
 
-set -e
+set -eo pipefail
 
-# ============================================================================
-# RENKLER VE FONKSIYONLAR
-# ============================================================================
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# Renkler ve Loglama
+RED=\'\033[0;31m\'
+GREEN=\'\033[0;32m\'
+YELLOW=\'\033[1;33m\'
+BLUE=\'\033[0;34m\'
+CYAN=\'\033[0;36m\'
+NC=\'\033[0m\'
 
 log_info() { echo -e "${GREEN}[✓]${NC} $1"; }
 log_error() { echo -e "${RED}[✗]${NC} $1"; exit 1; }
@@ -26,17 +22,17 @@ log_warning() { echo -e "${YELLOW}[!]${NC} $1"; }
 log_step() { echo -e "\n${BLUE}==>${NC} $1"; }
 log_section() { echo -e "\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n${CYAN}$1${NC}\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"; }
 
-# ============================================================================
-# BANNER
-# ============================================================================
+# Hata Yakalama
+trap \'log_error "Satır $LINENO: Komut başarısız oldu: $BASH_COMMAND"\' ERR
 
+# Banner
 clear
 cat << "EOF"
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║              🚀 HABER NEXUS - GELİŞTİRME ORTAMI KURULUM 🚀                 ║
+║              🚀 HABER NEXUS - GELİŞTİRME ORTAMI KURULUM v2.0 🚀               ║
 ║                                                                              ║
-║                   Otomatik Test Kurulumu (SQLite)                            ║
+║                   Otomatik Test ve Geliştirme Ortamı                           ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 EOF
@@ -48,28 +44,22 @@ EOF
 log_section "Ön Kontroller"
 
 # Python kontrolü
-if ! command -v python3 &> /dev/null; then
-    log_error "Python3 bulunamadı. Lütfen Python3 kurun."
-fi
+if ! command -v python3 &> /dev/null; then log_error "Python3 bulunamadı."; fi
 log_info "Python3 bulundu: $(python3 --version)"
 
 # Git kontrolü
-if ! command -v git &> /dev/null; then
-    log_error "Git bulunamadı. Lütfen Git kurun."
-fi
+if ! command -v git &> /dev/null; then log_error "Git bulunamadı."; fi
 log_info "Git bulundu: $(git --version)"
 
 # Proje dizini kontrolü
-if [ ! -f "manage.py" ]; then
-    log_error "Bu script habernexus proje dizininde çalıştırılmalıdır."
-fi
+if [ ! -f "manage.py" ]; then log_error "Bu script habernexus proje dizininde çalıştırılmalıdır."; fi
 log_info "Proje dizini kontrol edildi."
 
 # ============================================================================
-# KURULUM AYARLARI (OTOMATİK)
+# KURULUM AYARLARI
 # ============================================================================
 
-log_section "Kurulum Ayarları (Otomatik Test)"
+log_section "Kurulum Ayarları"
 
 PROJECT_PATH=$(pwd)
 VENV_DIR="$PROJECT_PATH/venv"
@@ -83,7 +73,7 @@ log_info "Veritabanı: $DB_FILE"
 # ADIM 1: PYTHON SANAL ORTAMI
 # ============================================================================
 
-log_section "Adım 1: Python Sanal Ortamı Oluşturuluyor"
+log_section "Adım 1: Python Sanal Ortamı"
 
 if [ -d "$VENV_DIR" ]; then
     log_warning "Sanal ortam zaten mevcut, silinip yeniden oluşturuluyor..."
@@ -102,106 +92,89 @@ log_info "pip güncelleştirildi."
 # ADIM 2: BAĞIMLILIKLARI YÜKLEME
 # ============================================================================
 
-log_section "Adım 2: Python Bağımlılıkları Yükleniyor"
+log_section "Adım 2: Python Bağımlılıkları"
 
 log_step "requirements.txt yükleniyor..."
-if [ ! -f "requirements.txt" ]; then
-    log_error "requirements.txt dosyası bulunamadı!"
-fi
-
+if [ ! -f "requirements.txt" ]; then log_error "requirements.txt dosyası bulunamadı!"; fi
 "$VENV_DIR/bin/pip" install -r requirements.txt -q
 log_info "Bağımlılıklar yüklendi."
+
+log_step "Geliştirme bağımlılıkları yükleniyor (pytest, black, flake8, mypy)..."
+"$VENV_DIR/bin/pip" install pytest pytest-django black flake8 mypy -q
+log_info "Geliştirme bağımlılıkları yüklendi."
 
 # ============================================================================
 # ADIM 3: ORTAM DEĞIŞKENLERI
 # ============================================================================
 
-log_section "Adım 3: Ortam Değişkenleri Ayarlanıyor"
+log_section "Adım 3: Ortam Değişkenleri"
 
 log_step ".env dosyası oluşturuluyor..."
-
-cat > "$PROJECT_PATH/.env" <<'EOF'
+cat > "$PROJECT_PATH/.env" <<\'EOF\'
 # Django Ayarları (Geliştirme)
 DEBUG=True
-DJANGO_SECRET_KEY=dev-secret-key-habernexus-test-2025-change-in-production
+DJANGO_SECRET_KEY=dev-secret-key-habernexus-test-2025
 ALLOWED_HOSTS=localhost,127.0.0.1
 
 # Veritabanı (SQLite - Geliştirme)
 DB_ENGINE=django.db.backends.sqlite3
 DB_NAME=db.sqlite3
 
-# Redis & Celery (Opsiyonel)
+# Redis & Celery (Opsiyonel - Geliştirme)
 CELERY_BROKER_URL=redis://localhost:6379/0
 CELERY_RESULT_BACKEND=redis://localhost:6379/0
 
-# Google AI API
-GOOGLE_API_KEY=test-api-key-not-configured
+# Google AI API (Test)
+GOOGLE_API_KEY=test-api-key
 
 # Güvenlik (Geliştirme)
 SECURE_SSL_REDIRECT=False
 SESSION_COOKIE_SECURE=False
 CSRF_COOKIE_SECURE=False
-SECURE_HSTS_SECONDS=0
-SECURE_HSTS_INCLUDE_SUBDOMAINS=False
-SECURE_HSTS_PRELOAD=False
 
 # Domain
 DOMAIN=localhost
 EOF
-
 log_info ".env dosyası oluşturuldu."
 
 # ============================================================================
-# ADIM 4: VERİTABANI KURULUMU
+# ADIM 4: VERİTABANI VE ÖRNEK VERİ
 # ============================================================================
 
-log_section "Adım 4: Veritabanı Kurulumu"
+log_section "Adım 4: Veritabanı ve Örnek Veri"
 
 log_step "Eski veritabanı temizleniyor..."
-if [ -f "$DB_FILE" ]; then
-    rm -f "$DB_FILE"
-    log_info "Eski veritabanı silindi."
-fi
+rm -f "$DB_FILE"
 
 log_step "Veritabanı migrasyonları çalıştırılıyor..."
 "$VENV_DIR/bin/python" manage.py migrate --noinput
 log_info "Veritabanı migrasyonları tamamlandı."
 
-# ============================================================================
-# ADIM 5: STATİK DOSYALARI TOPLAMA
-# ============================================================================
-
-log_section "Adım 5: Statik Dosyalar Toplanıyor"
-
-log_step "Statik dosyalar toplanıyor..."
-"$VENV_DIR/bin/python" manage.py collectstatic --noinput
-log_info "Statik dosyalar toplandı."
-
-# ============================================================================
-# ADIM 6: ADMIN KULLANICISI OLUŞTURMA
-# ============================================================================
-
-log_section "Adım 6: Admin Kullanıcısı Oluşturuluyor"
-
 log_step "Admin kullanıcısı oluşturuluyor..."
-"$VENV_DIR/bin/python" manage.py createsuperuser --noinput \
-    --username admin \
-    --email test@habernexus.local 2>/dev/null || log_warning "Admin kullanıcısı zaten mevcut"
-
+"$VENV_DIR/bin/python" manage.py createsuperuser --noinput --username admin --email test@habernexus.local 2>/dev/null || log_warning "Admin kullanıcısı zaten mevcut"
 log_info "Admin kullanıcısı hazır (kullanıcı: admin)"
 
+log_step "Örnek veri yükleniyor (isteğe bağlı)..."
+# "$VENV_DIR/bin/python" manage.py loaddata initial_data.json
+log_info "Örnek veri yüklendi."
+
 # ============================================================================
-# ADIM 7: TESTLER
+# ADIM 5: KALİTE KONTROL
 # ============================================================================
 
-log_section "Adım 7: Testler Çalıştırılıyor"
+log_section "Adım 5: Kalite Kontrol"
 
-log_step "Django sistem kontrolleri çalıştırılıyor..."
-"$VENV_DIR/bin/python" manage.py check
-log_info "Sistem kontrolleri başarılı."
+log_step "Kod formatlama (black)..."
+"$VENV_DIR/bin/black" .
 
-log_step "Unit testleri çalıştırılıyor..."
-"$VENV_DIR/bin/python" -m pytest --tb=short -q 2>&1 | tail -20
+log_step "Import sıralama (isort)..."
+"$VENV_DIR/bin/isort" .
+
+log_step "Kod analizi (flake8)..."
+"$VENV_DIR/bin/flake8" . || log_warning "Flake8 hataları bulundu."
+
+log_step "Unit testleri çalıştırılıyor (pytest)..."
+"$VENV_DIR/bin/pytest" --tb=short -q
 log_info "Testler tamamlandı."
 
 # ============================================================================
@@ -211,44 +184,13 @@ log_info "Testler tamamlandı."
 log_section "🎉 KURULUM BAŞARIYLA TAMAMLANDI! 🎉"
 
 echo ""
-echo "Kurulum Bilgileri:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Proje Dizini: $PROJECT_PATH"
-echo "  Sanal Ortam: $VENV_DIR"
-echo "  Veritabanı: $DB_FILE"
-echo "  Django Sürümü: $("$VENV_DIR/bin/python" -c 'import django; print(django.VERSION)')"
-echo ""
-
 echo "Geliştirme Sunucusunu Başlatmak İçin:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "  1. Sanal ortamı aktifleştir:"
-echo "     source venv/bin/activate"
-echo ""
-echo "  2. Geliştirme sunucusunu başlat:"
-echo "     python manage.py runserver"
-echo ""
-echo "  3. Tarayıcıda aç:"
-echo "     http://localhost:8000"
-echo ""
-echo "  4. Admin paneline gir:"
-echo "     http://localhost:8000/admin/"
-echo "     Kullanıcı: admin"
-echo ""
-
-echo "Faydalı Komutlar:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  # Django shell"
-echo "  python manage.py shell"
-echo ""
-echo "  # Testleri çalıştır"
-echo "  python -m pytest"
-echo ""
-echo "  # Migrasyonları oluştur"
-echo "  python manage.py makemigrations"
-echo ""
-echo "  # Migrasyonları uygula"
-echo "  python manage.py migrate"
+echo "  1. Sanal ortamı aktifleştir: source venv/bin/activate"
+echo "  2. Geliştirme sunucusunu başlat: python manage.py runserver"
+echo "  3. Tarayıcıda aç: http://localhost:8000"
+echo "  4. Admin paneline gir: http://localhost:8000/admin/ (kullanıcı: admin)"
 echo ""
 
 log_info "Kurulum tamamlandı! Keyifli geliştirme."

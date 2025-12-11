@@ -1,152 +1,108 @@
 #!/bin/bash
 
 #############################################################################
-# Haber Nexus Restore Script
-# Restores PostgreSQL database, Redis data, and media files from backup
+# Haber Nexus - Gelişmiş Geri Yükleme Scripti v2.0
+# PostgreSQL, Redis ve medya dosyalarını geri yükler.
+# Geliştirici: Salih TANRISEVEN & Manus AI
 #############################################################################
 
-set -e
+set -eo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Renkler ve Loglama
+RED=\'\033[0;31m\'
+GREEN=\'\033[0;32m\'
+YELLOW=\'\033[1;33m\'
+BLUE=\'\033[0;34m\'
+NC=\'\033[0m\'
 
-# Functions
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+log_info() { echo -e "${GREEN}[✓]${NC} $1"; }
+log_error() { echo -e "${RED}[✗]${NC} $1"; exit 1; }
+log_warning() { echo -e "${YELLOW}[!]${NC} $1"; }
+log_step() { echo -e "\n${BLUE}==>${NC} $1"; }
 
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
+# Hata Yakalama
+trap \'log_error "Satır $LINENO: Komut başarısız oldu: $BASH_COMMAND"\' ERR
 
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Check arguments
+# Argüman kontrolü
 if [ -z "$1" ]; then
-    log_error "Usage: $0 <backup_path>"
-    log_info "Example: $0 .backup/habernexus_backup_20231206_120000"
+    log_error "Kullanım: $0 <yedek_dosyasi.tar.gz>"
+    log_info "Örnek: $0 /var/backups/habernexus/habernexus_backup_20231206_120000.tar.gz"
     exit 1
 fi
 
-BACKUP_PATH="$1"
+BACKUP_ARCHIVE="$1"
 
-# Check if backup exists
-if [ ! -d "$BACKUP_PATH" ]; then
-    log_error "Backup directory not found: $BACKUP_PATH"
-    exit 1
+if [ ! -f "$BACKUP_ARCHIVE" ]; then
+    log_error "Yedek dosyası bulunamadı: $BACKUP_ARCHIVE"
 fi
 
-log_info "Starting restore from: $BACKUP_PATH"
+# Onay
+log_warning "Bu işlem mevcut verileri SİLECEK ve yedekten geri yükleyecektir."
+read -p "Devam etmek istiyor musunuz? (y/n): " -n 1 -r
+echo ""
+[[ ! $REPLY =~ ^[Yy]$ ]] && log_error "Geri yükleme iptal edildi."
 
-# Confirm restore operation
-log_warn "⚠️  WARNING: This will overwrite the current database and files!"
-read -p "Are you sure you want to restore? (yes/no): " -r
-if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
-    log_info "Restore cancelled"
-    exit 0
+# Yedek dosyasını açma
+TEMP_DIR="/tmp/habernexus_restore_$(date +%s)"
+mkdir -p "$TEMP_DIR"
+tar -xzf "$BACKUP_ARCHIVE" -C "$TEMP_DIR"
+BACKUP_DIR=$(find "$TEMP_DIR" -mindepth 1 -maxdepth 1 -type d)
+
+# .env dosyasını yükle
+if [ -f .env ]; then
+    export $(cat .env | sed \'s/#.*//g\' | xargs)
 fi
 
-# Stop containers
-log_info "Stopping containers..."
-docker-compose -f docker-compose.prod.yml down || true
+DB_USER=${DB_USER:-habernexus_user}
+DB_NAME=${DB_NAME:-habernexus}
 
-# Restore PostgreSQL database
-if [ -f "${BACKUP_PATH}/database.sql.gz" ]; then
-    log_info "Restoring PostgreSQL database..."
-    
-    # Start postgres container
-    docker-compose -f docker-compose.prod.yml up -d postgres
-    sleep 10
-    
-    # Restore database
-    gunzip -c "${BACKUP_PATH}/database.sql.gz" | \
-    docker-compose -f docker-compose.prod.yml exec -T postgres psql \
-        -U ${DB_USER:-habernexus_user} \
-        -d ${DB_NAME:-habernexus}
-    
-    if [ $? -eq 0 ]; then
-        log_info "✅ Database restored successfully"
-    else
-        log_error "Database restore failed"
-        exit 1
-    fi
-else
-    log_error "Database backup file not found: ${BACKUP_PATH}/database.sql.gz"
-    exit 1
-fi
+# Servisleri durdurma
+log_step "Servisler durduruluyor..."
+docker-compose -f docker-compose.prod.yml down -v --remove-orphans 2>/dev/null || true
+log_info "Servisler durduruldu."
 
-# Restore Redis data
-if [ -f "${BACKUP_PATH}/redis_dump.rdb" ]; then
-    log_info "Restoring Redis data..."
-    
-    docker-compose -f docker-compose.prod.yml up -d redis
-    sleep 5
-    
-    docker cp "${BACKUP_PATH}/redis_dump.rdb" habernexus-redis:/data/dump.rdb
-    docker-compose -f docker-compose.prod.yml exec -T redis redis-cli SHUTDOWN
-    sleep 2
-    docker-compose -f docker-compose.prod.yml up -d redis
-    
-    log_info "✅ Redis data restored"
-else
-    log_warn "Redis backup file not found - skipping Redis restore"
-fi
+# PostgreSQL geri yükleme
+log_step "PostgreSQL veritabanı geri yükleniyor..."
+docker-compose -f docker-compose.prod.yml up -d postgres
+sleep 10 # PostgreSQL'in başlaması için bekle
+docker-compose -f docker-compose.prod.yml exec -T postgres dropdb -U "$DB_USER" "$DB_NAME" --if-exists
+docker-compose -f docker-compose.prod.yml exec -T postgres createdb -U "$DB_USER" "$DB_NAME"
+gunzip -c "$BACKUP_DIR/database.sql.gz" | docker-compose -f docker-compose.prod.yml exec -T postgres psql -U "$DB_USER" -d "$DB_NAME"
+log_info "Veritabanı geri yüklendi."
 
-# Restore media files
-if [ -f "${BACKUP_PATH}/media.tar.gz" ]; then
-    log_info "Restoring media files..."
-    
-    # Remove old media
+# Redis geri yükleme
+log_step "Redis verisi geri yükleniyor..."
+docker-compose -f docker-compose.prod.yml up -d redis
+sleep 5
+docker cp "$BACKUP_DIR/redis_dump.rdb" habernexus-redis:/data/dump.rdb
+docker-compose -f docker-compose.prod.yml restart redis
+log_info "Redis geri yüklendi."
+
+# Medya dosyaları geri yükleme
+log_step "Medya dosyaları geri yükleniyor..."
+if [ -f "$BACKUP_DIR/media.tar.gz" ]; then
     rm -rf media/
-    
-    # Extract media
-    tar -xzf "${BACKUP_PATH}/media.tar.gz"
-    
-    log_info "✅ Media files restored"
+    tar -xzf "$BACKUP_DIR/media.tar.gz"
+    log_info "Medya dosyaları geri yüklendi."
 else
-    log_warn "Media backup file not found - skipping media restore"
+    log_warning "Medya yedek dosyası bulunamadı."
 fi
 
-# Restore environment file
-if [ -f "${BACKUP_PATH}/.env.backup" ]; then
-    log_info "Restoring environment configuration..."
-    cp "${BACKUP_PATH}/.env.backup" .env
-    log_info "✅ Environment configuration restored"
+# .env dosyası geri yükleme
+log_step ".env dosyası geri yükleniyor..."
+if [ -f "$BACKUP_DIR/.env.backup" ]; then
+    cp "$BACKUP_DIR/.env.backup" .env
+    log_info ".env dosyası geri yüklendi."
 else
-    log_warn "Environment backup file not found - skipping .env restore"
+    log_warning ".env yedek dosyası bulunamadı."
 fi
 
-# Start all containers
-log_info "Starting all containers..."
-docker-compose -f docker-compose.prod.yml up -d
+# Servisleri başlatma
+log_step "Tüm servisler başlatılıyor..."
+docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+log_info "Servisler başlatıldı."
 
-# Wait for containers to be ready
-log_info "Waiting for containers to be ready..."
-sleep 15
+# Temizlik
+rm -rf "$TEMP_DIR"
 
-# Run migrations
-log_info "Running database migrations..."
-docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate
-
-# Collect static files
-log_info "Collecting static files..."
-docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
-
-# Health check
-log_info "Performing health check..."
-for i in {1..30}; do
-    if curl -f http://localhost:8000/health/ > /dev/null 2>&1; then
-        log_info "✅ Application is healthy!"
-        break
-    fi
-    echo "Waiting for application... ($i/30)"
-    sleep 2
-done
-
-log_info "✅ Restore completed successfully!"
-log_info "Application is running and ready to use"
+log_info "✅ Geri yükleme başarıyla tamamlandı!"
