@@ -42,7 +42,9 @@ class ImageProcessor:
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": "HaberNexus/2.0 (+http://habernexus.com)"})
 
-    def download_and_optimize(self, image_url: str, article_id: str, quality: str = "high", max_retries: int = 3) -> Dict:
+    def download_and_optimize(
+        self, image_url: str, article_id: str, quality: str = "high", max_retries: int = 3
+    ) -> Dict:
         """
         Görseli indir ve optimize et
         """
@@ -203,17 +205,47 @@ class VideoProcessor:
     """
 
     ENCODING_PROFILES = {
-        "1080p": {"resolution": "1920x1080", "bitrate": "5128k", "fps": 30, "codec": "libx264", "preset": "slow", "crf": 23},
-        "720p": {"resolution": "1280x720", "bitrate": "2596k", "fps": 30, "codec": "libx264", "preset": "medium", "crf": 28},
-        "480p": {"resolution": "854x480", "bitrate": "1064k", "fps": 24, "codec": "libx264", "preset": "fast", "crf": 32},
-        "360p": {"resolution": "640x360", "bitrate": "548k", "fps": 24, "codec": "libx264", "preset": "fast", "crf": 35},
+        "1080p": {
+            "resolution": "1920x1080",
+            "bitrate": "5128k",
+            "fps": 30,
+            "codec": "libx264",
+            "preset": "slow",
+            "crf": 23,
+        },
+        "720p": {
+            "resolution": "1280x720",
+            "bitrate": "2596k",
+            "fps": 30,
+            "codec": "libx264",
+            "preset": "medium",
+            "crf": 28,
+        },
+        "480p": {
+            "resolution": "854x480",
+            "bitrate": "1064k",
+            "fps": 24,
+            "codec": "libx264",
+            "preset": "fast",
+            "crf": 32,
+        },
+        "360p": {
+            "resolution": "640x360",
+            "bitrate": "548k",
+            "fps": 24,
+            "codec": "libx264",
+            "preset": "fast",
+            "crf": 35,
+        },
     }
 
     def __init__(self, output_dir: str = "/media"):
         self.output_dir = output_dir
         self.session = requests.Session()
 
-    def download_and_encode(self, video_url: str, article_id: str, profiles: List[str] = None, max_retries: int = 3) -> Dict:
+    def download_and_encode(
+        self, video_url: str, article_id: str, profiles: List[str] = None, max_retries: int = 3
+    ) -> Dict:
         """
         Videoyu indir ve encode et
         """
@@ -400,7 +432,9 @@ class MediaManager:
         self.image_processor = ImageProcessor(output_dir)
         self.video_processor = VideoProcessor(output_dir)
 
-    def process_article_media(self, article_id: str, image_urls: List[str] = None, video_urls: List[str] = None) -> Dict:
+    def process_article_media(
+        self, article_id: str, image_urls: List[str] = None, video_urls: List[str] = None
+    ) -> Dict:
         """
         Makale için tüm medyayı işle
         """

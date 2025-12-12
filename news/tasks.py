@@ -151,7 +151,9 @@ def generate_ai_content(self, article_id):
 
         # Idempotency kontrolü: Eğer makale zaten AI tarafından üretilmişse, tekrar işleme
         if article.is_ai_generated and article.status == "published":
-            log_info("generate_ai_content", f"Makale zaten AI tarafından üretilmiş: {article.title}", related_id=article_id)
+            log_info(
+                "generate_ai_content", f"Makale zaten AI tarafından üretilmiş: {article.title}", related_id=article_id
+            )
             return f"Makale zaten işlenmiş: {article.title}"
 
         # Google Gemini API anahtarını al
@@ -377,7 +379,9 @@ Requirements:
                 article.featured_image_alt = article.title
                 article.save()
 
-                log_info("generate_article_image", f"Görsel başarıyla oluşturuldu: {article.title}", related_id=article_id)
+                log_info(
+                    "generate_article_image", f"Görsel başarıyla oluşturuldu: {article.title}", related_id=article_id
+                )
                 return f"Görsel oluşturuldu: {article.title}"
             else:
                 log_error("generate_article_image", "Imagen API yanıt boş", related_id=article_id)

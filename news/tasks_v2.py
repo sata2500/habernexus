@@ -23,7 +23,13 @@ from core.models import Setting
 from core.tasks import log_error, log_info
 
 from .models import Article, RssSource
-from .models_extended import ArticleClassification, ContentGenerationLog, ContentQualityMetrics, HeadlineScore, ResearchSource
+from .models_extended import (
+    ArticleClassification,
+    ContentGenerationLog,
+    ContentQualityMetrics,
+    HeadlineScore,
+    ResearchSource,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -121,9 +127,9 @@ def score_headlines():
     try:
         # Son 2 saatte çekilen işlenmemiş başlıkları al
         two_hours_ago = timezone.now() - timedelta(hours=2)
-        unscored_headlines = HeadlineScore.objects.filter(is_processed=False, created_at__gte=two_hours_ago).select_related(
-            "rss_source"
-        )
+        unscored_headlines = HeadlineScore.objects.filter(
+            is_processed=False, created_at__gte=two_hours_ago
+        ).select_related("rss_source")
 
         logger.info(f"Puanlanacak başlık sayısı: {unscored_headlines.count()}")
 
@@ -200,7 +206,9 @@ def calculate_uniqueness_score(headline_score):
     same_count = HeadlineScore.objects.filter(original_headline=headline_score.original_headline).count()
 
     # Benzer başlık sayısı (ilk 30 karakter aynı)
-    similar_count = HeadlineScore.objects.filter(original_headline__startswith=headline_score.original_headline[:30]).count()
+    similar_count = HeadlineScore.objects.filter(
+        original_headline__startswith=headline_score.original_headline[:30]
+    ).count()
 
     if same_count > 1:
         return 0  # Tam aynı başlık
@@ -896,10 +904,14 @@ Style: Editorial, 16:9 aspect ratio, high quality, photorealistic
                 article.is_ai_image = True
                 article.save()
 
-                log_info("generate_article_image_v2", f"Görsel başarıyla oluşturuldu: {article.title}", related_id=article_id)
+                log_info(
+                    "generate_article_image_v2", f"Görsel başarıyla oluşturuldu: {article.title}", related_id=article_id
+                )
 
         except Exception as e:
-            log_error("generate_article_image_v2", f"Görsel üretim hatası: {str(e)}", traceback=str(e), related_id=article_id)
+            log_error(
+                "generate_article_image_v2", f"Görsel üretim hatası: {str(e)}", traceback=str(e), related_id=article_id
+            )
 
     except Article.DoesNotExist:
         log_error("generate_article_image_v2", f"Makale bulunamadı (ID: {article_id})", related_id=article_id)

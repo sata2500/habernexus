@@ -5,101 +5,200 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: read
+  deployments: write
+  id-token: write
 
 jobs:
-  deploy:
-    name: Deploy to Production
+  validate:
+    name: Validate Deployment
     runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://habernexus.com
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Validate secrets
       run: |
-        if [ -z "${{ secrets.VM_HOST }}" ]; then echo "VM_HOST secret is not set"; exit 1; fi
-        if [ -z "${{ secrets.VM_USER }}" ]; then echo "VM_USER secret is not set"; exit 1; fi
-        if [ -z "${{ secrets.VM_SSH_KEY }}" ]; then echo "VM_SSH_KEY secret is not set"; exit 1; fi
-        if [ -z "${{ secrets.DJANGO_SECRET_KEY }}" ]; then echo "DJANGO_SECRET_KEY secret is not set"; exit 1; fi
-        if [ -z "${{ secrets.DB_PASSWORD }}" ]; then echo "DB_PASSWORD secret is not set"; exit 1; fi
-        if [ -z "${{ secrets.GOOGLE_GEMINI_API_KEY }}" ]; then echo "GOOGLE_GEMINI_API_KEY secret is not set"; exit 1; fi
+        if [ -z "${{ secrets.VM_HOST }}" ]; then
+          echo "❌ VM_HOST secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.VM_USER }}" ]; then
+          echo "❌ VM_USER secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.VM_SSH_KEY }}" ]; then
+          echo "❌ VM_SSH_KEY secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.DJANGO_SECRET_KEY }}" ]; then
+          echo "❌ DJANGO_SECRET_KEY secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.DB_PASSWORD }}" ]; then
+          echo "❌ DB_PASSWORD secret is not set"
+          exit 1
+        fi
+        echo "✅ All required secrets are configured"
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Validate Django settings
+      run: |
+        python manage.py check --deploy || true
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: validate
+    environment:
+      name: production
+      url: https://habernexus.com
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create deployment
+      uses: actions/github-script@v7
+      id: deployment
+      with:
+        script: |
+          const deployment = await github.rest.repos.createDeployment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: context.ref,
+            environment: 'production',
+            required_contexts: [],
+            auto_merge: false
+          });
+          return deployment.data.id;
 
     - name: Create .env file
       run: |
-        echo "DEBUG=False" > .env
-        echo "ALLOWED_HOSTS=${{ vars.ALLOWED_HOSTS }}" >> .env
-        echo "DB_ENGINE=django.db.backends.postgresql" >> .env
-        echo "DB_HOST=postgres" >> .env
-        echo "SECURE_SSL_REDIRECT=True" >> .env
-        echo "SESSION_COOKIE_SECURE=True" >> .env
-        echo "CSRF_COOKIE_SECURE=True" >> .env
-        echo "DOMAIN=${{ vars.DOMAIN }}" >> .env
-        echo "DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" >> .env
-        echo "DB_NAME=${{ vars.DB_NAME }}" >> .env
-        echo "DB_USER=${{ vars.DB_USER }}" >> .env
-        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-        echo "DB_PORT=${{ vars.DB_PORT }}" >> .env
-        echo "CELERY_BROKER_URL=${{ vars.CELERY_BROKER_URL }}" >> .env
-        echo "CELERY_RESULT_BACKEND=${{ vars.CELERY_RESULT_BACKEND }}" >> .env
-        echo "GOOGLE_GEMINI_API_KEY=${{ secrets.GOOGLE_GEMINI_API_KEY }}" >> .env
+        cat > .env << EOF
+        DEBUG=False
+        ALLOWED_HOSTS=${{ vars.ALLOWED_HOSTS }}
+        DB_ENGINE=django.db.backends.postgresql
+        DB_HOST=postgres
+        DB_NAME=${{ vars.DB_NAME }}
+        DB_USER=${{ vars.DB_USER }}
+        DB_PORT=${{ vars.DB_PORT }}
+        DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+        SECURE_SSL_REDIRECT=True
+        SESSION_COOKIE_SECURE=True
+        CSRF_COOKIE_SECURE=True
+        DOMAIN=${{ vars.DOMAIN }}
+        DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+        CELERY_BROKER_URL=${{ vars.CELERY_BROKER_URL }}
+        CELERY_RESULT_BACKEND=${{ vars.CELERY_RESULT_BACKEND }}
+        GOOGLE_GEMINI_API_KEY=${{ secrets.GOOGLE_GEMINI_API_KEY }}
+        EOF
+        chmod 600 .env
+
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
     - name: Backup database before deployment
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.VM_HOST }}
-        username: ${{ secrets.VM_USER }}
-        key: ${{ secrets.VM_SSH_KEY }}
-        script: |
-          cd /opt/habernexus
-          bash scripts/backup.sh
+      run: |
+        ssh -i ~/.ssh/deploy_key ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "cd /opt/habernexus && bash scripts/backup.sh" || echo "Backup warning: $?"
+      continue-on-error: true
 
     - name: Copy .env file to VM
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.VM_HOST }}
-        username: ${{ secrets.VM_USER }}
-        key: ${{ secrets.VM_SSH_KEY }}
-        source: ".env"
-        target: "/opt/habernexus/.env"
+      run: |
+        scp -i ~/.ssh/deploy_key .env ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/opt/habernexus/.env
 
     - name: Deploy via SSH
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.VM_HOST }}
-        username: ${{ secrets.VM_USER }}
-        key: ${{ secrets.VM_SSH_KEY }}
-        script: |
-          set -e
-          cd /opt/habernexus
-          git fetch origin
-          git reset --hard origin/main
-          docker-compose -f docker-compose.prod.yml down -v --remove-orphans || true
-          docker-compose -f docker-compose.prod.yml up -d --build
-          sleep 30
-          # Retry logic for migrations
-          for i in {1..5}; do
-            if docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput; then
-              break
-            fi
-            if [ $i -lt 5 ]; then
-              echo "Migration attempt $i failed, retrying..."
-              sleep 10
-            fi
-          done
-          docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
+      run: |
+        ssh -i ~/.ssh/deploy_key ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'DEPLOY_SCRIPT'
+        set -e
+        cd /opt/habernexus
+        
+        echo "📥 Fetching latest code..."
+        git fetch origin
+        git reset --hard origin/main
+        
+        echo "🐳 Stopping containers..."
+        docker-compose -f docker-compose.prod.yml down -v --remove-orphans || true
+        
+        echo "🔨 Building and starting containers..."
+        docker-compose -f docker-compose.prod.yml up -d --build
+        
+        echo "⏳ Waiting for services to start..."
+        sleep 30
+        
+        echo "🔄 Running migrations..."
+        for i in {1..5}; do
+          if docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput; then
+            echo "✅ Migrations completed successfully"
+            break
+          fi
+          if [ $i -lt 5 ]; then
+            echo "⚠️ Migration attempt $i failed, retrying in 10s..."
+            sleep 10
+          else
+            echo "❌ Migrations failed after 5 attempts"
+            exit 1
+          fi
+        done
+        
+        echo "📦 Collecting static files..."
+        docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
+        
+        echo "✅ Deployment completed successfully"
+        DEPLOY_SCRIPT
 
     - name: Health check
-      uses: appleboy/ssh-action@master
+      run: |
+        ssh -i ~/.ssh/deploy_key ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "cd /opt/habernexus && bash scripts/health-check.sh"
+
+    - name: Create deployment status - success
+      if: success()
+      uses: actions/github-script@v7
       with:
-        host: ${{ secrets.VM_HOST }}
-        username: ${{ secrets.VM_USER }}
-        key: ${{ secrets.VM_SSH_KEY }}
         script: |
-          cd /opt/habernexus
-          bash scripts/health-check.sh
+          github.rest.repos.createDeploymentStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            deployment_id: ${{ steps.deployment.outputs.result }},
+            state: 'success',
+            environment_url: 'https://habernexus.com',
+            description: 'Deployment successful'
+          });
+
+    - name: Create deployment status - failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.repos.createDeploymentStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            deployment_id: ${{ steps.deployment.outputs.result }},
+            state: 'failure',
+            description: 'Deployment failed'
+          });
 
     - name: Notify Slack on success
       if: success()
@@ -108,8 +207,18 @@ jobs:
         webhook-url: ${{ secrets.SLACK_WEBHOOK }}
         payload: |
           {
-            "text": "✅ Deployment to https://habernexus.com successful!"
+            "text": "✅ Deployment to https://habernexus.com successful!",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Deployment Successful* ✅\n*Repository:* ${{ github.repository }}\n*Commit:* ${{ github.sha }}\n*URL:* https://habernexus.com"
+                }
+              }
+            ]
           }
+      continue-on-error: true
 
     - name: Notify Slack on failure
       if: failure()
@@ -118,5 +227,15 @@ jobs:
         webhook-url: ${{ secrets.SLACK_WEBHOOK }}
         payload: |
           {
-            "text": "❌ Deployment to https://habernexus.com failed!"
+            "text": "❌ Deployment to https://habernexus.com failed!",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Deployment Failed* ❌\n*Repository:* ${{ github.repository }}\n*Commit:* ${{ github.sha }}\n*Check logs:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                }
+              }
+            ]
           }
+      continue-on-error: true

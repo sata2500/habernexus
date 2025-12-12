@@ -156,7 +156,9 @@ def calculate_seo_metrics(title, html_content, category):
 
     # İkincil anahtar kelimeler (kategori bazlı)
     secondary_keywords = get_secondary_keywords(category)
-    secondary_keyword_count = sum(len(re.findall(r"\b" + re.escape(kw) + r"\b", text_lower)) for kw in secondary_keywords)
+    secondary_keyword_count = sum(
+        len(re.findall(r"\b" + re.escape(kw) + r"\b", text_lower)) for kw in secondary_keywords
+    )
 
     # Kelime sayısı
     words = text.split()

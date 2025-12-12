@@ -363,7 +363,9 @@ class PromptGenerator:
         from news.models_advanced import PromptTemplate
 
         try:
-            template = PromptTemplate.objects.get(category=article_data["category"], template_type="article", is_active=True)
+            template = PromptTemplate.objects.get(
+                category=article_data["category"], template_type="article", is_active=True
+            )
 
             prompt = template.template_content.format(
                 title=article_data["title"],
@@ -524,7 +526,11 @@ class RSSMediaExtractor:
                                 )
                             elif "video" in media_type:
                                 media["videos"].append(
-                                    {"url": item.get("url", ""), "type": media_type, "duration": item.get("duration", 0)}
+                                    {
+                                        "url": item.get("url", ""),
+                                        "type": media_type,
+                                        "duration": item.get("duration", 0),
+                                    }
                                 )
 
                     # HTML'den görselleri çıkar

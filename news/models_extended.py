@@ -20,7 +20,9 @@ class ContentQualityMetrics(models.Model):
 
     # Okunabilirlik Metrikleri
     flesch_kincaid_grade = models.FloatField(
-        default=0, validators=[MinValueValidator(0), MaxValueValidator(18)], help_text="Flesch-Kincaid okuma seviyesi (0-18)"
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(18)],
+        help_text="Flesch-Kincaid okuma seviyesi (0-18)",
     )
 
     gunning_fog_index = models.FloatField(default=0, help_text="Gunning Fog İndeksi")
@@ -46,7 +48,9 @@ class ContentQualityMetrics(models.Model):
     secondary_keyword_count = models.IntegerField(default=0, help_text="İkincil anahtar kelime kullanım sayısı")
 
     keyword_density = models.FloatField(
-        default=0, validators=[MinValueValidator(0), MaxValueValidator(100)], help_text="Ana anahtar kelime yoğunluğu (%)"
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Ana anahtar kelime yoğunluğu (%)",
     )
 
     meta_description_length = models.IntegerField(default=0, help_text="Meta açıklaması uzunluğu")
@@ -108,7 +112,9 @@ class HeadlineScore(models.Model):
 
     # Genel Puan
     overall_score = models.FloatField(
-        default=0, validators=[MinValueValidator(0), MaxValueValidator(100)], help_text="Genel başlık kalitesi puanı (0-100)"
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Genel başlık kalitesi puanı (0-100)",
     )
 
     # Puanlama Bileşenleri
@@ -195,22 +201,32 @@ class ArticleClassification(models.Model):
         (2, "Derinlemesine - Kapsamlı araştırma"),
     ]
 
-    article = models.OneToOneField(Article, on_delete=models.CASCADE, related_name="classification", help_text="İlgili makale")
+    article = models.OneToOneField(
+        Article, on_delete=models.CASCADE, related_name="classification", help_text="İlgili makale"
+    )
 
     # Tür Sınıflandırması
-    article_type = models.CharField(max_length=20, choices=ARTICLE_TYPE_CHOICES, default="news", help_text="Makale türü")
+    article_type = models.CharField(
+        max_length=20, choices=ARTICLE_TYPE_CHOICES, default="news", help_text="Makale türü"
+    )
 
     type_confidence = models.FloatField(
-        default=0, validators=[MinValueValidator(0), MaxValueValidator(1)], help_text="Tür sınıflandırması güven puanı (0-1)"
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Tür sınıflandırması güven puanı (0-1)",
     )
 
     # Kategori
     primary_category = models.CharField(max_length=100, help_text="Birincil kategori")
 
-    secondary_categories = models.CharField(max_length=500, blank=True, help_text="İkincil kategoriler (virgülle ayrılmış)")
+    secondary_categories = models.CharField(
+        max_length=500, blank=True, help_text="İkincil kategoriler (virgülle ayrılmış)"
+    )
 
     # Araştırma Derinliği
-    research_depth = models.IntegerField(choices=RESEARCH_DEPTH_CHOICES, default=1, help_text="Gereken araştırma derinliği")
+    research_depth = models.IntegerField(
+        choices=RESEARCH_DEPTH_CHOICES, default=1, help_text="Gereken araştırma derinliği"
+    )
 
     # AI Model Seçimi
     recommended_ai_model = models.CharField(max_length=50, default="gemini-2.5-flash", help_text="Önerilen AI modeli")
@@ -254,7 +270,9 @@ class ResearchSource(models.Model):
     Makale üretimi sırasında kullanılan araştırma kaynaklarını saklar.
     """
 
-    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="research_sources", help_text="İlgili makale")
+    article = models.ForeignKey(
+        Article, on_delete=models.CASCADE, related_name="research_sources", help_text="İlgili makale"
+    )
 
     source_url = models.URLField(help_text="Kaynağın URL'si")
 
@@ -310,7 +328,9 @@ class ContentGenerationLog(models.Model):
         ("publish", "Yayınlama"),
     ]
 
-    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="generation_logs", help_text="İlgili makale")
+    article = models.ForeignKey(
+        Article, on_delete=models.CASCADE, related_name="generation_logs", help_text="İlgili makale"
+    )
 
     stage = models.CharField(max_length=20, choices=STAGE_CHOICES, help_text="İşlem aşaması")
 

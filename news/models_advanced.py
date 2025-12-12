@@ -96,7 +96,9 @@ class PromptTemplate(models.Model):
 
     category = models.CharField(max_length=100, help_text="Hangi kategoriye ait")
 
-    template_type = models.CharField(max_length=50, choices=TEMPLATE_TYPES, default="article", help_text="Template türü")
+    template_type = models.CharField(
+        max_length=50, choices=TEMPLATE_TYPES, default="article", help_text="Template türü"
+    )
 
     template_content = models.TextField(
         help_text="""
@@ -280,7 +282,9 @@ class ArticleMedia(models.Model):
     )
 
     # Görsel metadata
-    featured_image_alt = models.CharField(max_length=255, blank=True, help_text="Görsel alt text (SEO ve accessibility)")
+    featured_image_alt = models.CharField(
+        max_length=255, blank=True, help_text="Görsel alt text (SEO ve accessibility)"
+    )
 
     featured_image_credit = models.CharField(max_length=255, blank=True, help_text="Görsel kaynağı/fotoğrafçı")
 
@@ -302,7 +306,9 @@ class ArticleMedia(models.Model):
         upload_to="articles/video/", null=True, blank=True, help_text="720p video (orta kalite)"
     )
 
-    summary_video_480p = models.FileField(upload_to="articles/video/", null=True, blank=True, help_text="480p video (mobil)")
+    summary_video_480p = models.FileField(
+        upload_to="articles/video/", null=True, blank=True, help_text="480p video (mobil)"
+    )
 
     # HLS Streaming
     summary_video_hls_manifest = models.FileField(

@@ -30,7 +30,11 @@ class HeadlineScoringTestCase(TestCase):
     def setUp(self):
         """Test verilerini hazırla"""
         self.rss_source = RssSource.objects.create(
-            name="Test Source", url="http://example.com/feed", category="Teknoloji", frequency_minutes=60, is_active=True
+            name="Test Source",
+            url="http://example.com/feed",
+            category="Teknoloji",
+            frequency_minutes=60,
+            is_active=True,
         )
 
     def test_headline_score_creation(self):
@@ -196,10 +200,16 @@ class ArticleClassificationTestCase(TestCase):
 
     def setUp(self):
         """Test verilerini hazırla"""
-        self.author = Author.objects.create(name="Test Author", slug="test-author", expertise="Teknoloji", is_active=True)
+        self.author = Author.objects.create(
+            name="Test Author", slug="test-author", expertise="Teknoloji", is_active=True
+        )
 
         self.rss_source = RssSource.objects.create(
-            name="Test Source", url="http://example.com/feed", category="Teknoloji", frequency_minutes=60, is_active=True
+            name="Test Source",
+            url="http://example.com/feed",
+            category="Teknoloji",
+            frequency_minutes=60,
+            is_active=True,
         )
 
         self.article = Article.objects.create(
@@ -246,7 +256,9 @@ class ContentQualityMetricsTestCase(TestCase):
 
     def setUp(self):
         """Test verilerini hazırla"""
-        self.author = Author.objects.create(name="Test Author", slug="test-author", expertise="Teknoloji", is_active=True)
+        self.author = Author.objects.create(
+            name="Test Author", slug="test-author", expertise="Teknoloji", is_active=True
+        )
 
         self.article = Article.objects.create(
             title="Test Article",
@@ -285,7 +297,9 @@ class ContentGenerationLogTestCase(TestCase):
 
     def setUp(self):
         """Test verilerini hazırla"""
-        self.author = Author.objects.create(name="Test Author", slug="test-author", expertise="Teknoloji", is_active=True)
+        self.author = Author.objects.create(
+            name="Test Author", slug="test-author", expertise="Teknoloji", is_active=True
+        )
 
         self.article = Article.objects.create(
             title="Test Article",
@@ -336,10 +350,16 @@ class ContentGenerationIntegrationTestCase(TestCase):
 
     def setUp(self):
         """Test verilerini hazırla"""
-        self.author = Author.objects.create(name="Test Author", slug="test-author", expertise="Teknoloji", is_active=True)
+        self.author = Author.objects.create(
+            name="Test Author", slug="test-author", expertise="Teknoloji", is_active=True
+        )
 
         self.rss_source = RssSource.objects.create(
-            name="Test Source", url="http://example.com/feed", category="Teknoloji", frequency_minutes=60, is_active=True
+            name="Test Source",
+            url="http://example.com/feed",
+            category="Teknoloji",
+            frequency_minutes=60,
+            is_active=True,
         )
 
     def test_full_workflow(self):

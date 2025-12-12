@@ -5,30 +5,45 @@ on:
     tags:
       - 'v*.*.*'
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Get version from tag
       id: tag_name
       run: |
-        echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "📦 Release version: $VERSION"
 
     - name: Generate changelog
       id: changelog
       run: |
         VERSION=${{ steps.tag_name.outputs.VERSION }}
         echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
-        if git describe --tags --abbrev=0 HEAD~1 2>/dev/null; then
-          git log $(git describe --tags --abbrev=0 HEAD~1)..HEAD --pretty=format:"- %s (%h)" >> $GITHUB_OUTPUT
+        
+        # Get previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        
+        if [ -z "$PREV_TAG" ]; then
+          echo "Initial release - no previous tags found" >> $GITHUB_OUTPUT
+          git log --pretty=format:"- %s (%h)" | head -20 >> $GITHUB_OUTPUT
         else
-          echo "Initial release" >> $GITHUB_OUTPUT
+          echo "Changes since $PREV_TAG:" >> $GITHUB_OUTPUT
+          git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" >> $GITHUB_OUTPUT
         fi
+        
         echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Create GitHub Release
@@ -37,7 +52,7 @@ jobs:
         tag_name: ${{ steps.tag_name.outputs.VERSION }}
         body: ${{ steps.changelog.outputs.CHANGELOG }}
         draft: false
-        prerelease: false
+        prerelease: ${{ contains(steps.tag_name.outputs.VERSION, 'alpha') || contains(steps.tag_name.outputs.VERSION, 'beta') }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -47,5 +62,15 @@ jobs:
         webhook-url: ${{ secrets.SLACK_WEBHOOK }}
         payload: |
           {
-            "text": "📦 New release: ${{ steps.tag_name.outputs.VERSION }}"
+            "text": "📦 New release: ${{ steps.tag_name.outputs.VERSION }}",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*New Release Published* 📦\n*Version:* ${{ steps.tag_name.outputs.VERSION }}\n*Repository:* ${{ github.repository }}\n*Release URL:* ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.tag_name.outputs.VERSION }}"
+                }
+              }
+            ]
           }
+      continue-on-error: true

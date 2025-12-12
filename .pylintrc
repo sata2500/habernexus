@@ -1,0 +1,32 @@
+[MASTER]
+disable=
+    C0111,  # missing-docstring
+    C0103,  # invalid-name
+    R0903,  # too-few-public-methods
+    R0913,  # too-many-arguments
+    W0212,  # protected-access
+    C0302,  # too-many-lines
+    R0914,  # too-many-locals
+    R0915,  # too-many-statements
+    R0904,  # too-many-public-methods
+    W0703,  # broad-except
+    C0301,  # line-too-long
+
+[FORMAT]
+max-line-length=120
+
+[DESIGN]
+max-args=10
+max-attributes=10
+max-locals=20
+max-branches=15
+max-statements=50
+
+[LOGGING]
+logging-format-style=new
+
+[VARIABLES]
+dummy-variables-rgx=_
+
+[MESSAGES CONTROL]
+enable=all

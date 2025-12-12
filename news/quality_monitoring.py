@@ -155,7 +155,9 @@ class QualityMetrics:
             Article.objects.filter(created_at__gte=timezone.now() - timedelta(days=7))
             .values("category")
             .annotate(
-                count=Count("id"), avg_quality=Avg("quality_score"), published_count=Count("id", filter=Q(status="published"))
+                count=Count("id"),
+                avg_quality=Avg("quality_score"),
+                published_count=Count("id", filter=Q(status="published")),
             )
         )
 
@@ -164,7 +166,9 @@ class QualityMetrics:
                 "total_articles": category["count"],
                 "published_articles": category["published_count"],
                 "avg_quality_score": category["avg_quality"] or 0,
-                "publication_rate": (category["published_count"] / category["count"] * 100) if category["count"] > 0 else 0,
+                "publication_rate": (
+                    (category["published_count"] / category["count"] * 100) if category["count"] > 0 else 0
+                ),
             }
             for category in articles
         }
@@ -373,9 +377,9 @@ class DashboardData:
         """
         En iyi makaleleri al
         """
-        articles = Article.objects.filter(created_at__gte=timezone.now() - timedelta(days=7), status="published").order_by(
-            "-quality_score"
-        )[:limit]
+        articles = Article.objects.filter(
+            created_at__gte=timezone.now() - timedelta(days=7), status="published"
+        ).order_by("-quality_score")[:limit]
 
         return [
             {
@@ -483,7 +487,9 @@ class PerformanceAnalyzer:
             step = bottleneck["step"]
 
             if step == "content_generation":
-                recommendations.append("İçerik üretimi yavaş. Daha hızlı AI modeli (Gemini 2.5 Flash) kullanmayı düşün.")
+                recommendations.append(
+                    "İçerik üretimi yavaş. Daha hızlı AI modeli (Gemini 2.5 Flash) kullanmayı düşün."
+                )
             elif step == "image_generation":
                 recommendations.append("Görsel üretimi yavaş. Batch processing'i etkinleştir veya CDN kullan.")
             elif step == "media_processing":
@@ -492,6 +498,8 @@ class PerformanceAnalyzer:
         # Başarısızlık oranı yüksekse
         metrics = QualityMetrics.calculate_pipeline_efficiency()
         if metrics["success_rate"] < 90:
-            recommendations.append("Başarısızlık oranı yüksek. Hata loglarını kontrol et ve retry mekanizmasını iyileştir.")
+            recommendations.append(
+                "Başarısızlık oranı yüksek. Hata loglarını kontrol et ve retry mekanizmasını iyileştir."
+            )
 
         return recommendations

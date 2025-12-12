@@ -6,7 +6,13 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 
-from .models_extended import ArticleClassification, ContentGenerationLog, ContentQualityMetrics, HeadlineScore, ResearchSource
+from .models_extended import (
+    ArticleClassification,
+    ContentGenerationLog,
+    ContentQualityMetrics,
+    HeadlineScore,
+    ResearchSource,
+)
 
 
 @admin.register(HeadlineScore)
@@ -175,7 +181,9 @@ class ArticleClassificationAdmin(admin.ModelAdmin):
         color = colors.get(obj.article_type, "#666666")
         label = obj.get_article_type_display()
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>', color, label
+            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>',
+            color,
+            label,
         )
 
     article_type_badge.short_description = "Tür"
@@ -398,7 +406,9 @@ class ResearchSourceAdmin(admin.ModelAdmin):
         color = colors.get(obj.source_type, "#666666")
         label = obj.get_source_type_display()
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>', color, label
+            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>',
+            color,
+            label,
         )
 
     source_type_badge.short_description = "Tür"
@@ -503,7 +513,9 @@ class ContentGenerationLogAdmin(admin.ModelAdmin):
         color = colors.get(obj.stage, "#666666")
         label = obj.get_stage_display()
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>', color, label
+            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>',
+            color,
+            label,
         )
 
     stage_badge.short_description = "Aşama"
@@ -519,7 +531,9 @@ class ContentGenerationLogAdmin(admin.ModelAdmin):
         color = colors.get(obj.status, "#666666")
         label = obj.get_status_display()
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>', color, label
+            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>',
+            color,
+            label,
         )
 
     status_badge.short_description = "Durum"

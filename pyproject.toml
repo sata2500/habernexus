@@ -2,6 +2,14 @@
 requires = ["setuptools>=40.8.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "habernexus"
+version = "2.0.0"
+description = "Advanced news aggregation and content generation platform"
+authors = [{name = "Salih TANRISEVEN", email = "salihtanriseven25@gmail.com"}]
+requires-python = ">=3.10"
+license = {text = "MIT"}
+
 [tool.black]
 line-length = 120
 target-version = ['py310', 'py311', 'py312']
@@ -50,4 +58,45 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
 ]
+ignore_errors = true
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[tool.pylint.messages_control]
+disable = [
+    "C0111",
+    "C0103",
+    "R0903",
+    "R0913",
+    "W0212",
+    "C0302",
+    "R0914",
+    "R0915",
+    "R0904",
+    "W0703",
+    "C0301",
+]
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.design]
+max-args = 10
+max-attributes = 10
+max-locals = 20
+max-branches = 15
+max-statements = 50

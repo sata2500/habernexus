@@ -345,7 +345,16 @@ class PerformanceMonitor:
 
         performance = {}
 
-        for stage in ["fetch", "score", "classify", "research", "generate", "quality_check", "image_generation", "publish"]:
+        for stage in [
+            "fetch",
+            "score",
+            "classify",
+            "research",
+            "generate",
+            "quality_check",
+            "image_generation",
+            "publish",
+        ]:
             stage_logs = logs.filter(stage=stage)
 
             if stage_logs.exists():
