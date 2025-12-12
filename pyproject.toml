@@ -1,48 +1,53 @@
+[build-system]
+requires = ["setuptools>=40.8.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [tool.black]
-line-length = 127
-target-version = ['py311']
+line-length = 120
+target-version = ['py310', 'py311', 'py312']
 include = '\.pyi?$'
-extend-exclude = '''
+exclude = '''
 /(
-    \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
+    \.git
   | \.venv
-  | _build
-  | buck-out
+  | venv
+  | migrations
+  | __pycache__
+  | \.eggs
+  | \.egg
   | build
   | dist
-  | migrations
 )/
 '''
 
 [tool.isort]
 profile = "black"
-line_length = 127
-skip_glob = ["*/migrations/*", "*/venv/*", "*/env/*"]
-known_first_party = ["habernexus_config", "news", "authors", "core"]
+line_length = 120
+skip_glob = ["*/migrations/*", ".venv", "venv", ".git"]
 known_django = ["django"]
+known_first_party = ["core", "news", "authors"]
 sections = ["FUTURE", "STDLIB", "DJANGO", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "habernexus_config.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "--verbose",
-    "--strict-markers",
-    "--tb=short",
+addopts = "--cov=news --cov=core --cov=authors --cov-report=html --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["core", "news", "authors"]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/__init__.py",
+    "manage.py",
 ]
-testpaths = [
-    "news/tests",
-    "authors/tests",
-    "core/tests",
-]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
 ]

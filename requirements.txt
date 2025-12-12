@@ -25,7 +25,7 @@ requests==2.31.0
 python-dotenv==1.0.0
 
 # Web Server
-gunicorn==23.0.0
+gunicorn==22.0.0
 
 # Utilities
 python-slugify==8.0.1
@@ -51,8 +51,8 @@ opencv-python==4.8.1.78
 
 # Code Quality
 flake8==7.0.0
-black==23.12.1
+black==24.1.1
 isort==5.13.2
 pylint==3.0.3
-safety==2.3.5
+safety==3.0.1
 bandit==1.7.5

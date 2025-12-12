@@ -78,8 +78,17 @@ jobs:
           git reset --hard origin/main
           docker-compose -f docker-compose.prod.yml down -v --remove-orphans || true
           docker-compose -f docker-compose.prod.yml up -d --build
-          sleep 20
-          docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput
+          sleep 30
+          # Retry logic for migrations
+          for i in {1..5}; do
+            if docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput; then
+              break
+            fi
+            if [ $i -lt 5 ]; then
+              echo "Migration attempt $i failed, retrying..."
+              sleep 10
+            fi
+          done
           docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
 
     - name: Health check

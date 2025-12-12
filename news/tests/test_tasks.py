@@ -2,9 +2,10 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from django.test import TestCase
 from django.utils import timezone
+
+import pytest
 
 from authors.models import Author
 from news.models import Article, RssSource

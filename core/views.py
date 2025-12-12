@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import redirect, render
 from django.http import JsonResponse
+from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 
 from .models import Setting
@@ -16,17 +16,10 @@ def health_check(request):
     try:
         # Veritabanı bağlantısını kontrol et
         Setting.objects.count()
-        
-        return JsonResponse({
-            'status': 'healthy',
-            'message': 'Application is running',
-            'version': '1.0.0'
-        }, status=200)
+
+        return JsonResponse({"status": "healthy", "message": "Application is running", "version": "1.0.0"}, status=200)
     except Exception as e:
-        return JsonResponse({
-            'status': 'unhealthy',
-            'message': f'Health check failed: {str(e)}'
-        }, status=503)
+        return JsonResponse({"status": "unhealthy", "message": f"Health check failed: {str(e)}"}, status=503)
 
 
 @staff_member_required

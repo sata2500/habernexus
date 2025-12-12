@@ -1,7 +1,8 @@
 """Authors modeli için testler."""
 
-import pytest
 from django.test import TestCase
+
+import pytest
 
 from authors.models import Author
 

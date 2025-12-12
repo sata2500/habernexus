@@ -9,12 +9,12 @@ class Setting(models.Model):
 
     # AI Model Seçenekleri
     AI_MODEL_CHOICES = [
-        ('gemini-3-pro', 'Gemini 3 Pro (En Gelişmiş)'),
-        ('gemini-2.5-flash', 'Gemini 2.5 Flash (Önerilen - Hızlı ve Akıllı)'),
-        ('gemini-2.5-flash-lite', 'Gemini 2.5 Flash-Lite (En Hızlı)'),
-        ('gemini-2.5-pro', 'Gemini 2.5 Pro (Gelişmiş Düşünme)'),
-        ('gemini-2.0-flash', 'Gemini 2.0 Flash (Eski)'),
-        ('gemini-2.0-flash-lite', 'Gemini 2.0 Flash-Lite (Eski)'),
+        ("gemini-3-pro", "Gemini 3 Pro (En Gelişmiş)"),
+        ("gemini-2.5-flash", "Gemini 2.5 Flash (Önerilen - Hızlı ve Akıllı)"),
+        ("gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite (En Hızlı)"),
+        ("gemini-2.5-pro", "Gemini 2.5 Pro (Gelişmiş Düşünme)"),
+        ("gemini-2.0-flash", "Gemini 2.0 Flash (Eski)"),
+        ("gemini-2.0-flash-lite", "Gemini 2.0 Flash-Lite (Eski)"),
     ]
 
     key = models.CharField(max_length=255, unique=True, help_text="Ayar anahtarı (örn: GOOGLE_API_KEY)")

@@ -151,9 +151,7 @@ def generate_ai_content(self, article_id):
 
         # Idempotency kontrolü: Eğer makale zaten AI tarafından üretilmişse, tekrar işleme
         if article.is_ai_generated and article.status == "published":
-            log_info(
-                "generate_ai_content", f"Makale zaten AI tarafından üretilmiş: {article.title}", related_id=article_id
-            )
+            log_info("generate_ai_content", f"Makale zaten AI tarafından üretilmiş: {article.title}", related_id=article_id)
             return f"Makale zaten işlenmiş: {article.title}"
 
         # Google Gemini API anahtarını al
@@ -238,7 +236,11 @@ Kategori: {article.category}
                 ai_model_name = ai_model_setting.value
             except Setting.DoesNotExist:
                 ai_model_name = "gemini-2.5-flash"  # Varsayılan model
-                log_info("generate_ai_content", "AI model ayarı bulunamadı, varsayılan kullanılıyor: gemini-2.5-flash", related_id=article_id)
+                log_info(
+                    "generate_ai_content",
+                    "AI model ayarı bulunamadı, varsayılan kullanılıyor: gemini-2.5-flash",
+                    related_id=article_id,
+                )
 
             model = genai.GenerativeModel(ai_model_name)
             response = model.generate_content(prompt)
@@ -251,7 +253,7 @@ Kategori: {article.category}
                 article.save()
 
                 log_info("generate_ai_content", f"Haber başarıyla oluşturuldu: {article.title}", related_id=article_id)
-                
+
                 # Görsel üretimini tetikle (transaction commit olduktan sonra)
                 transaction.on_commit(lambda: generate_article_image.delay(article_id))
             else:
@@ -324,7 +326,11 @@ def generate_article_image(self, article_id):
             image_model_name = image_model_setting.value
         except Setting.DoesNotExist:
             image_model_name = "imagen-4.0-ultra-generate-001"  # Varsayılan: En yüksek kalite
-            log_info("generate_article_image", "Image model ayarı bulunamadı, varsayılan kullanılıyor: imagen-4.0-ultra-generate-001", related_id=article_id)
+            log_info(
+                "generate_article_image",
+                "Image model ayarı bulunamadı, varsayılan kullanılıyor: imagen-4.0-ultra-generate-001",
+                related_id=article_id,
+            )
 
         try:
             from google import genai
@@ -352,23 +358,20 @@ Requirements:
             response = client.models.generate_images(
                 model=image_model_name,
                 prompt=image_prompt,
-                config=types.GenerateImagesConfig(
-                    number_of_images=1,
-                    aspect_ratio='16:9'
-                )
+                config=types.GenerateImagesConfig(number_of_images=1, aspect_ratio="16:9"),
             )
 
             if response.generated_images:
                 generated_image = response.generated_images[0]
-                
+
                 # PIL Image'ı BytesIO'ya dönüştür
                 img_buffer = BytesIO()
-                generated_image.image._pil_image.save(img_buffer, format='JPEG', quality=95)
+                generated_image.image._pil_image.save(img_buffer, format="JPEG", quality=95)
                 img_buffer.seek(0)
 
                 # Dosya adı oluştur
                 filename = f"{article.slug}_ai_generated.jpg"
-                
+
                 # Görseli makaleye kaydet
                 article.featured_image.save(filename, img_buffer, save=True)
                 article.featured_image_alt = article.title

@@ -1,8 +1,9 @@
 """Cache utils için testler."""
 
-import pytest
 from django.core.cache import cache
 from django.test import TestCase
+
+import pytest
 
 from news.cache_utils import (
     CACHE_TIMEOUT_ARTICLE_DETAIL,

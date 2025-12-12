@@ -4,8 +4,8 @@ Başlık puanlaması, sınıflandırma ve kalite kontrolü
 """
 
 import logging
-import time
 import re
+import time
 from datetime import timedelta
 from io import BytesIO
 
@@ -15,7 +15,7 @@ from django.utils.text import slugify
 
 import feedparser
 import requests
-from celery import shared_task, group, chord
+from celery import chord, group, shared_task
 from PIL import Image
 
 from authors.models import Author
@@ -23,13 +23,7 @@ from core.models import Setting
 from core.tasks import log_error, log_info
 
 from .models import Article, RssSource
-from .models_extended import (
-    HeadlineScore,
-    ArticleClassification,
-    ContentQualityMetrics,
-    ResearchSource,
-    ContentGenerationLog,
-)
+from .models_extended import ArticleClassification, ContentGenerationLog, ContentQualityMetrics, HeadlineScore, ResearchSource
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +31,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # AŞAMA 1: RSS TARAMA VE BAŞLIK PUANLAMASI
 # ============================================================================
+
 
 @shared_task
 def fetch_rss_feeds_v2():
@@ -85,10 +80,7 @@ def fetch_single_rss_v2(source):
 
         for entry in feed.entries[:20]:  # Son 20 haberi al
             # Başlık zaten var mı kontrol et
-            if HeadlineScore.objects.filter(
-                rss_source=source,
-                original_headline=entry.get("title", "")
-            ).exists():
+            if HeadlineScore.objects.filter(rss_source=source, original_headline=entry.get("title", "")).exists():
                 continue
 
             title = entry.get("title", "Başlıksız")
@@ -119,6 +111,7 @@ def fetch_single_rss_v2(source):
 # AŞAMA 2: BAŞLIK PUANLAMASI
 # ============================================================================
 
+
 @shared_task
 def score_headlines():
     """
@@ -128,10 +121,9 @@ def score_headlines():
     try:
         # Son 2 saatte çekilen işlenmemiş başlıkları al
         two_hours_ago = timezone.now() - timedelta(hours=2)
-        unscored_headlines = HeadlineScore.objects.filter(
-            is_processed=False,
-            created_at__gte=two_hours_ago
-        ).select_related('rss_source')
+        unscored_headlines = HeadlineScore.objects.filter(is_processed=False, created_at__gte=two_hours_ago).select_related(
+            "rss_source"
+        )
 
         logger.info(f"Puanlanacak başlık sayısı: {unscored_headlines.count()}")
 
@@ -142,9 +134,7 @@ def score_headlines():
                 logger.error(f"Başlık puanlaması hatası: {str(e)}")
 
         # En iyi 10 başlığı seç ve sınıflandırmaya gönder
-        top_headlines = HeadlineScore.objects.filter(
-            is_processed=False
-        ).order_by('-overall_score')[:10]
+        top_headlines = HeadlineScore.objects.filter(is_processed=False).order_by("-overall_score")[:10]
 
         if top_headlines.exists():
             headline_ids = [h.id for h in top_headlines]
@@ -191,10 +181,10 @@ def score_single_headline(headline_score):
     headline_score.engagement_score = engagement
     headline_score.keyword_relevance = keyword_relevance
     headline_score.overall_score = overall_score
-    headline_score.has_numbers = bool(re.search(r'\d+', title))
+    headline_score.has_numbers = bool(re.search(r"\d+", title))
     headline_score.has_power_words = has_power_words(title)
-    headline_score.is_question = title.strip().endswith('?')
-    headline_score.is_listicle = bool(re.search(r'^\d+\s', title))
+    headline_score.is_question = title.strip().endswith("?")
+    headline_score.is_listicle = bool(re.search(r"^\d+\s", title))
 
     headline_score.save()
 
@@ -207,14 +197,10 @@ def calculate_uniqueness_score(headline_score):
     Aynı veya benzer başlıklar varsa puan düş.
     """
     # Aynı başlık sayısı
-    same_count = HeadlineScore.objects.filter(
-        original_headline=headline_score.original_headline
-    ).count()
+    same_count = HeadlineScore.objects.filter(original_headline=headline_score.original_headline).count()
 
     # Benzer başlık sayısı (ilk 30 karakter aynı)
-    similar_count = HeadlineScore.objects.filter(
-        original_headline__startswith=headline_score.original_headline[:30]
-    ).count()
+    similar_count = HeadlineScore.objects.filter(original_headline__startswith=headline_score.original_headline[:30]).count()
 
     if same_count > 1:
         return 0  # Tam aynı başlık
@@ -237,19 +223,30 @@ def calculate_engagement_score(title):
         score += 5
 
     # Sayı varlığı (listicle potansiyeli)
-    if re.search(r'\d+', title):
+    if re.search(r"\d+", title):
         score += 8
 
     # Güçlü kelimeler
     power_words_list = [
-        'nasıl', 'neden', 'ne zaman', 'en iyi', 'harika', 'şaşırtıcı',
-        'hızlı', 'kolay', 'basit', 'yeni', 'devrim', 'sır', 'ipucu'
+        "nasıl",
+        "neden",
+        "ne zaman",
+        "en iyi",
+        "harika",
+        "şaşırtıcı",
+        "hızlı",
+        "kolay",
+        "basit",
+        "yeni",
+        "devrim",
+        "sır",
+        "ipucu",
     ]
     if any(word in title.lower() for word in power_words_list):
         score += 7
 
     # Soru işareti
-    if title.endswith('?'):
+    if title.endswith("?"):
         score += 5
 
     return min(score, 30)
@@ -260,11 +257,11 @@ def calculate_keyword_relevance(title, category):
     Başlığın kategori ile uygunluğunu puanla.
     """
     category_keywords = {
-        'Teknoloji': ['teknoloji', 'yazılım', 'yapay zeka', 'app', 'web', 'veri', 'siber'],
-        'Spor': ['spor', 'futbol', 'basketbol', 'tenis', 'maç', 'takım', 'oyuncu'],
-        'Siyaset': ['siyaset', 'hükümet', 'seçim', 'kanun', 'parlamento', 'başkan'],
-        'Ekonomi': ['ekonomi', 'finans', 'pazar', 'yatırım', 'borsa', 'dolar', 'enflasyon'],
-        'Sağlık': ['sağlık', 'tıp', 'doktor', 'hastalık', 'ilaç', 'tedavi', 'hastane'],
+        "Teknoloji": ["teknoloji", "yazılım", "yapay zeka", "app", "web", "veri", "siber"],
+        "Spor": ["spor", "futbol", "basketbol", "tenis", "maç", "takım", "oyuncu"],
+        "Siyaset": ["siyaset", "hükümet", "seçim", "kanun", "parlamento", "başkan"],
+        "Ekonomi": ["ekonomi", "finans", "pazar", "yatırım", "borsa", "dolar", "enflasyon"],
+        "Sağlık": ["sağlık", "tıp", "doktor", "hastalık", "ilaç", "tedavi", "hastane"],
     }
 
     keywords = category_keywords.get(category, [])
@@ -298,7 +295,7 @@ def calculate_structure_score(title):
         score += 5
 
     # Noktalama işareti (uygun kullanım)
-    if title.count('!') <= 1 and title.count('?') <= 1:
+    if title.count("!") <= 1 and title.count("?") <= 1:
         score += 5
 
     return min(score, 20)
@@ -309,9 +306,25 @@ def has_power_words(title):
     Başlıkta güçlü kelimeler var mı kontrol et.
     """
     power_words_list = [
-        'nasıl', 'neden', 'ne zaman', 'en iyi', 'harika', 'şaşırtıcı',
-        'hızlı', 'kolay', 'basit', 'yeni', 'devrim', 'sır', 'ipucu',
-        'önemli', 'kritik', 'acil', 'başarı', 'kazanç', 'kaybetme'
+        "nasıl",
+        "neden",
+        "ne zaman",
+        "en iyi",
+        "harika",
+        "şaşırtıcı",
+        "hızlı",
+        "kolay",
+        "basit",
+        "yeni",
+        "devrim",
+        "sır",
+        "ipucu",
+        "önemli",
+        "kritik",
+        "acil",
+        "başarı",
+        "kazanç",
+        "kaybetme",
     ]
     return any(word in title.lower() for word in power_words_list)
 
@@ -319,6 +332,7 @@ def has_power_words(title):
 # ============================================================================
 # AŞAMA 3: BAŞLIK SINIFLAMA VE MAKALE OLUŞTURMA
 # ============================================================================
+
 
 @shared_task
 def classify_headlines(headline_ids):
@@ -329,9 +343,7 @@ def classify_headlines(headline_ids):
         headlines = HeadlineScore.objects.filter(id__in=headline_ids)
 
         # Paralel olarak sınıflandırma yap
-        classification_tasks = group(
-            classify_and_create_article.s(headline.id) for headline in headlines
-        )
+        classification_tasks = group(classify_and_create_article.s(headline.id) for headline in headlines)
 
         result = classification_tasks.apply_async()
 
@@ -360,24 +372,24 @@ def classify_and_create_article(headline_id):
             slug=slugify(headline.original_headline)[:50],
             content="",  # İçerik daha sonra üretilecek
             excerpt="",
-            category=classification_data['primary_category'],
+            category=classification_data["primary_category"],
             rss_source=headline.rss_source,
-            status='draft',
+            status="draft",
             is_ai_generated=False,
         )
 
         # Sınıflandırma bilgilerini kaydet
         ArticleClassification.objects.create(
             article=article,
-            article_type=classification_data['article_type'],
-            type_confidence=classification_data['confidence'],
-            primary_category=classification_data['primary_category'],
-            secondary_categories=','.join(classification_data.get('secondary_categories', [])),
-            research_depth=classification_data.get('research_depth', 1),
-            recommended_ai_model=classification_data.get('ai_model', 'gemini-2.5-flash'),
-            is_time_sensitive=classification_data.get('is_time_sensitive', False),
-            is_controversial=classification_data.get('is_controversial', False),
-            tone=classification_data.get('tone', 'neutral'),
+            article_type=classification_data["article_type"],
+            type_confidence=classification_data["confidence"],
+            primary_category=classification_data["primary_category"],
+            secondary_categories=",".join(classification_data.get("secondary_categories", [])),
+            research_depth=classification_data.get("research_depth", 1),
+            recommended_ai_model=classification_data.get("ai_model", "gemini-2.5-flash"),
+            is_time_sensitive=classification_data.get("is_time_sensitive", False),
+            is_controversial=classification_data.get("is_controversial", False),
+            tone=classification_data.get("tone", "neutral"),
         )
 
         # Başlık işlendi olarak işaretle
@@ -414,7 +426,7 @@ def classify_headline_with_ai(headline):
         import google.generativeai as genai
 
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         prompt = f"""
 Aşağıdaki haber başlığını analiz et ve sınıflandır:
@@ -443,6 +455,7 @@ Sadece JSON'u döndür, başka hiçbir şey ekleme.
 
         if response and response.text:
             import json
+
             try:
                 data = json.loads(response.text)
                 return data
@@ -460,21 +473,22 @@ def get_default_classification():
     Varsayılan sınıflandırma bilgileri.
     """
     return {
-        'article_type': 'news',
-        'confidence': 0.5,
-        'primary_category': 'Genel Haberler',
-        'secondary_categories': [],
-        'research_depth': 1,
-        'ai_model': 'gemini-2.5-flash',
-        'is_time_sensitive': False,
-        'is_controversial': False,
-        'tone': 'neutral',
+        "article_type": "news",
+        "confidence": 0.5,
+        "primary_category": "Genel Haberler",
+        "secondary_categories": [],
+        "research_depth": 1,
+        "ai_model": "gemini-2.5-flash",
+        "is_time_sensitive": False,
+        "is_controversial": False,
+        "tone": "neutral",
     }
 
 
 # ============================================================================
 # AŞAMA 4: İÇERİK ÜRETIMI (Geliştirilmiş)
 # ============================================================================
+
 
 @shared_task(
     bind=True,
@@ -496,10 +510,7 @@ def generate_ai_content_v2(self, article_id):
 
         # Üretim logunu başlat
         log_entry = ContentGenerationLog.objects.create(
-            article=article,
-            stage='generate',
-            status='started',
-            input_data={'article_id': article_id}
+            article=article, stage="generate", status="started", input_data={"article_id": article_id}
         )
 
         # Araştırma verilerini al (varsa)
@@ -509,7 +520,7 @@ def generate_ai_content_v2(self, article_id):
         prompt = create_dynamic_prompt(article, classification, research_data)
 
         # AI modeli seç
-        ai_model = classification.recommended_ai_model if classification else 'gemini-2.5-flash'
+        ai_model = classification.recommended_ai_model if classification else "gemini-2.5-flash"
 
         # İçerik üret
         content = generate_content_with_gemini(article, prompt, ai_model)
@@ -518,7 +529,7 @@ def generate_ai_content_v2(self, article_id):
             # İçeriği kaydet
             article.content = content
             article.is_ai_generated = True
-            article.status = 'published'
+            article.status = "published"
             article.published_at = timezone.now()
             article.save()
 
@@ -527,9 +538,9 @@ def generate_ai_content_v2(self, article_id):
 
             # Logu güncelle
             duration = int((time.time() - start_time) * 1000)
-            log_entry.status = 'completed'
+            log_entry.status = "completed"
             log_entry.duration = duration
-            log_entry.output_data = {'content_length': len(content)}
+            log_entry.output_data = {"content_length": len(content)}
             log_entry.ai_model_used = ai_model
             log_entry.save()
 
@@ -538,8 +549,8 @@ def generate_ai_content_v2(self, article_id):
             # Görsel üretimini tetikle
             transaction.on_commit(lambda: generate_article_image_v2.delay(article_id))
         else:
-            log_entry.status = 'failed'
-            log_entry.error_message = 'AI yanıt boş'
+            log_entry.status = "failed"
+            log_entry.error_message = "AI yanıt boş"
             log_entry.save()
             log_error("generate_ai_content_v2", "AI yanıt boş", related_id=article_id)
 
@@ -562,15 +573,15 @@ def create_dynamic_prompt(article, classification, research_data):
     """
     Makale türüne göre dinamik prompt oluştur.
     """
-    article_type = classification.article_type if classification else 'news'
+    article_type = classification.article_type if classification else "news"
 
     # Tür bazlı prompt şablonları
     prompts = {
-        'news': create_news_prompt,
-        'analysis': create_analysis_prompt,
-        'feature': create_feature_prompt,
-        'opinion': create_opinion_prompt,
-        'tutorial': create_tutorial_prompt,
+        "news": create_news_prompt,
+        "analysis": create_analysis_prompt,
+        "feature": create_feature_prompt,
+        "opinion": create_opinion_prompt,
+        "tutorial": create_tutorial_prompt,
     }
 
     prompt_func = prompts.get(article_type, create_news_prompt)
@@ -739,34 +750,34 @@ def calculate_quality_metrics(article):
         # Kalite metrikleri kaydını oluştur veya güncelle
         metrics, created = ContentQualityMetrics.objects.get_or_create(article=article)
 
-        metrics.flesch_kincaid_grade = readability.get('flesch_kincaid_grade', 0)
-        metrics.gunning_fog_index = readability.get('gunning_fog_index', 0)
-        metrics.smog_index = readability.get('smog_index', 0)
-        metrics.word_count = readability.get('word_count', 0)
-        metrics.sentence_count = readability.get('sentence_count', 0)
-        metrics.paragraph_count = readability.get('paragraph_count', 0)
-        metrics.avg_sentence_length = readability.get('avg_sentence_length', 0)
-        metrics.avg_word_length = readability.get('avg_word_length', 0)
+        metrics.flesch_kincaid_grade = readability.get("flesch_kincaid_grade", 0)
+        metrics.gunning_fog_index = readability.get("gunning_fog_index", 0)
+        metrics.smog_index = readability.get("smog_index", 0)
+        metrics.word_count = readability.get("word_count", 0)
+        metrics.sentence_count = readability.get("sentence_count", 0)
+        metrics.paragraph_count = readability.get("paragraph_count", 0)
+        metrics.avg_sentence_length = readability.get("avg_sentence_length", 0)
+        metrics.avg_word_length = readability.get("avg_word_length", 0)
 
-        metrics.primary_keyword = seo.get('primary_keyword', '')
-        metrics.primary_keyword_count = seo.get('primary_keyword_count', 0)
-        metrics.keyword_density = seo.get('keyword_density', 0)
+        metrics.primary_keyword = seo.get("primary_keyword", "")
+        metrics.primary_keyword_count = seo.get("primary_keyword_count", 0)
+        metrics.keyword_density = seo.get("keyword_density", 0)
         metrics.meta_description_length = len(article.excerpt) if article.excerpt else 0
 
-        metrics.heading_count = structure.get('heading_count', 0)
-        metrics.h2_count = structure.get('h2_count', 0)
-        metrics.h3_count = structure.get('h3_count', 0)
-        metrics.has_lists = structure.get('has_lists', False)
-        metrics.has_images = structure.get('has_images', False)
-        metrics.has_bold_text = structure.get('has_bold_text', False)
+        metrics.heading_count = structure.get("heading_count", 0)
+        metrics.h2_count = structure.get("h2_count", 0)
+        metrics.h3_count = structure.get("h3_count", 0)
+        metrics.has_lists = structure.get("has_lists", False)
+        metrics.has_images = structure.get("has_images", False)
+        metrics.has_bold_text = structure.get("has_bold_text", False)
 
         # Genel kalite puanı hesapla
         overall_score = calculate_overall_quality_score(metrics)
         metrics.overall_quality_score = overall_score
 
         article.quality_score = overall_score
-        article.readability_score = readability.get('flesch_kincaid_grade', 0)
-        article.keyword_density = seo.get('keyword_density', 0)
+        article.readability_score = readability.get("flesch_kincaid_grade", 0)
+        article.keyword_density = seo.get("keyword_density", 0)
 
         metrics.save()
         article.save()
@@ -827,6 +838,7 @@ def calculate_overall_quality_score(metrics):
 # AŞAMA 5: GÖRSEL ÜRETIMI
 # ============================================================================
 
+
 @shared_task(
     bind=True,
     autoretry_for=(Exception,),
@@ -868,17 +880,14 @@ Style: Editorial, 16:9 aspect ratio, high quality, photorealistic
             response = client.models.generate_images(
                 model="imagen-4.0-ultra-generate-001",
                 prompt=image_prompt,
-                config=types.GenerateImagesConfig(
-                    number_of_images=1,
-                    aspect_ratio='16:9'
-                )
+                config=types.GenerateImagesConfig(number_of_images=1, aspect_ratio="16:9"),
             )
 
             if response.generated_images:
                 generated_image = response.generated_images[0]
 
                 img_buffer = BytesIO()
-                generated_image.image._pil_image.save(img_buffer, format='JPEG', quality=95)
+                generated_image.image._pil_image.save(img_buffer, format="JPEG", quality=95)
                 img_buffer.seek(0)
 
                 filename = f"{article.slug}_ai_generated.jpg"

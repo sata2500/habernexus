@@ -1,10 +1,11 @@
 """Core views için testler."""
 
-import pytest
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from django.test import Client, TestCase
 from django.urls import reverse
+
+import pytest
 
 from core.models import Setting
 from core.views import get_setting

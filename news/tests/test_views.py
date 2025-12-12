@@ -1,9 +1,10 @@
 """News views için testler."""
 
-import pytest
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
+
+import pytest
 
 from authors.models import Author
 from news.models import Article, RssSource
@@ -79,8 +80,6 @@ class TestArticleViews(TestCase):
         response = self.client.get(reverse("news:category", kwargs={"category": "ekonomi"}))
         assert response.status_code == 200
         assert len(response.context["articles"]) == 0
-
-
 
     def test_author_detail_view(self):
         """Author detail view'ı test."""
@@ -176,5 +175,3 @@ class TestArticleViews(TestCase):
         )
         response = self.client.get(reverse("news:author_detail", kwargs={"slug": inactive_author.slug}))
         assert response.status_code == 404
-
-

@@ -88,9 +88,9 @@ class ArticleAdmin(admin.ModelAdmin):
 # ============================================================================
 
 from .admin_extended import (
-    HeadlineScoreAdmin,
     ArticleClassificationAdmin,
-    ContentQualityMetricsAdmin,
-    ResearchSourceAdmin,
     ContentGenerationLogAdmin,
+    ContentQualityMetricsAdmin,
+    HeadlineScoreAdmin,
+    ResearchSourceAdmin,
 )

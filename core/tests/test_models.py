@@ -1,7 +1,8 @@
 """Core modelleri için testler."""
 
-import pytest
 from django.test import TestCase
+
+import pytest
 
 from core.models import Setting, SystemLog
 
