@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock, patch
 
 
-
 import pytest
 
 from news.models import RssSource
