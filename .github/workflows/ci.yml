@@ -168,7 +168,7 @@ jobs:
         pip install bandit safety
 
     - name: Run Bandit
-      run: bandit -r . -f json -o bandit-report.json --exclude './migrations,./venv,./.venv'
+      run: bandit -c .bandit -r . -f json -o bandit-report.json
       continue-on-error: true
 
     - name: Run Safety check
