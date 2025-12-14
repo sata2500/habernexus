@@ -1,139 +1,25 @@
 version: '3.9'
 
-# HaberNexus - Docker Compose Configuration
-# This is the main development and production configuration
-# For deployment options, see:
-# - config/docker-compose.npm.yml (Nginx Proxy Manager)
-# - config/docker-compose.tunnel.yml (Cloudflare Tunnel)
+# HaberNexus - Complete Docker Compose Configuration
+# Includes: Django App, PostgreSQL, Redis, Celery, Nginx Proxy Manager, Cloudflare Tunnel
+# Deployment: Cloudflare Tunnel + Nginx Proxy Manager (Recommended)
 
 services:
-  # Nginx - Web Server and Reverse Proxy
-  # Serves static files and proxies requests to Django application
-  nginx:
-    image: nginx:alpine
-    container_name: habernexus_nginx
-    restart: unless-stopped
-    
-    ports:
-      - "80:80"
-      - "443:443"
-    
-    environment:
-      TZ: "Europe/Istanbul"
-    
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./staticfiles:/app/staticfiles:ro
-      - ./media:/app/media:ro
-      - ./config/ssl:/etc/nginx/ssl:ro
-    
-    depends_on:
-      app:
-        condition: service_healthy
-    
-    networks:
-      - habernexus_network
-    
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    
-    labels:
-      com.example.description: "Nginx Web Server for HaberNexus"
-
-  # Django Application - Main Web Application
-  # Handles web interface, API, and business logic
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: habernexus_app
-    restart: unless-stopped
-    
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py collectstatic --noinput &&
-             gunicorn habernexus_config.wsgi:application 
-             --bind 0.0.0.0:8000 
-             --workers 4 
-             --worker-class sync 
-             --worker-tmp-dir /dev/shm 
-             --timeout 120 
-             --access-logfile - 
-             --error-logfile -"
-    
-    environment:
-      # Django Configuration
-      DEBUG: "False"
-      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:-change-me-in-production-with-strong-secret}"
-      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-localhost,127.0.0.1,habernexus.com}"
-      
-      # Database Configuration
-      DB_ENGINE: "django.db.backends.postgresql"
-      DB_NAME: "${DB_NAME:-habernexus}"
-      DB_USER: "${DB_USER:-habernexus_user}"
-      DB_PASSWORD: "${DB_PASSWORD:-change-me-in-production}"
-      DB_HOST: "postgres"
-      DB_PORT: "5432"
-      
-      # Cache Configuration
-      CACHE_BACKEND: "django_redis.cache.RedisCache"
-      CACHE_LOCATION: "redis://redis:6379/1"
-      
-      # Celery Configuration
-      CELERY_BROKER_URL: "redis://redis:6379/0"
-      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-      
-      # API Keys
-      GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
-      
-      # Timezone
-      TZ: "Europe/Istanbul"
-    
-    volumes:
-      - .:/app
-      - ./media:/app/media
-      - ./staticfiles:/app/staticfiles
-    
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    
-    networks:
-      - habernexus_network
-    
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    
-    labels:
-      com.example.description: "Django Application for HaberNexus"
+  # ============================================================================
+  # CORE SERVICES
+  # ============================================================================
 
   # PostgreSQL - Primary Database
-  # Stores all application data, logs, and configurations
   postgres:
     image: postgres:16-alpine
     container_name: habernexus_postgres
     restart: unless-stopped
     
     environment:
-      # Database Configuration
       POSTGRES_DB: "${DB_NAME:-habernexus}"
       POSTGRES_USER: "${DB_USER:-habernexus_user}"
       POSTGRES_PASSWORD: "${DB_PASSWORD:-change-me-in-production}"
-      
-      # PostgreSQL Configuration
       POSTGRES_INITDB_ARGS: "-c shared_buffers=256MB -c max_connections=200"
-      
-      # Timezone
       TZ: "Europe/Istanbul"
     
     volumes:
@@ -152,7 +38,6 @@ services:
       com.example.description: "PostgreSQL Database for HaberNexus"
 
   # Redis - Cache and Message Broker
-  # Used for Celery task queue and caching
   redis:
     image: redis:7-alpine
     container_name: habernexus_redis
@@ -182,8 +67,72 @@ services:
     labels:
       com.example.description: "Redis Cache and Message Broker for HaberNexus"
 
+  # Django Application - Main Web Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: habernexus_app
+    restart: unless-stopped
+    
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn habernexus_config.wsgi:application 
+             --bind 0.0.0.0:8000 
+             --workers 4 
+             --worker-class sync 
+             --worker-tmp-dir /dev/shm 
+             --timeout 120 
+             --access-logfile - 
+             --error-logfile -"
+    
+    environment:
+      DEBUG: "False"
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:-change-me-in-production-with-strong-secret}"
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-localhost,127.0.0.1,habernexus.com}"
+      
+      DB_ENGINE: "django.db.backends.postgresql"
+      DB_NAME: "${DB_NAME:-habernexus}"
+      DB_USER: "${DB_USER:-habernexus_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-change-me-in-production}"
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      
+      CACHE_BACKEND: "django_redis.cache.RedisCache"
+      CACHE_LOCATION: "redis://redis:6379/1"
+      
+      CELERY_BROKER_URL: "redis://redis:6379/0"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+      
+      GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
+      TZ: "Europe/Istanbul"
+    
+    volumes:
+      - .:/app
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    networks:
+      - habernexus_network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    labels:
+      com.example.description: "Django Application for HaberNexus"
+
   # Celery Worker - Asynchronous Task Processing
-  # Processes long-running tasks like content generation
   celery:
     build:
       context: .
@@ -201,11 +150,9 @@ services:
       --soft-time-limit=3300
     
     environment:
-      # Django Configuration
       DEBUG: "False"
       DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:-change-me-in-production-with-strong-secret}"
       
-      # Database Configuration
       DB_ENGINE: "django.db.backends.postgresql"
       DB_NAME: "${DB_NAME:-habernexus}"
       DB_USER: "${DB_USER:-habernexus_user}"
@@ -213,14 +160,10 @@ services:
       DB_HOST: "postgres"
       DB_PORT: "5432"
       
-      # Celery Configuration
       CELERY_BROKER_URL: "redis://redis:6379/0"
       CELERY_RESULT_BACKEND: "redis://redis:6379/0"
       
-      # API Keys
       GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
-      
-      # Timezone
       TZ: "Europe/Istanbul"
     
     volumes:
@@ -240,7 +183,6 @@ services:
       com.example.description: "Celery Worker for HaberNexus"
 
   # Celery Beat - Task Scheduler
-  # Schedules periodic tasks like content generation
   celery_beat:
     build:
       context: .
@@ -254,11 +196,9 @@ services:
       --scheduler django_celery_beat.schedulers:DatabaseScheduler
     
     environment:
-      # Django Configuration
       DEBUG: "False"
       DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:-change-me-in-production-with-strong-secret}"
       
-      # Database Configuration
       DB_ENGINE: "django.db.backends.postgresql"
       DB_NAME: "${DB_NAME:-habernexus}"
       DB_USER: "${DB_USER:-habernexus_user}"
@@ -266,14 +206,10 @@ services:
       DB_HOST: "postgres"
       DB_PORT: "5432"
       
-      # Celery Configuration
       CELERY_BROKER_URL: "redis://redis:6379/0"
       CELERY_RESULT_BACKEND: "redis://redis:6379/0"
       
-      # API Keys
       GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
-      
-      # Timezone
       TZ: "Europe/Istanbul"
     
     volumes:
@@ -293,7 +229,6 @@ services:
       com.example.description: "Celery Beat Scheduler for HaberNexus"
 
   # Flower - Celery Task Monitoring
-  # Web interface for monitoring Celery tasks
   flower:
     build:
       context: .
@@ -307,11 +242,8 @@ services:
       --basic_auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}
     
     environment:
-      # Celery Configuration
       CELERY_BROKER_URL: "redis://redis:6379/0"
       CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-      
-      # Timezone
       TZ: "Europe/Istanbul"
     
     ports:
@@ -335,7 +267,152 @@ services:
     labels:
       com.example.description: "Flower Task Monitoring for HaberNexus"
 
-# Networks
+  # ============================================================================
+  # REVERSE PROXY & TUNNEL SERVICES
+  # ============================================================================
+
+  # Nginx - Direct Web Server (Used when not using NPM)
+  nginx:
+    image: nginx:alpine
+    container_name: habernexus_nginx
+    restart: unless-stopped
+    
+    ports:
+      - "8080:80"
+      - "8443:443"
+    
+    environment:
+      TZ: "Europe/Istanbul"
+    
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./staticfiles:/app/staticfiles:ro
+      - ./media:/app/media:ro
+      - ./config/ssl:/etc/nginx/ssl:ro
+    
+    depends_on:
+      app:
+        condition: service_healthy
+    
+    networks:
+      - habernexus_network
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    labels:
+      com.example.description: "Nginx Web Server for HaberNexus"
+    
+    profiles:
+      - direct
+
+  # Nginx Proxy Manager - GUI-based Reverse Proxy
+  nginx_proxy_manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: habernexus_npm
+    restart: unless-stopped
+    
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    
+    environment:
+      DB_MYSQL_HOST: "npm_db"
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: "${NPM_DB_USER:-npm}"
+      DB_MYSQL_PASSWORD: "${NPM_DB_PASSWORD:-npm_password}"
+      DB_MYSQL_NAME: "${NPM_DB_NAME:-npm}"
+      TZ: "Europe/Istanbul"
+    
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    
+    depends_on:
+      - npm_db
+    
+    networks:
+      - habernexus_network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:81/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    labels:
+      com.example.description: "Nginx Proxy Manager for HaberNexus"
+    
+    profiles:
+      - npm
+
+  # NPM Database - MySQL for Nginx Proxy Manager
+  npm_db:
+    image: mysql:8-alpine
+    container_name: habernexus_npm_db
+    restart: unless-stopped
+    
+    environment:
+      MYSQL_ROOT_PASSWORD: "${NPM_DB_ROOT_PASSWORD:-root_password}"
+      MYSQL_DATABASE: "${NPM_DB_NAME:-npm}"
+      MYSQL_USER: "${NPM_DB_USER:-npm}"
+      MYSQL_PASSWORD: "${NPM_DB_PASSWORD:-npm_password}"
+      TZ: "Europe/Istanbul"
+    
+    volumes:
+      - npm_db_data:/var/lib/mysql
+    
+    networks:
+      - habernexus_network
+    
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    labels:
+      com.example.description: "MySQL Database for Nginx Proxy Manager"
+    
+    profiles:
+      - npm
+
+  # Cloudflare Tunnel - Secure tunnel to Cloudflare
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: habernexus_cloudflared
+    restart: unless-stopped
+    
+    command: tunnel run
+    
+    environment:
+      TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN:-}"
+      TZ: "Europe/Istanbul"
+    
+    networks:
+      - habernexus_network
+    
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    labels:
+      com.example.description: "Cloudflare Tunnel for HaberNexus"
+    
+    profiles:
+      - tunnel
+
+# ============================================================================
+# NETWORKS & VOLUMES
+# ============================================================================
+
 networks:
   habernexus_network:
     driver: bridge
@@ -343,11 +420,16 @@ networks:
       config:
         - subnet: 172.20.0.0/16
 
-# Volumes
 volumes:
   postgres_data:
     driver: local
   redis_data:
     driver: local
   celerybeat_schedule:
+    driver: local
+  npm_data:
+    driver: local
+  npm_letsencrypt:
+    driver: local
+  npm_db_data:
     driver: local
