@@ -14,11 +14,8 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 import feedparser
-import requests
-from celery import chord, group, shared_task
-from PIL import Image
+from celery import group, shared_task
 
-from authors.models import Author
 from core.models import Setting
 from core.tasks import log_error, log_info
 
@@ -28,7 +25,6 @@ from .models_extended import (
     ContentGenerationLog,
     ContentQualityMetrics,
     HeadlineScore,
-    ResearchSource,
 )
 
 logger = logging.getLogger(__name__)
@@ -92,7 +88,7 @@ def fetch_single_rss_v2(source):
             title = entry.get("title", "Başlıksız")
 
             # Başlık puanı oluştur (başlangıçta 0, score_headlines'da hesaplanacak)
-            headline_score = HeadlineScore.objects.create(
+            HeadlineScore.objects.create(
                 rss_source=source,
                 original_headline=title,
                 overall_score=0,
@@ -353,7 +349,7 @@ def classify_headlines(headline_ids):
         # Paralel olarak sınıflandırma yap
         classification_tasks = group(classify_and_create_article.s(headline.id) for headline in headlines)
 
-        result = classification_tasks.apply_async()
+        classification_tasks.apply_async()
 
         log_info("classify_headlines", f"{len(headline_ids)} başlık sınıflandırıldı")
         return f"Başarılı: {len(headline_ids)} başlık sınıflandırıldı"

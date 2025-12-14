@@ -86,11 +86,3 @@ class ArticleAdmin(admin.ModelAdmin):
 # ============================================================================
 # Geliştirilmiş İçerik Üretim Sistemi - Admin Konfigürasyonu
 # ============================================================================
-
-from .admin_extended import (
-    ArticleClassificationAdmin,
-    ContentGenerationLogAdmin,
-    ContentQualityMetricsAdmin,
-    HeadlineScoreAdmin,
-    ResearchSourceAdmin,
-)

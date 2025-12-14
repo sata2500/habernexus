@@ -5,8 +5,6 @@ Yazar-kategori mapping, prompt template'leri, SEO ve medya yönetimi
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.utils import timezone
-from django.utils.text import slugify
 
 # ============================================================================
 # YAZAR-KATEGORİ MAPPING

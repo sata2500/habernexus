@@ -44,7 +44,7 @@ def extract_text_from_html(html_content):
     try:
         parser.feed(html_content)
         return parser.get_text()
-    except:
+    except Exception:
         return html_content
 
 

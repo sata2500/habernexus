@@ -6,14 +6,10 @@ Pipeline orchestration, AI content generation, media processing
 import json
 import logging
 import time
-from datetime import timedelta
 
-from django.core.cache import cache
-from django.db import transaction
-from django.utils import timezone
 
 import google.generativeai as genai
-from celery import chain, chord, group, shared_task
+from celery import chain, shared_task
 
 from news.content_utils import (
     ArticleClassifier,
@@ -24,8 +20,8 @@ from news.content_utils import (
     ReadabilityMetrics,
     RSSMediaExtractor,
 )
-from news.models import Article, RssSource
-from news.models_advanced import ArticleMedia, ArticleSEO, AuthorCategoryMapping, MediaProcessingLog, PromptTemplate
+from news.models import Article
+from news.models_advanced import ArticleMedia, ArticleSEO
 from news.models_extended import ContentGenerationLog
 
 logger = logging.getLogger(__name__)
@@ -134,7 +130,7 @@ def filter_quality_task(self, article_data: dict) -> dict:
 
     try:
         title = article_data.get("title", "")
-        summary = article_data.get("summary", "")
+        article_data.get("summary", "")
 
         # Kalite puanı hesapla
         quality_score = ContentQualityScorer.score_headline(title)
@@ -346,10 +342,10 @@ def generate_featured_image_task(self, article_data: dict) -> dict:
         category = article_data.get("category", "Diğer")
 
         # Prompt oluştur
-        image_prompt = PromptGenerator.generate_image_prompt(title, category)
+        PromptGenerator.generate_image_prompt(title, category)
 
         # Imagen 3 ile görsel üret
-        client = genai.Client()
+        genai.Client()
 
         # Imagen 3 API çağrısı (placeholder - gerçek implementasyon gerekli)
         # response = client.models.generate_images(
@@ -392,7 +388,7 @@ def optimize_seo_task(self, article_data: dict) -> dict:
 
     try:
         title = article_data.get("title", "")
-        content = article_data.get("content", "")
+        article_data.get("content", "")
         category = article_data.get("category", "")
 
         # Meta description oluştur

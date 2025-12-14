@@ -6,14 +6,14 @@ Metrikleri, alertleri, performans izleme
 import logging
 from datetime import timedelta
 from statistics import mean, stdev
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from django.core.mail import send_mail
-from django.db.models import Avg, Count, F, Q
+from django.db.models import Avg, Count, Q
 from django.utils import timezone
 
 from news.models import Article
-from news.models_advanced import ArticleSEO, MediaProcessingLog
+from news.models_advanced import MediaProcessingLog
 from news.models_extended import ContentGenerationLog
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class QualityMetrics:
                 score += 15
             if seo.og_title and seo.og_description:
                 score += 10
-        except:
+        except Exception:
             pass
 
         # 3. Medya (20 puan)
@@ -62,7 +62,7 @@ class QualityMetrics:
                 score += 15
             if media.summary_video_1080p or media.summary_video_720p:
                 score += 5
-        except:
+        except Exception:
             pass
 
         # 4. Yayın durumu (15 puan)

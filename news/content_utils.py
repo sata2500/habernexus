@@ -3,17 +3,14 @@ HaberNexus - İçerik Üretim Utility Fonksiyonları (v2.0)
 Sınıflandırma, yazı stili seçimi, prompt üretimi, kalite kontrol
 """
 
-import json
 import logging
 from datetime import timedelta
 from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
-from django.db.models import Avg, Q
 from django.utils import timezone
 
 import feedparser
-import spacy
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
@@ -474,10 +471,10 @@ Requirements:
         Video üretimi için prompt oluştur
         """
         return f"""
-[Cinematography: Dynamic news footage style] + 
-[Subject: {title}] + 
-[Action: Engaging narrative movement] + 
-[Context: Professional news setting] + 
+[Cinematography: Dynamic news footage style] +
+[Subject: {title}] +
+[Action: Engaging narrative movement] +
+[Context: Professional news setting] +
 [Style: Modern, clean, journalistic]
 
 Requirements:

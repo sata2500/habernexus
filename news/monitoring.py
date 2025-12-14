@@ -6,11 +6,11 @@ Sistem performansını izlemek ve metrikler toplamak için araçlar.
 from datetime import timedelta
 
 from django.core.cache import cache
-from django.db.models import Avg, Count, F, Q
+from django.db.models import Avg, Count, Q, Sum
 from django.utils import timezone
 
 from .models import Article, RssSource
-from .models_extended import ArticleClassification, ContentGenerationLog, ContentQualityMetrics, HeadlineScore
+from .models_extended import ArticleClassification, ContentGenerationLog, HeadlineScore
 
 
 class ContentGenerationMetrics:
@@ -240,7 +240,7 @@ class ContentQualityAnalyzer:
         """
         try:
             metrics = article.quality_metrics
-        except:
+        except Exception:
             return None
 
         issues = []

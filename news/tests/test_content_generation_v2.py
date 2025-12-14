@@ -3,12 +3,8 @@ Geliştirilmiş İçerik Üretim Sistemi Test Paketi
 Başlık puanlaması, sınıflandırma ve kalite kontrolü testleri
 """
 
-from unittest.mock import MagicMock, patch
-
 from django.test import TestCase
-from django.utils import timezone
 
-import pytest
 
 from authors.models import Author
 from news.models import Article, RssSource
@@ -20,7 +16,6 @@ from news.tasks_v2 import (
     calculate_structure_score,
     calculate_uniqueness_score,
     has_power_words,
-    score_single_headline,
 )
 
 
@@ -101,7 +96,7 @@ class ReadabilityMetricsTestCase(TestCase):
     def test_flesch_kincaid_calculation(self):
         """Flesch-Kincaid indeksi hesaplama"""
         html_content = """
-        <p>Bu bir test metnidir. Okunabilirlik testini yapıyoruz. 
+        <p>Bu bir test metnidir. Okunabilirlik testini yapıyoruz.
         Metrikleri hesaplamak önemlidir.</p>
         """
 

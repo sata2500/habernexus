@@ -58,7 +58,6 @@ def clear_search_cache():
     Arama cache'ini temizle.
     """
     # Arama cache'leri dinamik olduğu için genel bir temizlik yapıyoruz
-    pass
 
 
 def cache_view(timeout):

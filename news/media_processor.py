@@ -3,14 +3,12 @@ HaberNexus - Görsel ve Video İşleme Sistemi (v2.0)
 Medya indirme, optimizasyon, multi-format encoding
 """
 
-import json
 import logging
 import os
 import subprocess
 from datetime import datetime
 from io import BytesIO
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import cv2
 import requests
