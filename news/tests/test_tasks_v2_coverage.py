@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from django.utils import timezone
+
 
 import pytest
 

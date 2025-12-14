@@ -1,7 +1,6 @@
 from django.urls import path
 
-from . import views
-from . import views_migration
+from . import views, views_migration
 
 app_name = "core"
 

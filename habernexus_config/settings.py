@@ -77,9 +77,7 @@ INSTALLED_APPS = [
 
 # Elasticsearch Configuration
 ELASTICSEARCH_DSL = {
-    'default': {
-        'hosts': os.getenv("ELASTICSEARCH_HOST", "elasticsearch:9200")
-    },
+    "default": {"hosts": os.getenv("ELASTICSEARCH_HOST", "elasticsearch:9200")},
 }
 
 MIDDLEWARE = [
