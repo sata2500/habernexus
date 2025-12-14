@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ################################################################################
-# Haber Nexus - Ultimate Installer & Manager v3.0
+# Haber Nexus - Ultimate Installer & Manager v3.1
 # Features: TUI, One-Click Install, Smart Migration, Cloudflare Tunnel, Auto-Admin
 ################################################################################
 
@@ -69,21 +69,49 @@ install_dependencies() {
 }
 
 setup_cloudflare_tunnel() {
-    if (whiptail --title "Cloudflare Tunnel" --yesno "Do you want to set up Cloudflare Tunnel for secure remote access without opening ports?" 10 60); then
-        TUNNEL_TOKEN=$(whiptail --inputbox "Enter your Cloudflare Tunnel Token:" 10 60 3>&1 1>&2 2>&3)
+    if (whiptail --title "Cloudflare Tunnel Setup" --yesno "Do you want to use Cloudflare Tunnel?\n\nThis allows you to expose your site securely WITHOUT opening ports (80/443) or managing SSL certificates manually.\n\nRecommended for most users." 15 70); then
+        
+        INSTRUCTIONS="HOW TO GET YOUR TOKEN:\n\n"
+        INSTRUCTIONS+="1. Go to https://one.dash.cloudflare.com\n"
+        INSTRUCTIONS+="2. Navigate to Networks > Tunnels\n"
+        INSTRUCTIONS+="3. Click 'Create a Tunnel' -> Select 'Cloudflared'\n"
+        INSTRUCTIONS+="4. Name it (e.g., 'habernexus') and Save\n"
+        INSTRUCTIONS+="5. Copy the token from the 'Install and run a connector' section\n"
+        INSTRUCTIONS+="   (It looks like: eyJhIjoi...)\n\n"
+        INSTRUCTIONS+="6. In the 'Public Hostnames' tab, add your domain:\n"
+        INSTRUCTIONS+="   - Subdomain: (leave empty or www)\n"
+        INSTRUCTIONS+="   - Domain: yourdomain.com\n"
+        INSTRUCTIONS+="   - Service: http://nginx:80\n"
+        
+        whiptail --title "Cloudflare Token Guide" --msgbox "$INSTRUCTIONS" 20 75
+        
+        TUNNEL_TOKEN=$(whiptail --inputbox "Paste your Cloudflare Tunnel Token here:" 10 70 3>&1 1>&2 2>&3)
+        
         if [ -n "$TUNNEL_TOKEN" ]; then
-            # Add cloudflared service to docker-compose override
+            # Create override file to use tunnel configuration
             cat > "$PROJECT_PATH/docker-compose.override.yml" <<EOF
 services:
   cloudflared:
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run --token $TUNNEL_TOKEN
+    container_name: cloudflared
     restart: always
+    command: tunnel --no-autoupdate run --token $TUNNEL_TOKEN
     networks:
       - habernexus_network
+
+  nginx:
+    ports: [] # Disable public ports
+    expose:
+      - 80
 EOF
             log "Cloudflare Tunnel configured."
+            return 0
+        else
+            show_msg "No token provided. Falling back to standard installation (Direct Port 80/443)."
+            return 1
         fi
+    else
+        return 1
     fi
 }
 
@@ -170,10 +198,13 @@ post_install_summary() {
     SUMMARY+="Username: $ADMIN_USER\n"
     SUMMARY+="Password: (hidden)\n\n"
     SUMMARY+="Next Steps:\n"
-    SUMMARY+="1. Configure DNS: Point A record for $DOMAIN to $(curl -s ifconfig.me)\n"
+    
     if [ -n "$TUNNEL_TOKEN" ]; then
-        SUMMARY+="2. Cloudflare Tunnel is ACTIVE. Manage it at dash.cloudflare.com\n"
+        SUMMARY+="1. Cloudflare Tunnel is ACTIVE.\n"
+        SUMMARY+="2. Ensure you configured the Public Hostname in Cloudflare Dashboard:\n"
+        SUMMARY+="   - Service: http://nginx:80\n"
     else
+        SUMMARY+="1. Configure DNS: Point A record for $DOMAIN to $(curl -s ifconfig.me)\n"
         SUMMARY+="2. Ensure ports 80 and 443 are open in your firewall.\n"
     fi
     SUMMARY+="3. Login to Admin Panel and configure settings.\n"
@@ -182,7 +213,7 @@ post_install_summary() {
 }
 
 main_menu() {
-    CHOICE=$(whiptail --title "Haber Nexus Manager v3.0" --menu "Choose an option:" 15 60 4 \
+    CHOICE=$(whiptail --title "Haber Nexus Manager v3.1" --menu "Choose an option:" 15 60 4 \
     "1" "Fresh Installation (Recommended)" \
     "2" "Smart Migration (Transfer from another server)" \
     "3" "Update System" \

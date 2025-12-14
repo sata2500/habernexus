@@ -1,0 +1,14 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: always
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - habernexus_network
+
+  # Nginx is still used as the internal reverse proxy to handle static files and upstream routing
+  nginx:
+    ports: [] # Disable public ports when using Tunnel
+    expose:
+      - 80
