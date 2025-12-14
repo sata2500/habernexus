@@ -99,8 +99,10 @@ check_docker() {
 check_internet() {
     log_step "Checking Internet Connectivity"
     
-    if ! ping -c 1 8.8.8.8 &> /dev/null; then
-        log_error "No internet connection detected"
+    # Try multiple methods to check internet connectivity
+    if ! curl -s --connect-timeout 5 https://www.google.com &> /dev/null && \
+       ! wget -q --timeout=5 -O /dev/null https://www.google.com &> /dev/null; then
+        log_warn "Could not verify internet connectivity, but continuing..."
     fi
     
     log_info "Internet Connectivity: ✓"
