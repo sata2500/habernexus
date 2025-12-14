@@ -1,171 +1,353 @@
 version: '3.9'
 
+# HaberNexus - Docker Compose Configuration
+# This is the main development and production configuration
+# For deployment options, see:
+# - config/docker-compose.npm.yml (Nginx Proxy Manager)
+# - config/docker-compose.tunnel.yml (Cloudflare Tunnel)
+
 services:
-  # Nginx - Web Sunucusu ve Reverse Proxy
+  # Nginx - Web Server and Reverse Proxy
+  # Serves static files and proxies requests to Django application
   nginx:
     image: nginx:alpine
     container_name: habernexus_nginx
+    restart: unless-stopped
+    
     ports:
       - "80:80"
       - "443:443"
+    
+    environment:
+      TZ: "Europe/Istanbul"
+    
     volumes:
-      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./staticfiles:/app/staticfiles:ro
       - ./media:/app/media:ro
       - ./config/ssl:/etc/nginx/ssl:ro
+    
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    
     networks:
       - habernexus_network
-    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    labels:
+      com.example.description: "Nginx Web Server for HaberNexus"
 
-  # Django Uygulaması - Gunicorn ile
+  # Django Application - Main Web Application
+  # Handles web interface, API, and business logic
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: habernexus_app
+    restart: unless-stopped
+    
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
-             gunicorn habernexus_config.wsgi:application --bind 0.0.0.0:8000 --workers 4"
+             gunicorn habernexus_config.wsgi:application 
+             --bind 0.0.0.0:8000 
+             --workers 4 
+             --worker-class sync 
+             --worker-tmp-dir /dev/shm 
+             --timeout 120 
+             --access-logfile - 
+             --error-logfile -"
+    
     environment:
-      - DEBUG=False
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key-change-in-production}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,habernexus.com}
-      - DB_ENGINE=django.db.backends.postgresql
-      - DB_NAME=${DB_NAME:-habernexus}
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      # Django Configuration
+      DEBUG: "False"
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:-change-me-in-production-with-strong-secret}"
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-localhost,127.0.0.1,habernexus.com}"
+      
+      # Database Configuration
+      DB_ENGINE: "django.db.backends.postgresql"
+      DB_NAME: "${DB_NAME:-habernexus}"
+      DB_USER: "${DB_USER:-habernexus_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-change-me-in-production}"
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      
+      # Cache Configuration
+      CACHE_BACKEND: "django_redis.cache.RedisCache"
+      CACHE_LOCATION: "redis://redis:6379/1"
+      
+      # Celery Configuration
+      CELERY_BROKER_URL: "redis://redis:6379/0"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+      
+      # API Keys
+      GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
+      
+      # Timezone
+      TZ: "Europe/Istanbul"
+    
     volumes:
       - .:/app
       - ./media:/app/media
       - ./staticfiles:/app/staticfiles
+    
     depends_on:
-      - db
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
     networks:
       - habernexus_network
-    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    labels:
+      com.example.description: "Django Application for HaberNexus"
 
-  # PostgreSQL Veritabanı
-  db:
+  # PostgreSQL - Primary Database
+  # Stores all application data, logs, and configurations
+  postgres:
     image: postgres:16-alpine
-    container_name: habernexus_db
+    container_name: habernexus_postgres
+    restart: unless-stopped
+    
     environment:
-      - POSTGRES_DB=${DB_NAME:-habernexus}
-      - POSTGRES_USER=${DB_USER:-postgres}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      # Database Configuration
+      POSTGRES_DB: "${DB_NAME:-habernexus}"
+      POSTGRES_USER: "${DB_USER:-habernexus_user}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-change-me-in-production}"
+      
+      # PostgreSQL Configuration
+      POSTGRES_INITDB_ARGS: "-c shared_buffers=256MB -c max_connections=200"
+      
+      # Timezone
+      TZ: "Europe/Istanbul"
+    
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    
     networks:
       - habernexus_network
-    restart: unless-stopped
+    
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-habernexus_user}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    
+    labels:
+      com.example.description: "PostgreSQL Database for HaberNexus"
 
-  # Redis - Celery Broker ve Cache
+  # Redis - Cache and Message Broker
+  # Used for Celery task queue and caching
   redis:
     image: redis:7-alpine
     container_name: habernexus_redis
+    restart: unless-stopped
+    
     command: >
       redis-server
       --appendonly yes
       --maxmemory 512mb
-      --maxmemory-policy noeviction
+      --maxmemory-policy allkeys-lru
       --save 60 1000
       --loglevel warning
+      --databases 2
+    
     volumes:
       - redis_data:/data
+    
     networks:
       - habernexus_network
-    restart: unless-stopped
+    
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    
+    labels:
+      com.example.description: "Redis Cache and Message Broker for HaberNexus"
 
-  # Celery Worker - Arka Plan Görevleri
+  # Celery Worker - Asynchronous Task Processing
+  # Processes long-running tasks like content generation
   celery:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: habernexus_celery
-    command: celery -A habernexus_config worker -l info --concurrency=4 --prefetch-multiplier=4
+    restart: unless-stopped
+    
+    command: >
+      celery -A habernexus_config worker 
+      -l info 
+      --concurrency=4 
+      --prefetch-multiplier=4 
+      --max-tasks-per-child=1000 
+      --time-limit=3600 
+      --soft-time-limit=3300
+    
     environment:
-      - DEBUG=False
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key-change-in-production}
-      - DB_ENGINE=django.db.backends.postgresql
-      - DB_NAME=${DB_NAME:-habernexus}
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      # Django Configuration
+      DEBUG: "False"
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:-change-me-in-production-with-strong-secret}"
+      
+      # Database Configuration
+      DB_ENGINE: "django.db.backends.postgresql"
+      DB_NAME: "${DB_NAME:-habernexus}"
+      DB_USER: "${DB_USER:-habernexus_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-change-me-in-production}"
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      
+      # Celery Configuration
+      CELERY_BROKER_URL: "redis://redis:6379/0"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+      
+      # API Keys
+      GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
+      
+      # Timezone
+      TZ: "Europe/Istanbul"
+    
     volumes:
       - .:/app
       - ./media:/app/media
+    
     depends_on:
-      - db
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
     networks:
       - habernexus_network
-    restart: unless-stopped
+    
+    labels:
+      com.example.description: "Celery Worker for HaberNexus"
 
-  # Celery Beat - Zamanlayıcı (Periyodik Görevler)
+  # Celery Beat - Task Scheduler
+  # Schedules periodic tasks like content generation
   celery_beat:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: habernexus_celery_beat
-    command: celery -A habernexus_config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    restart: unless-stopped
+    
+    command: >
+      celery -A habernexus_config beat 
+      -l info 
+      --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    
     environment:
-      - DEBUG=False
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key-change-in-production}
-      - DB_ENGINE=django.db.backends.postgresql
-      - DB_NAME=${DB_NAME:-habernexus}
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      # Django Configuration
+      DEBUG: "False"
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:-change-me-in-production-with-strong-secret}"
+      
+      # Database Configuration
+      DB_ENGINE: "django.db.backends.postgresql"
+      DB_NAME: "${DB_NAME:-habernexus}"
+      DB_USER: "${DB_USER:-habernexus_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-change-me-in-production}"
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      
+      # Celery Configuration
+      CELERY_BROKER_URL: "redis://redis:6379/0"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+      
+      # API Keys
+      GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
+      
+      # Timezone
+      TZ: "Europe/Istanbul"
+    
     volumes:
       - .:/app
+      - celerybeat_schedule:/app/celerybeat_schedule
+    
     depends_on:
-      - db
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
     networks:
       - habernexus_network
-    restart: unless-stopped
+    
+    labels:
+      com.example.description: "Celery Beat Scheduler for HaberNexus"
 
-  # Flower - Celery Monitoring Tool
+  # Flower - Celery Task Monitoring
+  # Web interface for monitoring Celery tasks
   flower:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: habernexus_flower
-    command: celery -A habernexus_config flower --port=5555
+    restart: unless-stopped
+    
+    command: >
+      celery -A habernexus_config flower 
+      --port=5555 
+      --basic_auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}
+    
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # Celery Configuration
+      CELERY_BROKER_URL: "redis://redis:6379/0"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+      
+      # Timezone
+      TZ: "Europe/Istanbul"
+    
     ports:
       - "5555:5555"
+    
     depends_on:
-      - redis
-      - celery
+      redis:
+        condition: service_healthy
+      celery:
+        condition: service_started
+    
     networks:
       - habernexus_network
-    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5555/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    labels:
+      com.example.description: "Flower Task Monitoring for HaberNexus"
 
+# Networks
 networks:
   habernexus_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 
+# Volumes
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
+  celerybeat_schedule:
+    driver: local

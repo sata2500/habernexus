@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+  # Cloudflare Tunnel - Secure tunnel without port forwarding
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: habernexus_cloudflared
+    restart: always
+    
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    
+    environment:
+      TZ: "Europe/Istanbul"
+    
+    networks:
+      - habernexus_network
+    
+    depends_on:
+      - nginx_proxy_manager
+    
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    labels:
+      com.example.description: "Cloudflare Tunnel for HaberNexus"
+      com.example.version: "latest"
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  habernexus_network:
+    driver: bridge
