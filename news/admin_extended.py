@@ -76,7 +76,8 @@ class HeadlineScoreAdmin(admin.ModelAdmin):
     def overall_score_badge(self, obj):
         color = self._get_score_color(obj.overall_score)
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 5px 10px; border-radius: 3px; font-weight: bold;">{:.1f}</span>',
+            '<span style="background-color: {}; color: white; padding: 5px 10px; '
+            'border-radius: 3px; font-weight: bold;">{:.1f}</span>',
             color,
             obj.overall_score,
         )
@@ -293,7 +294,8 @@ class ContentQualityMetricsAdmin(admin.ModelAdmin):
     def overall_score_badge(self, obj):
         color = self._get_score_color(obj.overall_quality_score)
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 5px 10px; border-radius: 3px; font-weight: bold;">{:.1f}</span>',
+            '<span style="background-color: {}; color: white; padding: 5px 10px; '
+            'border-radius: 3px; font-weight: bold;">{:.1f}</span>',
             color,
             obj.overall_quality_score,
         )

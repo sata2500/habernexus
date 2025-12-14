@@ -1,4 +1,9 @@
-from .settings import *
+from pathlib import Path
+
+from .settings import *  # noqa: F401, F403
+
+# Redefine BASE_DIR to avoid F405
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 DATABASES = {
     "default": {

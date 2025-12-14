@@ -187,7 +187,8 @@ def generate_ai_content(self, article_id):
 
             # Gelişmiş SEO ve Profesyonellik Promptu
             prompt = f"""
-Sen {author.name} isimli deneyimli bir {author.expertise} yazarısın. Aşağıdaki haber kaynağını kullanarak, profesyonel bir haber makalesi yazacaksın.
+Sen {author.name} isimli deneyimli bir {author.expertise} yazarısın. Aşağıdaki haber kaynağını kullanarak, """
+            """profesyonel bir haber makalesi yazacaksın.
 
 **KAYNAK BİLGİLERİ:**
 Başlık: {article.title}
