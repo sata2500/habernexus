@@ -1,135 +1,117 @@
-# HaberNexus - Intelligent News Aggregation Platform v5.0
+# HaberNexus v6.0
 
-![Version](https://img.shields.io/badge/version-5.0-blue?style=flat-square)
-![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
+**Modern, Fully Automated News Aggregation & Content Generation Platform**
+
+> Single-click installation • Automatic HTTPS • Cloudflare Tunnel • Zero Configuration • Production Ready
+
+![Version](https://img.shields.io/badge/version-6.0-brightgreen?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.11+-blue?style=flat-square)
 ![Django](https://img.shields.io/badge/django-4.2+-darkgreen?style=flat-square)
 ![Docker](https://img.shields.io/badge/docker-ready-blue?style=flat-square)
-![Cloudflare](https://img.shields.io/badge/cloudflare-tunnel-orange?style=flat-square)
+![Caddy](https://img.shields.io/badge/caddy-reverse%20proxy-orange?style=flat-square)
+![Cloudflare](https://img.shields.io/badge/cloudflare-tunnel-blue?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
-HaberNexus is a powerful, scalable, and **fully automated** news aggregation platform built with Django, PostgreSQL, Redis, and Celery. It supports multiple deployment options including Cloudflare Tunnel and Nginx Proxy Manager for maximum flexibility and security.
+HaberNexus is a powerful, scalable, and **fully automated** news aggregation platform built with Django, PostgreSQL, Redis, and Celery. v6.0 features Caddy for automatic HTTPS, Cloudflare Tunnel for secure connectivity, and complete automation requiring zero manual configuration.
 
-## 🚀 What's New in v5.0
+## 🚀 What's New in v6.0
 
-### ✨ Full Automation
-- **One-Command Installation** - Single installer handles everything
-- **Automatic DNS Setup** - Cloudflare DNS records created automatically
-- **Auto-Configuration** - All services configured automatically
-- **Health Checks** - Automated container health monitoring
+### ✨ Complete Automation
+- **5-Minute Setup** - Single command installation
+- **Zero Configuration** - Everything automated
+- **Automatic HTTPS** - Caddy with Cloudflare DNS challenge
+- **Automatic DNS** - Cloudflare records created automatically
+- **Automatic Tunnel** - Cloudflare Tunnel configured automatically
+- **Health Checks** - Automated container monitoring and recovery
 
 ### 🔒 Enhanced Security
+- **Caddy Reverse Proxy** - Automatic HTTPS by default
 - **Cloudflare Tunnel** - No port forwarding needed
-- **SSL/TLS** - Automatic Let's Encrypt certificates
-- **DDoS Protection** - Cloudflare DDoS protection included
-- **Security Headers** - HSTS, CSP, X-Frame-Options, etc.
+- **DDoS Protection** - Cloudflare protection included
+- **SSL/TLS** - Let's Encrypt certificates (auto-renewal)
+- **Security Headers** - HSTS, CSP, X-Frame-Options
+- **Secure by Default** - No manual security setup
 
-### 🎛️ Better Management
-- **Nginx Proxy Manager** - GUI-based reverse proxy management
-- **Flower Monitoring** - Real-time task monitoring
-- **Health Dashboards** - Container health status
-- **Comprehensive Logging** - Detailed installation logs
+### 🎛️ Modern Architecture
+- **Caddy** - Modern reverse proxy with automatic HTTPS
+- **Cloudflare Tunnel** - Secure tunnel without port forwarding
+- **Docker Compose** - Simplified, unified configuration
+- **Optimized** - Minimal resource usage
+- **Production Ready** - Enterprise-grade setup
 
 ## 📋 System Requirements
 
 ### Minimum
-- Ubuntu 22.04 LTS or newer
+- Ubuntu 22.04 LTS or 24.04 LTS
 - 2 CPU cores
 - 4 GB RAM
-- 20 GB storage
+- 20 GB disk space
 - Internet connection
 
 ### Recommended
 - Ubuntu 24.04 LTS
-- 4+ CPU cores
-- 8+ GB RAM
-- 50+ GB SSD
+- 4 CPU cores
+- 8 GB RAM
+- 50 GB SSD
 - High-speed internet
 
 ## 🛠️ Quick Installation
 
-### Option 1: Cloudflare Tunnel + Nginx Proxy Manager (Recommended)
+### One-Command Setup (Recommended)
 
 ```bash
-curl -O https://raw.githubusercontent.com/sata2500/habernexus/main/install_v5.sh
-sudo bash install_v5.sh
+curl -O https://raw.githubusercontent.com/sata2500/habernexus/main/install_v6.sh
+sudo bash install_v6.sh
 ```
 
-**Choose option 1 during installation**
+That's it! The installer will:
+1. ✅ Check system requirements
+2. ✅ Install Docker and dependencies
+3. ✅ Clone the repository
+4. ✅ Create environment configuration
+5. ✅ Build Docker images
+6. ✅ Create Cloudflare DNS records
+7. ✅ Configure Cloudflare Tunnel
+8. ✅ Start all services
+9. ✅ Create admin user
+10. ✅ Verify SSL certificate
 
-Features:
-- ✅ No port forwarding needed
-- ✅ Automatic DNS setup (with API token)
-- ✅ GUI-based proxy management
-- ✅ Automatic SSL certificates
-- ✅ Full automation
+**Total time: ~5 minutes**
 
-Setup time: **15-20 minutes**
-
-### Option 2: Cloudflare Tunnel + Direct Nginx
+### Manual Installation
 
 ```bash
-curl -O https://raw.githubusercontent.com/sata2500/habernexus/main/install_v5.sh
-sudo bash install_v5.sh
+git clone https://github.com/sata2500/habernexus.git
+cd habernexus
+cp .env.example .env
+# Edit .env with your settings
+docker-compose up -d
 ```
-
-**Choose option 2 during installation**
-
-Features:
-- ✅ No port forwarding needed
-- ✅ Minimal resources
-- ✅ Manual DNS setup
-
-Setup time: **10-15 minutes**
-
-### Option 3: Direct Port Forwarding
-
-```bash
-curl -O https://raw.githubusercontent.com/sata2500/habernexus/main/install_v5.sh
-sudo bash install_v5.sh
-```
-
-**Choose option 3 during installation**
-
-Features:
-- ⚠️ Requires static IP
-- ⚠️ Port forwarding needed (80, 443)
-- ⚠️ Manual SSL setup
-
-Setup time: **20-30 minutes**
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Cloudflare Tunnel                     │
-│              (Optional - No Port Forwarding)             │
-└────────────────────┬────────────────────────────────────┘
-                     │
-┌────────────────────▼────────────────────────────────────┐
-│          Nginx Proxy Manager (Optional)                  │
-│              (GUI-based Management)                      │
-└────────────────────┬────────────────────────────────────┘
-                     │
-┌────────────────────▼────────────────────────────────────┐
-│                   Nginx Container                        │
-│            (Reverse Proxy & Static Files)               │
-└────────────────────┬────────────────────────────────────┘
-                     │
-      ┌──────────────┼──────────────┐
-      │              │              │
-┌─────▼────┐  ┌─────▼────┐  ┌─────▼────┐
-│   Django │  │ Celery   │  │ Celery   │
-│   App    │  │ Worker   │  │ Beat     │
-└─────┬────┘  └─────┬────┘  └─────┬────┘
-      │             │             │
-      └─────────────┼─────────────┘
-                    │
-      ┌─────────────┼─────────────┐
-      │             │             │
-┌─────▼────┐  ┌─────▼────┐  ┌─────▼────┐
-│PostgreSQL│  │  Redis   │  │  Flower  │
-│Database  │  │  Cache   │  │ Monitor  │
-└──────────┘  └──────────┘  └──────────┘
+┌──────────────────────────────────────────────┐
+│         Cloudflare Tunnel                    │
+│  (DDoS Protection, No Port Forwarding)       │
+└────────────────┬─────────────────────────────┘
+                 │
+┌────────────────▼─────────────────────────────┐
+│    Caddy Reverse Proxy                       │
+│  (Automatic HTTPS, Load Balancing)           │
+└────────────────┬─────────────────────────────┘
+                 │
+    ┌────────────┼────────────┐
+    │            │            │
+┌───▼──┐  ┌─────▼────┐  ┌───▼────┐
+│Django│  │ Celery   │  │Flower  │
+│ App  │  │ Workers  │  │Monitor │
+└───┬──┘  └─────┬────┘  └────────┘
+    │           │
+┌───▼───────────▼────┐
+│PostgreSQL + Redis  │
+│(Data & Cache)      │
+└────────────────────┘
 ```
 
 ## 🔧 Technology Stack
@@ -140,8 +122,7 @@ Setup time: **20-30 minutes**
 | Database | PostgreSQL | 16 |
 | Cache | Redis | 7 |
 | Task Queue | Celery | 5.3+ |
-| Web Server | Nginx | Alpine |
-| Reverse Proxy | Nginx Proxy Manager | Latest |
+| Reverse Proxy | Caddy | 2.7+ |
 | Tunnel | Cloudflare Tunnel | Latest |
 | Container | Docker | 24+ |
 | Orchestration | Docker Compose | 2.0+ |
@@ -149,22 +130,22 @@ Setup time: **20-30 minutes**
 ## 📊 Features
 
 ### Core Features
-- **Intelligent Content Aggregation** - Automatic RSS feed parsing
+- **Intelligent Aggregation** - Automatic RSS feed parsing
 - **Advanced Search** - Full-text search with filtering
 - **Content Management** - Manage sources and categories
 - **User Management** - Role-based access control
 - **REST API** - Programmatic access
 - **Admin Panel** - Comprehensive Django admin
 
-### v5.0 Features
-- **Full Automation** - One-command installation
-- **DNS Auto-Setup** - Automatic Cloudflare DNS records
-- **Cloudflare Tunnel** - Secure tunnel without port forwarding
-- **Nginx Proxy Manager** - GUI-based reverse proxy
-- **Health Checks** - Automated container monitoring
-- **SSL/TLS** - Automatic Let's Encrypt certificates
-- **Performance** - Optimized caching and queries
-- **Scalability** - Horizontal scaling support
+### v6.0 Features
+- **Complete Automation** - One-command setup
+- **Automatic HTTPS** - Caddy with Cloudflare DNS
+- **Cloudflare Tunnel** - Secure connectivity
+- **Zero Configuration** - Everything automated
+- **Health Monitoring** - Real-time system status
+- **Service Management** - Start/stop from UI
+- **Log Viewer** - Live application logs
+- **Performance Optimized** - Minimal resource usage
 
 ## 🎯 Access URLs
 
@@ -172,62 +153,10 @@ After installation:
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| Main Site | https://habernexus.com | - |
-| Admin Panel | https://habernexus.com/admin | username/password |
-| Nginx Proxy Manager | http://localhost:81 | admin@example.com / changeme |
-| Flower (Tasks) | http://localhost:5555 | admin / admin |
-
-## 📚 Documentation
-
-- [Installation Guide](docs/INSTALLATION.md) - Detailed setup
-- [Installation Guide v5](docs/INSTALLATION_GUIDE_v5.md) - v5.0 specific
-- [Architecture](docs/ARCHITECTURE.md) - System design
-- [Scripts](docs/SCRIPTS.md) - Available utilities
-- [Configuration](docs/CONFIGURATION.md) - Settings
-- [Deployment](docs/DEPLOYMENT.md) - Production setup
-- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues
-
-## 🔐 Security Features
-
-- SSL/TLS encryption (HTTPS)
-- HSTS headers (enforce HTTPS)
-- CSRF protection (Django built-in)
-- SQL injection prevention (ORM)
-- XSS prevention (template escaping)
-- Rate limiting (DDoS protection)
-- Security headers (CSP, X-Frame-Options)
-- Cloudflare DDoS protection (with Tunnel)
-
-## 🚀 Deployment
-
-### Using Docker Compose
-
-```bash
-cd /opt/habernexus
-
-# Option 1: Tunnel + NPM
-docker-compose --profile npm --profile tunnel up -d
-
-# Option 2: Tunnel + Direct Nginx
-docker-compose --profile tunnel up -d
-
-# Option 3: Direct Port Forwarding
-docker-compose up -d
-```
-
-### Health Checks
-
-```bash
-# Check status
-docker-compose ps
-
-# View logs
-docker-compose logs -f app
-
-# Check specific service
-docker-compose logs cloudflared
-docker-compose logs nginx_proxy_manager
-```
+| Main Site | https://your-domain.com | - |
+| Admin Panel | https://your-domain.com/admin | username/password |
+| API | https://your-domain.com/api | - |
+| Flower (Tasks) | https://your-domain.com/flower | admin/admin |
 
 ## ⚙️ Configuration
 
@@ -236,150 +165,150 @@ docker-compose logs nginx_proxy_manager
 The installer creates `.env` automatically with:
 
 ```bash
-# Django Configuration
-DEBUG=False
-DJANGO_SECRET_KEY=auto-generated
-ALLOWED_HOSTS=habernexus.com,www.habernexus.com
+# Domain
+DOMAIN=your-domain.com
+
+# Admin User
+ADMIN_EMAIL=admin@example.com
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=SecurePassword123!
+
+# Cloudflare
+CLOUDFLARE_API_TOKEN=your_token
+CLOUDFLARE_TUNNEL_TOKEN=your_tunnel_token
 
 # Database
 DB_NAME=habernexus
 DB_USER=habernexus_user
 DB_PASSWORD=auto-generated
 
-# Cloudflare
-CLOUDFLARE_TUNNEL_TOKEN=your-token
-CLOUDFLARE_API_TOKEN=your-api-token
-
-# Admin
-ADMIN_USER=sata
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=your-password
+# Django
+SECRET_KEY=auto-generated
+DEBUG=False
 ```
 
-### Cloudflare Setup
+## 🔐 Security Features
 
-#### Create Tunnel
-1. Go to https://one.dash.cloudflare.com
-2. Networks > Tunnels
-3. Create a Tunnel
-4. Copy the token
+- **Automatic HTTPS** - Caddy with Let's Encrypt
+- **DDoS Protection** - Cloudflare Tunnel
+- **Security Headers** - HSTS, CSP, X-Frame-Options
+- **CSRF Protection** - Django built-in
+- **SQL Injection Prevention** - ORM
+- **XSS Prevention** - Template escaping
+- **Rate Limiting** - Built-in throttling
+- **Secure by Default** - No manual setup
 
-#### Create DNS Records
-Automatic with API token, or manual:
+## 🚀 Deployment
 
-1. Go to https://dash.cloudflare.com
-2. DNS > Add record
-3. Type: CNAME
-4. Name: habernexus.com
-5. Content: {tunnel-id}.cfargotunnel.com
-6. Proxied: Yes
+### Start Services
 
-#### Configure Public Hostnames
-1. https://one.dash.cloudflare.com/networks/tunnels
-2. Select your tunnel
-3. Public Hostname
-4. Add hostnames pointing to http://nginx_proxy_manager:81
+```bash
+cd /opt/habernexus
+docker-compose up -d
+```
 
-## 🐛 Troubleshooting
+### Check Status
 
-### Tunnel shows "Inactive"
-- Check DNS records are created
-- Verify Public Hostnames configured
-- Check logs: `docker-compose logs cloudflared`
-
-### Port already in use
-- Check available ports: `sudo lsof -i :80`
-- Kill process: `sudo kill -9 <PID>`
-
-### Database connection error
-- Check PostgreSQL: `docker-compose logs postgres`
-- Verify credentials in `.env`
-
-### SSL certificate issues
-- Check NPM logs: `docker-compose logs nginx_proxy_manager`
-- Verify DNS records
-
-For more help, see [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-
-## 📊 Monitoring
-
-### Container Status
 ```bash
 docker-compose ps
 ```
 
-### Service Logs
+### View Logs
+
 ```bash
 docker-compose logs -f app
-docker-compose logs -f postgres
-docker-compose logs -f redis
-docker-compose logs -f celery
 ```
 
-### Task Monitoring
-Access Flower at http://localhost:5555
-
-### System Metrics
-- Task execution time
-- Worker status
-- Task history
-- Performance statistics
-
-## 🔄 Updates
-
-### Update to Latest Version
+### Stop Services
 
 ```bash
-cd /opt/habernexus
-git pull origin main
 docker-compose down
-docker-compose up -d
-docker-compose exec app python manage.py migrate
 ```
+
+## 🧪 Testing
+
+Run the test suite:
+
+```bash
+bash tests/test_v6.sh
+```
+
+## 📚 Documentation
+
+- [Installation Guide](docs/INSTALLATION.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [API Documentation](docs/API.md)
+- [Scripts Reference](docs/SCRIPTS.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Configuration](docs/CONFIGURATION.md)
+
+## 🐛 Troubleshooting
+
+### Site not accessible
+1. Check DNS: `nslookup your-domain.com`
+2. Check Tunnel: `docker-compose logs cloudflared`
+3. Check Caddy: `docker-compose logs caddy`
+
+### SSL certificate not issued
+1. Verify domain DNS is set
+2. Check Caddy logs: `docker-compose logs caddy`
+3. Wait 5-10 minutes
+
+### Services not starting
+1. Check Docker: `docker ps`
+2. Check logs: `docker-compose logs`
+3. Verify disk space: `df -h`
+
+### Database connection error
+1. Check PostgreSQL: `docker-compose logs postgres`
+2. Verify DATABASE_URL in .env
+3. Check network: `docker network ls`
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/sata2500/habernexus/issues)
+- **Email**: salihtanriseven25@gmail.com
+- **Documentation**: [docs/](docs/)
 
 ## 🤝 Contributing
 
-Contributions welcome! See [CONTRIBUTING.md](docs/CONTRIBUTING.md)
+Contributions welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ## 📄 License
 
 MIT License - See [LICENSE](LICENSE)
 
-## 👥 Authors
+## 🙏 Acknowledgments
 
-- **Salih TANRISEVEN** - Initial development
-- **Manus AI** - v5.0 automation and improvements
+- [Django](https://www.djangoproject.com/) - Web framework
+- [Caddy](https://caddyserver.com/) - Reverse proxy
+- [Cloudflare](https://www.cloudflare.com/) - DNS & Tunnel
+- [Docker](https://www.docker.com/) - Containerization
+- [Celery](https://docs.celeryproject.io/) - Task queue
+- [PostgreSQL](https://www.postgresql.org/) - Database
+- [Redis](https://redis.io/) - Cache
 
-## 📞 Support
+## 📈 Roadmap
 
-- GitHub Issues: https://github.com/sata2500/habernexus/issues
-- Email: salihtanriseven25@gmail.com
-- Documentation: https://github.com/sata2500/habernexus/tree/main/docs
-
-## 🗺️ Roadmap
-
-### v5.1 (Planned)
+- [ ] Web-based installer UI
 - [ ] Multi-language support
 - [ ] Advanced analytics
-- [ ] Custom themes
-- [ ] API rate limiting
-
-### v6.0 (Planned)
-- [ ] Kubernetes support
-- [ ] GraphQL API
 - [ ] Mobile app
-- [ ] ML features
+- [ ] API rate limiting UI
+- [ ] Custom themes
+- [ ] Plugin system
 
-## 📈 Performance
+## ⭐ Show Your Support
 
-- Page load time: < 500ms
-- API response: < 100ms
-- Database optimized: Indexed queries
-- Cache hit rate: > 80%
-- Concurrent users: 1000+
+If you find HaberNexus useful, please star the repository!
 
 ---
 
-**Made with ❤️ by Salih TANRISEVEN & Manus AI**
+**Made with ❤️ by Salih TANRISEVEN**
 
-Last Updated: December 2024 | Version: 5.0
+v6.0 • December 2025 • Production Ready • Fully Automated

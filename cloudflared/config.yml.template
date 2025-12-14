@@ -1,0 +1,46 @@
+# HaberNexus Cloudflare Tunnel Configuration
+# This file is auto-generated during installation
+
+tunnel: {TUNNEL_NAME}
+credentials-file: /root/.cloudflared/credentials.json
+logLevel: info
+
+# Ingress rules
+ingress:
+  # Main domain
+  - hostname: {DOMAIN}
+    service: http://caddy:80
+    originRequest:
+      connectTimeout: 30s
+      tlsTimeout: 30s
+      tcpKeepAlive: 30s
+      noHappyEyeballs: false
+      
+  # Wildcard subdomains
+  - hostname: "*.{DOMAIN}"
+    service: http://caddy:80
+    originRequest:
+      connectTimeout: 30s
+      tlsTimeout: 30s
+      tcpKeepAlive: 30s
+      noHappyEyeballs: false
+      
+  # Default catch-all (404)
+  - service: http_status:404
+
+# Tunnel configuration
+warp-routing:
+  enabled: false
+
+# Metrics
+metrics: localhost:7622
+
+# Keep-alive settings
+keepaliveInterval: 30s
+keepaliveTimeout: 40s
+
+# Retries
+retries: 5
+
+# Grace period
+gracePeriod: 30s

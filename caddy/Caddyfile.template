@@ -1,0 +1,122 @@
+# HaberNexus Caddy Configuration
+# This file is auto-generated during installation
+
+{
+    # Global options
+    email {ADMIN_EMAIL}
+    
+    # ACME configuration with Cloudflare DNS challenge
+    acme_dns cloudflare {CLOUDFLARE_API_TOKEN}
+    
+    # Storage for certificates
+    storage file_system {
+        root /data/caddy
+    }
+    
+    # Logging
+    log {
+        output stdout
+        format json
+        level info
+    }
+    
+    # Admin API
+    admin localhost:2019
+}
+
+# Main domain configuration
+{DOMAIN} {
+    # Reverse proxy to Django app
+    reverse_proxy app:8000 {
+        # Health check
+        health_uri /health
+        health_interval 10s
+        health_timeout 5s
+        
+        # Headers
+        header_up X-Forwarded-For {http.request.remote.host}
+        header_up X-Forwarded-Proto {http.request.proto}
+        header_up X-Forwarded-Host {http.request.host}
+        
+        # Timeouts
+        transport http {
+            dial_timeout 10s
+            response_header_timeout 30s
+        }
+    }
+    
+    # Security headers
+    header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    header X-Content-Type-Options "nosniff"
+    header X-Frame-Options "DENY"
+    header X-XSS-Protection "1; mode=block"
+    header Referrer-Policy "strict-origin-when-cross-origin"
+    header Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    
+    # Content Security Policy
+    header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none';"
+    
+    # Compression
+    encode gzip
+    
+    # Logging
+    log {
+        output stdout
+        format json
+        level info
+    }
+    
+    # Rate limiting
+    rate_limit {path}/* 100 {
+        key {remote_host}
+        window 1m
+        events 100
+    }
+}
+
+# Wildcard subdomain configuration
+*.{DOMAIN} {
+    # Reverse proxy to Django app
+    reverse_proxy app:8000 {
+        # Health check
+        health_uri /health
+        health_interval 10s
+        health_timeout 5s
+        
+        # Headers
+        header_up X-Forwarded-For {http.request.remote.host}
+        header_up X-Forwarded-Proto {http.request.proto}
+        header_up X-Forwarded-Host {http.request.host}
+        
+        # Timeouts
+        transport http {
+            dial_timeout 10s
+            response_header_timeout 30s
+        }
+    }
+    
+    # Security headers
+    header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    header X-Content-Type-Options "nosniff"
+    header X-Frame-Options "DENY"
+    header X-XSS-Protection "1; mode=block"
+    header Referrer-Policy "strict-origin-when-cross-origin"
+    header Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    
+    # Compression
+    encode gzip
+    
+    # Logging
+    log {
+        output stdout
+        format json
+        level info
+    }
+}
+
+# Health check endpoint
+localhost:2019 {
+    respond /health 200 {
+        body "OK"
+    }
+}
