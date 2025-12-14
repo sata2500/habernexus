@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 import sentry_sdk
@@ -240,14 +241,22 @@ NPM_BIN_PATH = "/usr/local/bin/npm"
 SITE_ID = 1
 
 # Cache Configuration
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
-        "KEY_PREFIX": "habernexus",
-        "TIMEOUT": 300,
+if "test" in sys.argv or "pytest" in sys.modules:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+            "KEY_PREFIX": "habernexus",
+            "TIMEOUT": 300,
+        }
+    }
 
 # Session Cache
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
