@@ -1,6 +1,6 @@
 [run]
 source = .
-omit = 
+omit =
     */migrations/*
     */tests/*
     */test_*.py
@@ -13,6 +13,8 @@ omit =
     */settings.py
 
 [report]
+show_missing = True
+skip_covered = True
 exclude_lines =
     pragma: no cover
     def __repr__

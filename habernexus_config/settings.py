@@ -13,7 +13,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+import sentry_sdk
 from dotenv import load_dotenv
+from sentry_sdk.integrations.django import DjangoIntegration
 
 # Celery imports
 try:
@@ -32,6 +34,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 
 load_dotenv()
+
+# Sentry Configuration
+if os.getenv("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=1.0,
+        send_default_pii=True,
+    )
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-mt-=czt$#v)6=4i8b4*kg#ff=rxnyk+8!ln6hi3jelx!y1yseo")
 
@@ -53,6 +64,8 @@ INSTALLED_APPS = [
     # Third-party apps
     "tailwind",
     "django_celery_beat",
+    "django_prometheus",
+    "drf_spectacular",
     "django.contrib.sites",
     "django.contrib.sitemaps",
     # Local apps
@@ -62,6 +75,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -69,6 +83,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 ROOT_URLCONF = "habernexus_config.urls"
@@ -237,6 +252,19 @@ CACHES = {
 # Session Cache
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+
+# REST Framework Configuration
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# Spectacular Settings
+SPECTACULAR_SETTINGS = {
+    "TITLE": "HaberNexus API",
+    "DESCRIPTION": "HaberNexus İçerik Üretim ve Yönetim Sistemi API Dokümantasyonu",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
 
 # Security Settings
 # Production Security Settings
