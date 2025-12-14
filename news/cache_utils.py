@@ -15,7 +15,7 @@ def get_cache_key(prefix, *args):
     """
     Cache anahtarı oluştur.
     """
-    key_parts = [prefix] + [str(arg) for arg in args]
+    key_parts = [str(prefix)] + [str(arg) for arg in args]
     return ":".join(key_parts)
 
 
