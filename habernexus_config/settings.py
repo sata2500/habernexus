@@ -68,11 +68,19 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "django.contrib.sites",
     "django.contrib.sitemaps",
+    "django_elasticsearch_dsl",
     # Local apps
     "core.apps.CoreConfig",
     "news.apps.NewsConfig",
     "authors.apps.AuthorsConfig",
 ]
+
+# Elasticsearch Configuration
+ELASTICSEARCH_DSL = {
+    'default': {
+        'hosts': os.getenv("ELASTICSEARCH_HOST", "elasticsearch:9200")
+    },
+}
 
 MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",

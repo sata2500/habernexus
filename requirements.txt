@@ -30,3 +30,6 @@ bandit==1.7.5
 sentry-sdk==2.47.0
 django-prometheus==2.4.1
 drf-spectacular==0.29.0
+django-elasticsearch-dsl==8.0
+elasticsearch-dsl==8.0
+elasticsearch==8.0
