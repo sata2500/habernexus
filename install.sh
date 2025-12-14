@@ -103,6 +103,25 @@ services:
     ports: [] # Disable public ports
     expose:
       - 80
+    volumes:
+      - ./nginx/conf.d/habernexus_tunnel.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+EOF
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: always
+    command: tunnel --no-autoupdate run --token $TUNNEL_TOKEN
+    networks:
+      - habernexus_network
+
+  nginx:
+    ports: [] # Disable public ports
+    expose:
+      - 80
 EOF
             log "Cloudflare Tunnel configured."
             return 0

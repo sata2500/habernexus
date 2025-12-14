@@ -61,3 +61,13 @@ Your site should now be live!
 
 *   **Logs:** Check `/var/log/habernexus_installer.log` for detailed installation logs.
 *   **Services:** Run `docker compose ps` in `/opt/habernexus` to check service status.
+
+## ⚠️ Important: Cloudflare SSL/TLS Settings
+
+If you encounter a **"Too Many Redirects"** error after setting up Cloudflare Tunnel:
+
+1.  Go to your Cloudflare Dashboard.
+2.  Navigate to **SSL/TLS > Overview**.
+3.  Ensure your encryption mode is set to **Full** or **Full (Strict)**.
+    *   **Do NOT use "Flexible" mode.** This is the most common cause of redirect loops with Django applications.
+    *   Since Cloudflare Tunnel communicates securely with the `cloudflared` connector, "Full" mode ensures the entire chain is encrypted.
