@@ -39,7 +39,12 @@ cleanup_environment() {
             if [ -d "$PROJECT_PATH" ]; then
                 cd "$PROJECT_PATH" || exit
                 if command -v docker &> /dev/null; then
+                    # Stop all containers including cloudflared
                     docker compose down -v --remove-orphans >/dev/null 2>&1
+                    # Force remove cloudflared if it persists
+                    docker rm -f cloudflared >/dev/null 2>&1 || true
+                    # Prune unused networks and volumes to ensure clean slate
+                    docker network prune -f >/dev/null 2>&1
                 fi
             fi
             echo 50
