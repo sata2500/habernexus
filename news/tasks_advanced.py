@@ -7,7 +7,6 @@ import json
 import logging
 import time
 
-
 import google.generativeai as genai
 from celery import chain, shared_task
 

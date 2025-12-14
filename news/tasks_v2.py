@@ -20,12 +20,7 @@ from core.models import Setting
 from core.tasks import log_error, log_info
 
 from .models import Article, RssSource
-from .models_extended import (
-    ArticleClassification,
-    ContentGenerationLog,
-    ContentQualityMetrics,
-    HeadlineScore,
-)
+from .models_extended import ArticleClassification, ContentGenerationLog, ContentQualityMetrics, HeadlineScore
 
 logger = logging.getLogger(__name__)
 

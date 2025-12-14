@@ -5,7 +5,6 @@ Başlık puanlaması, sınıflandırma ve kalite kontrolü testleri
 
 from django.test import TestCase
 
-
 from authors.models import Author
 from news.models import Article, RssSource
 from news.models_extended import ArticleClassification, ContentGenerationLog, ContentQualityMetrics, HeadlineScore
