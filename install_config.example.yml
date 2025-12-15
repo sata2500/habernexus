@@ -1,0 +1,157 @@
+# ============================================================================
+# HaberNexus v8.0 - Installation Configuration File
+# ============================================================================
+#
+# Bu dosyayı kullanarak otomatik kurulum yapabilirsiniz:
+#   sudo bash install_v8.sh --config install_config.yml
+#
+# Tüm değerleri kendi bilgilerinizle değiştirin.
+# ============================================================================
+
+# ============================================================================
+# DOMAIN & SITE CONFIGURATION
+# ============================================================================
+
+domain: "habernexus.com"
+site_name: "HaberNexus"
+site_description: "Modern Haber Agregasyon Platformu"
+
+# ============================================================================
+# ADMIN USER CONFIGURATION
+# ============================================================================
+
+admin:
+  username: "admin"
+  email: "admin@habernexus.com"
+  password: ""  # Boş bırakılırsa otomatik oluşturulur
+
+# ============================================================================
+# CLOUDFLARE CONFIGURATION
+# ============================================================================
+
+cloudflare:
+  # API Token - https://dash.cloudflare.com/profile/api-tokens
+  # "Edit zone DNS" template kullanarak oluşturun
+  api_token: ""
+  
+  # Tunnel Token - https://one.dash.cloudflare.com → Networks → Tunnels
+  # "Create a Tunnel" ile oluşturun ve token'ı kopyalayın
+  tunnel_token: ""
+  
+  # Zone ID (opsiyonel) - Cloudflare dashboard'dan alınabilir
+  zone_id: ""
+
+# ============================================================================
+# GOOGLE AI CONFIGURATION (OPTIONAL)
+# ============================================================================
+
+google:
+  # Google AI API Key - https://aistudio.google.com/app/apikey
+  api_key: ""
+
+# ============================================================================
+# DATABASE CONFIGURATION
+# ============================================================================
+
+database:
+  # Veritabanı şifresi - Boş bırakılırsa otomatik oluşturulur
+  password: ""
+  
+  # Veritabanı adı
+  name: "habernexus"
+  
+  # Veritabanı kullanıcısı
+  user: "habernexus"
+
+# ============================================================================
+# REDIS CONFIGURATION
+# ============================================================================
+
+redis:
+  # Redis şifresi (opsiyonel)
+  password: ""
+
+# ============================================================================
+# INSTALLATION OPTIONS
+# ============================================================================
+
+options:
+  # Mevcut kurulumu zorla yeniden yükle
+  force_reinstall: false
+  
+  # API doğrulamalarını atla
+  skip_validation: false
+  
+  # Detaylı çıktı
+  verbose: false
+  
+  # Sessiz mod
+  silent: false
+
+# ============================================================================
+# SECURITY SETTINGS
+# ============================================================================
+
+security:
+  # Django secret key - Boş bırakılırsa otomatik oluşturulur
+  secret_key: ""
+  
+  # SSL/TLS ayarları
+  ssl_redirect: true
+  hsts_seconds: 31536000
+  
+  # Cookie güvenliği
+  session_cookie_secure: true
+  csrf_cookie_secure: true
+
+# ============================================================================
+# TIMEZONE & LOCALE
+# ============================================================================
+
+timezone: "Europe/Istanbul"
+language: "tr"
+
+# ============================================================================
+# BACKUP CONFIGURATION
+# ============================================================================
+
+backup:
+  # Kurulum öncesi yedek al
+  before_install: true
+  
+  # Yedek dizini
+  directory: "/opt/habernexus/.backups"
+  
+  # Eski yedekleri kaç gün tut
+  retention_days: 30
+
+# ============================================================================
+# NOTIFICATION SETTINGS (OPTIONAL)
+# ============================================================================
+
+notifications:
+  # Kurulum tamamlandığında e-posta gönder
+  email_on_complete: false
+  
+  # Hata durumunda e-posta gönder
+  email_on_error: false
+
+# ============================================================================
+# ADVANCED SETTINGS
+# ============================================================================
+
+advanced:
+  # Proje yolu
+  project_path: "/opt/habernexus"
+  
+  # Log dizini
+  log_directory: "/var/log/habernexus"
+  
+  # Docker network adı
+  docker_network: "habernexus_network"
+  
+  # Celery worker sayısı
+  celery_workers: 2
+  
+  # Gunicorn worker sayısı
+  gunicorn_workers: 4
