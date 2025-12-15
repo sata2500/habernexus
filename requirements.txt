@@ -1,35 +1,115 @@
-Django==5.0.7
+# ============================================================================
+# HaberNexus v9.0 - Python Dependencies
+# Updated: December 2025
+# ============================================================================
+
+# Core Framework
+Django==5.1.3
 django-tailwind==3.8.0
-psycopg2-binary==2.9.9
+django-extensions==3.2.3
+
+# Database
+psycopg2-binary==2.9.10
+dj-database-url==2.2.0
+
+# Task Queue
 celery==5.4.0
-redis==5.0.1
-google-generativeai==0.7.2
-feedparser==6.0.10
-Pillow==11.0.0
-requests==2.31.0
-python-dotenv==1.0.0
-gunicorn==22.0.0
-python-slugify==8.0.1
-django-celery-beat==2.6.0
-django-redis==5.4.0
+django-celery-beat==2.7.0
+django-celery-results==2.5.1
 flower==2.0.1
-pytest==8.0.0
-pytest-django==4.8.0
-pytest-cov==4.1.0
-factory-boy==3.3.0
-spacy==3.7.2
-textblob==0.17.1
-beautifulsoup4==4.12.2
-opencv-python==4.8.1.78
-flake8==7.0.0
-black==24.1.1
+
+# Cache & Session
+redis==5.2.1
+django-redis==5.4.0
+hiredis==3.0.0
+
+# AI & ML
+google-generativeai==0.8.3
+openai==1.57.2
+tiktoken==0.8.0
+spacy==3.8.2
+textblob==0.18.0.post0
+
+# Web Scraping & RSS
+feedparser==6.0.11
+beautifulsoup4==4.12.3
+lxml==5.3.0
+requests==2.32.3
+httpx==0.28.1
+aiohttp==3.11.10
+
+# Image Processing
+Pillow==11.0.0
+opencv-python-headless==4.10.0.84
+
+# Server
+gunicorn==23.0.0
+uvicorn==0.32.1
+whitenoise==6.8.2
+
+# Environment & Config
+python-dotenv==1.0.1
+python-decouple==3.8
+
+# Utilities
+python-slugify==8.0.4
+markdown==3.7
+bleach==6.2.0
+humanize==4.11.0
+
+# Search
+django-elasticsearch-dsl==8.0
+elasticsearch-dsl==8.17.0
+elasticsearch==8.17.0
+
+# API & Documentation
+djangorestframework==3.15.2
+drf-spectacular==0.28.0
+django-cors-headers==4.6.0
+
+# Monitoring & Logging
+sentry-sdk[django]==2.19.2
+django-prometheus==2.3.1
+structlog==24.4.0
+
+# Security
+django-csp==3.8
+django-axes==7.0.0
+
+# ============================================================================
+# Development & Testing
+# ============================================================================
+
+# Testing
+pytest==8.3.4
+pytest-django==4.9.0
+pytest-cov==6.0.0
+pytest-asyncio==0.24.0
+pytest-xdist==3.6.1
+factory-boy==3.3.1
+faker==33.1.0
+responses==0.25.3
+freezegun==1.4.0
+
+# Code Quality (Ruff replaces flake8, isort, black)
+ruff==0.8.3
+black==24.10.0
 isort==5.13.2
-pylint==3.0.3
-safety==3.0.1
-bandit==1.7.5
-sentry-sdk==2.47.0
-django-prometheus==2.4.1
-drf-spectacular==0.29.0
-django-elasticsearch-dsl>=8.0
-elasticsearch-dsl>=8.0
-elasticsearch>=8.0
+flake8==7.1.1
+pylint==3.3.2
+pylint-django==2.6.1
+mypy==1.13.0
+django-stubs==5.1.1
+
+# Security Scanning
+bandit==1.8.0
+safety==3.2.11
+pip-audit==2.7.3
+
+# Documentation
+mkdocs==1.6.1
+mkdocs-material==9.5.47
+
+# Debug
+django-debug-toolbar==4.4.6
+ipython==8.30.0

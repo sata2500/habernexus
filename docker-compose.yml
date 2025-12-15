@@ -1,6 +1,6 @@
 version: '3.9'
 
-# HaberNexus v6.0 - Complete Docker Compose Configuration
+# HaberNexus v9.0 - Complete Docker Compose Configuration
 # Includes: Django App, PostgreSQL, Redis, Celery, Caddy, Cloudflare Tunnel
 # Deployment: Cloudflare Tunnel + Caddy (Automatic HTTPS)
 
@@ -174,7 +174,7 @@ services:
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
-             gunicorn -w 4 -b 0.0.0.0:8000 habernexus.wsgi:application"
+             gunicorn -w 4 -b 0.0.0.0:8000 habernexus_config.wsgi:application"
     
     expose:
       - "8000"
@@ -234,7 +234,7 @@ services:
     container_name: habernexus_celery
     restart: unless-stopped
     
-    command: celery -A habernexus worker -l info --concurrency=4
+    command: celery -A habernexus_config worker -l info --concurrency=4
     
     environment:
       - DEBUG=${DEBUG:-False}
@@ -274,7 +274,7 @@ services:
     container_name: habernexus_celery_beat
     restart: unless-stopped
     
-    command: celery -A habernexus beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    command: celery -A habernexus_config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     
     environment:
       - DEBUG=${DEBUG:-False}
@@ -314,7 +314,7 @@ services:
     container_name: habernexus_flower
     restart: unless-stopped
     
-    command: celery -A habernexus flower --port=5555 --broker=redis://redis:6379/0
+    command: celery -A habernexus_config flower --port=5555 --broker=redis://redis:6379/0
     
     expose:
       - "5555"

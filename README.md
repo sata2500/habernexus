@@ -1,11 +1,11 @@
-# 🚀 HaberNexus v8.0
+# 🚀 HaberNexus v9.0
 
 <div align="center">
 
-![HaberNexus Logo](https://img.shields.io/badge/HaberNexus-v8.0-blue?style=for-the-badge&logo=newspaper)
+![HaberNexus Logo](https://img.shields.io/badge/HaberNexus-v9.0-blue?style=for-the-badge&logo=newspaper)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.11+-green?style=for-the-badge&logo=python)](https://python.org)
-[![Django](https://img.shields.io/badge/Django-5.0-green?style=for-the-badge&logo=django)](https://djangoproject.com)
+[![Django](https://img.shields.io/badge/Django-5.1-green?style=for-the-badge&logo=django)](https://djangoproject.com)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker)](https://docker.com)
 
 **Modern, AI-Destekli, Tam Otomatik Haber Agregasyon Platformu**
@@ -16,7 +16,7 @@
 
 ---
 
-## ✨ v8.0'da Yenilikler
+## ✨ v9.0'da Yenilikler
 
 ### 🎯 Ultimate Kurulum Sistemi
 - **One-Click Kurulum** - Tek komutla tam otomatik kurulum
@@ -151,7 +151,7 @@ sudo bash pre_install_check_v8.sh
 
 | Bileşen | Teknoloji | Versiyon |
 |---------|-----------|----------|
-| Backend | Django | 5.0+ |
+| Backend | Django | 5.1+ |
 | Veritabanı | PostgreSQL | 16 |
 | Cache | Redis | 7 |
 | Task Queue | Celery | 5.3+ |
@@ -311,7 +311,7 @@ Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır.
 
 <div align="center">
 
-**HaberNexus v8.0** - Modern, Otomatik, Güvenli
+**HaberNexus v9.0** - Modern, Otomatik, Güvenli
 
 Geliştirici: **Salih TANRISEVEN** | Aralık 2025
 

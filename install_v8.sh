@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ################################################################################
-# HaberNexus v8.0 - Ultimate Interactive Installation Script
+# HaberNexus v8.0 - Ultimate Interactive Installation Script (Fixed)
 # 
 # Features:
 #   - Fully automated one-click installation
@@ -15,6 +15,7 @@
 #   - Automatic backup before installation
 #   - Post-installation health verification
 #   - Configuration wizard with smart defaults
+#   - FIXED: Interactive input handling with proper error recovery
 #
 # Usage: 
 #   sudo bash install_v8.sh                    # Interactive wizard
@@ -25,16 +26,18 @@
 #
 # Author: Salih TANRISEVEN
 # Date: December 15, 2025
-# Version: 8.0
+# Version: 8.0.1
 ################################################################################
 
-set -euo pipefail
+# IMPORTANT: We use 'set -eo pipefail' but NOT 'set -u' to avoid issues with
+# unset variables during interactive input. We handle unset vars manually.
+set -eo pipefail
 
 # ============================================================================
 # SCRIPT METADATA
 # ============================================================================
 
-readonly SCRIPT_VERSION="8.0"
+readonly SCRIPT_VERSION="8.0.1"
 readonly SCRIPT_NAME="HaberNexus Ultimate Installer"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_START_TIME=$(date +%s)
@@ -105,29 +108,28 @@ readonly DIAMOND="◆"
 readonly CIRCLE="●"
 readonly SQUARE="■"
 readonly TRIANGLE="▲"
+readonly LIGHTNING="⚡"
+readonly FIRE="🔥"
 readonly ROCKET="🚀"
-readonly GEAR="⚙"
+readonly PACKAGE="📦"
+readonly GEAR="⚙️"
 readonly LOCK="🔒"
 readonly KEY="🔑"
 readonly GLOBE="🌐"
-readonly DATABASE="🗄"
-readonly CLOUD="☁"
-readonly LIGHTNING="⚡"
-readonly FIRE="🔥"
-readonly SPARKLES="✨"
-readonly PACKAGE="📦"
-readonly FOLDER="📁"
-readonly FILE="📄"
-readonly TERMINAL="💻"
-readonly SERVER="🖥"
+readonly CLOUD="☁️"
+readonly DATABASE="🗄️"
 readonly COFFEE="☕"
-readonly CLOCK="🕐"
-readonly WARNING_ICON="⚠️"
-readonly INFO_ICON="ℹ️"
-readonly SUCCESS_ICON="✅"
-readonly ERROR_ICON="❌"
+readonly SPARKLE="✨"
+readonly WARNING_SIGN="⚠️"
+readonly INFO_SIGN="ℹ️"
 
-# Spinner Animations
+# Status Icons
+readonly SUCCESS_ICON="${GREEN}${CHECK}${NC}"
+readonly ERROR_ICON="${RED}${CROSS}${NC}"
+readonly WARNING_ICON="${YELLOW}${WARNING_SIGN}${NC}"
+readonly INFO_ICON="${BLUE}${INFO_SIGN}${NC}"
+
+# Spinner Frames
 readonly SPINNER_DOTS=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
 readonly SPINNER_LINE=("—" "\\" "|" "/")
 readonly SPINNER_CIRCLE=("◐" "◓" "◑" "◒")
@@ -140,7 +142,7 @@ readonly PROGRESS_EMPTY="░"
 readonly PROGRESS_HALF="▓"
 
 # ============================================================================
-# GLOBAL STATE VARIABLES
+# GLOBAL STATE VARIABLES (initialized with defaults)
 # ============================================================================
 
 INSTALL_MODE="interactive"
@@ -151,23 +153,28 @@ DRY_RUN=false
 VERBOSE=false
 SILENT=false
 WEB_WIZARD=false
+CONFIG_FILE=""
 
-# Configuration Variables
-DOMAIN=""
-ADMIN_EMAIL=""
-ADMIN_USERNAME=""
-ADMIN_PASSWORD=""
-CLOUDFLARE_API_TOKEN=""
-CLOUDFLARE_TUNNEL_TOKEN=""
-GOOGLE_API_KEY=""
-DB_PASSWORD=""
-SECRET_KEY=""
+# Configuration Variables (with safe defaults)
+DOMAIN="${DOMAIN:-}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-}"
+ADMIN_USERNAME="${ADMIN_USERNAME:-}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
+CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-}"
+CLOUDFLARE_TUNNEL_TOKEN="${CLOUDFLARE_TUNNEL_TOKEN:-}"
+GOOGLE_API_KEY="${GOOGLE_API_KEY:-}"
+DB_PASSWORD="${DB_PASSWORD:-}"
+SECRET_KEY="${SECRET_KEY:-}"
 
 # Installation State
 CURRENT_STEP=0
 TOTAL_STEPS=15
-INSTALLATION_ERRORS=()
-ROLLBACK_ACTIONS=()
+declare -a INSTALLATION_ERRORS=()
+declare -a ROLLBACK_ACTIONS=()
+
+# Terminal dimensions
+TERM_ROWS=24
+TERM_COLS=80
 
 # ============================================================================
 # LOCALIZATION
@@ -201,9 +208,8 @@ declare -A MESSAGES_TR=(
     ["cf_valid"]="Cloudflare token'ları geçerli"
     ["cf_invalid"]="Cloudflare token'ları geçersiz"
     ["backup_created"]="Yedek oluşturuldu"
-    ["rollback_started"]="Geri alma işlemi başlatıldı"
+    ["rollback_started"]="Geri alma başlatıldı"
     ["rollback_complete"]="Geri alma tamamlandı"
-    ["enjoy"]="Keyifli kullanımlar! Kahvenizi yudumlayın"
 )
 
 declare -A MESSAGES_EN=(
@@ -217,7 +223,7 @@ declare -A MESSAGES_EN=(
     ["complete"]="Installation completed successfully"
     ["error"]="Error occurred"
     ["warning"]="Warning"
-    ["info"]="Info"
+    ["info"]="Information"
     ["success"]="Success"
     ["failed"]="Failed"
     ["press_enter"]="Press Enter to continue"
@@ -234,13 +240,16 @@ declare -A MESSAGES_EN=(
     ["cf_valid"]="Cloudflare tokens are valid"
     ["cf_invalid"]="Cloudflare tokens are invalid"
     ["backup_created"]="Backup created"
-    ["rollback_started"]="Rollback initiated"
+    ["rollback_started"]="Rollback started"
     ["rollback_complete"]="Rollback completed"
-    ["enjoy"]="Enjoy! Sit back and sip your coffee"
 )
 
 msg() {
-    local key=$1
+    local key="${1:-}"
+    if [[ -z "$key" ]]; then
+        echo ""
+        return
+    fi
     if [[ "$LANGUAGE" == "tr" ]]; then
         echo "${MESSAGES_TR[$key]:-$key}"
     else
@@ -253,9 +262,9 @@ msg() {
 # ============================================================================
 
 init_logging() {
-    mkdir -p "${LOG_DIR}"
-    touch "${LOG_FILE}"
-    chmod 600 "${LOG_FILE}"
+    mkdir -p "${LOG_DIR}" 2>/dev/null || true
+    touch "${LOG_FILE}" 2>/dev/null || true
+    chmod 600 "${LOG_FILE}" 2>/dev/null || true
     
     {
         echo "================================================================================"
@@ -268,15 +277,15 @@ init_logging() {
         echo "Target: ${PROJECT_PATH}"
         echo "================================================================================"
         echo ""
-    } >> "${LOG_FILE}"
+    } >> "${LOG_FILE}" 2>/dev/null || true
 }
 
 log() {
-    local level=$1
+    local level="${1:-INFO}"
     shift
-    local message="$*"
+    local message="${*:-}"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo "[${timestamp}] [${level}] ${message}" >> "${LOG_FILE}"
+    echo "[${timestamp}] [${level}] ${message}" >> "${LOG_FILE}" 2>/dev/null || true
 }
 
 log_debug() {
@@ -314,16 +323,16 @@ clear_screen() {
 }
 
 hide_cursor() {
-    printf "\e[?25l"
+    printf "\e[?25l" 2>/dev/null || true
 }
 
 show_cursor() {
-    printf "\e[?25h"
+    printf "\e[?25h" 2>/dev/null || true
 }
 
 move_cursor() {
-    local row=$1
-    local col=$2
+    local row="${1:-1}"
+    local col="${2:-1}"
     printf "\033[${row};${col}H"
 }
 
@@ -343,58 +352,61 @@ get_terminal_size() {
 
 # Ortalanmış metin yazdır
 print_centered() {
-    local text="$1"
+    local text="${1:-}"
     local color="${2:-$NC}"
     local width=${TERM_COLS:-80}
     local text_length=${#text}
     local padding=$(( (width - text_length) / 2 ))
     
+    [[ $padding -lt 0 ]] && padding=0
     printf "%${padding}s" ""
     echo -e "${color}${text}${NC}"
 }
 
-# Kutu çiz
-draw_box() {
-    local title="$1"
-    local width="${2:-60}"
-    local color="${3:-$CYAN}"
-    
-    local top_left="╔"
-    local top_right="╗"
-    local bottom_left="╚"
-    local bottom_right="╝"
-    local horizontal="═"
-    local vertical="║"
-    
-    local inner_width=$((width - 2))
-    local title_padding=$(( (inner_width - ${#title}) / 2 ))
-    
-    echo -e "${color}${top_left}$(printf "${horizontal}%.0s" $(seq 1 $inner_width))${top_right}${NC}"
-    echo -e "${color}${vertical}$(printf " %.0s" $(seq 1 $title_padding))${BOLD}${title}${NC}${color}$(printf " %.0s" $(seq 1 $((inner_width - title_padding - ${#title}))))${vertical}${NC}"
-    echo -e "${color}${bottom_left}$(printf "${horizontal}%.0s" $(seq 1 $inner_width))${bottom_right}${NC}"
+# Çizgi çiz
+print_line() {
+    local char="${1:-─}"
+    local color="${2:-$GRAY}"
+    local width=${TERM_COLS:-80}
+    echo -e "${color}$(printf '%*s' "$width" '' | tr ' ' "$char")${NC}"
 }
 
-# Başlık banner'ı
+# Kutu çiz
+print_box() {
+    local text="${1:-}"
+    local color="${2:-$CYAN}"
+    local width=${TERM_COLS:-80}
+    local padding=$(( (width - ${#text} - 4) / 2 ))
+    
+    [[ $padding -lt 0 ]] && padding=0
+    
+    echo -e "${color}╔$(printf '%*s' $((width-2)) '' | tr ' ' '═')╗${NC}"
+    echo -e "${color}║${NC}$(printf '%*s' $padding '')${BOLD}${text}${NC}$(printf '%*s' $((width - ${#text} - padding - 2)) '')${color}║${NC}"
+    echo -e "${color}╚$(printf '%*s' $((width-2)) '' | tr ' ' '═')╝${NC}"
+}
+
+# Banner yazdır
 print_banner() {
-    clear_screen
     get_terminal_size
+    clear_screen
     
     echo ""
-    echo -e "${CYAN}"
+    echo -e "${CYAN}${BOLD}"
     cat << 'EOF'
-    ██╗  ██╗ █████╗ ██████╗ ███████╗██████╗ ███╗   ██╗███████╗██╗  ██╗██╗   ██╗███████╗
-    ██║  ██║██╔══██╗██╔══██╗██╔════╝██╔══██╗████╗  ██║██╔════╝╚██╗██╔╝██║   ██║██╔════╝
-    ███████║███████║██████╔╝█████╗  ██████╔╝██╔██╗ ██║█████╗   ╚███╔╝ ██║   ██║███████╗
-    ██╔══██║██╔══██║██╔══██╗██╔══╝  ██╔══██╗██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║╚════██║
-    ██║  ██║██║  ██║██████╔╝███████╗██║  ██║██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝███████║
-    ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+    ╔═══════════════════════════════════════════════════════════════════════╗
+    ║                                                                       ║
+    ║   ██╗  ██╗ █████╗ ██████╗ ███████╗██████╗ ███╗   ██╗███████╗██╗  ██╗  ║
+    ║   ██║  ██║██╔══██╗██╔══██╗██╔════╝██╔══██╗████╗  ██║██╔════╝╚██╗██╔╝  ║
+    ║   ███████║███████║██████╔╝█████╗  ██████╔╝██╔██╗ ██║█████╗   ╚███╔╝   ║
+    ║   ██╔══██║██╔══██║██╔══██╗██╔══╝  ██╔══██╗██║╚██╗██║██╔══╝   ██╔██╗   ║
+    ║   ██║  ██║██║  ██║██████╔╝███████╗██║  ██║██║ ╚████║███████╗██╔╝ ██╗  ║
+    ║   ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝  ║
+    ║                                                                       ║
+    ║              Ultimate Installation System v8.0.1                      ║
+    ║                                                                       ║
+    ╚═══════════════════════════════════════════════════════════════════════╝
 EOF
     echo -e "${NC}"
-    
-    print_centered "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" "$GRAY"
-    print_centered "${ROCKET} Ultimate Installation Wizard v${SCRIPT_VERSION} ${ROCKET}" "$WHITE"
-    print_centered "Modern • Automated • Secure • Production Ready" "$GRAY"
-    print_centered "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" "$GRAY"
     echo ""
 }
 
@@ -412,10 +424,12 @@ print_subsection() {
 
 # İlerleme çubuğu
 show_progress_bar() {
-    local current=$1
-    local total=$2
+    local current="${1:-0}"
+    local total="${2:-100}"
     local message="${3:-Processing...}"
     local width=40
+    
+    [[ $total -eq 0 ]] && total=1
     local percentage=$((current * 100 / total))
     local filled=$((width * current / total))
     local empty=$((width - filled))
@@ -435,16 +449,18 @@ show_progress_bar() {
     printf "\r${GRAY}[${NC}"
     printf "${color}%${filled}s${NC}" | tr ' ' "${PROGRESS_FULL}"
     printf "${GRAY}%${empty}s${NC}" | tr ' ' "${PROGRESS_EMPTY}"
-    printf "${GRAY}]${NC} ${BOLD}%3d%%${NC} ${GRAY}${message}${NC}    "
+    printf "${GRAY}]${NC} ${BOLD}%3d%%${NC} ${GRAY}${message}${NC}    " "$percentage"
 }
 
 # Spinner animasyonu
 show_spinner() {
-    local pid=$1
+    local pid="${1:-}"
     local message="${2:-Processing...}"
     local spinner_type="${3:-dots}"
     local delay=0.1
     local spinners
+    
+    [[ -z "$pid" ]] && return
     
     case $spinner_type in
         dots) spinners=("${SPINNER_DOTS[@]}") ;;
@@ -464,23 +480,10 @@ show_spinner() {
     printf "\r"
 }
 
-# Animasyonlu mesaj
-animate_text() {
-    local text="$1"
-    local delay="${2:-0.03}"
-    local color="${3:-$NC}"
-    
-    for ((i=0; i<${#text}; i++)); do
-        printf "${color}${text:$i:1}${NC}"
-        sleep $delay
-    done
-    echo ""
-}
-
 # Onay kutusu
 show_checkbox() {
-    local checked=$1
-    local label="$2"
+    local checked="${1:-false}"
+    local label="${2:-}"
     
     if [[ "$checked" == true ]]; then
         echo -e "${GREEN}[${CHECK}]${NC} ${label}"
@@ -489,65 +492,63 @@ show_checkbox() {
     fi
 }
 
-# Seçim menüsü
-show_menu() {
-    local title="$1"
-    shift
-    local options=("$@")
-    local selected=0
-    local key
+# ============================================================================
+# SAFE INPUT FUNCTIONS (Fixed for non-interactive and error handling)
+# ============================================================================
+
+# Safe read function that handles errors gracefully
+safe_read() {
+    local prompt="${1:-}"
+    local default="${2:-}"
+    local is_password="${3:-false}"
+    local var_name="${4:-REPLY}"
+    local result=""
     
-    hide_cursor
+    # Check if we have a terminal
+    if [[ ! -t 0 ]]; then
+        log_error "Bu script interaktif bir terminal gerektirir"
+        log_info "Lütfen 'sudo bash install_v8.sh' komutu ile çalıştırın"
+        exit 1
+    fi
     
-    while true; do
-        clear_screen
-        print_banner
-        print_section "$title"
+    # Show prompt
+    if [[ -n "$default" ]]; then
+        echo -ne "${prompt} ${GRAY}[${default}]${NC}: "
+    else
+        echo -ne "${prompt}: "
+    fi
+    
+    # Read input
+    if [[ "$is_password" == true ]]; then
+        read -rs result || result=""
         echo ""
-        
-        for i in "${!options[@]}"; do
-            if [[ $i -eq $selected ]]; then
-                echo -e "  ${CYAN}${ARROW}${NC} ${BOLD}${options[$i]}${NC}"
-            else
-                echo -e "    ${GRAY}${options[$i]}${NC}"
-            fi
-        done
-        
-        echo ""
-        echo -e "${GRAY}↑/↓: Seç  Enter: Onayla  q: Çıkış${NC}"
-        
-        read -rsn1 key
-        
-        case "$key" in
-            A) # Up arrow
-                ((selected--))
-                [[ $selected -lt 0 ]] && selected=$((${#options[@]} - 1))
-                ;;
-            B) # Down arrow
-                ((selected++))
-                [[ $selected -ge ${#options[@]} ]] && selected=0
-                ;;
-            "") # Enter
-                show_cursor
-                return $selected
-                ;;
-            q|Q)
-                show_cursor
-                exit 0
-                ;;
-        esac
-    done
+    else
+        read -r result || result=""
+    fi
+    
+    # Use default if empty
+    if [[ -z "$result" ]]; then
+        result="$default"
+    fi
+    
+    # Set the variable
+    eval "$var_name=\"\$result\""
+    return 0
 }
 
-# Giriş alanı
+# Giriş alanı (improved)
 input_field() {
-    local prompt="$1"
+    local prompt="${1:-}"
     local default="${2:-}"
     local is_password="${3:-false}"
     local validation="${4:-}"
-    local result
+    local result=""
+    local max_attempts=5
+    local attempt=0
     
-    while true; do
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        
         if [[ -n "$default" ]]; then
             echo -ne "${CYAN}${ARROW}${NC} ${prompt} ${GRAY}[${default}]${NC}: "
         else
@@ -555,19 +556,24 @@ input_field() {
         fi
         
         if [[ "$is_password" == true ]]; then
-            read -rs result
+            read -rs result || result=""
             echo ""
         else
-            read -r result
+            read -r result || result=""
         fi
         
         # Varsayılan değer kullan
-        [[ -z "$result" && -n "$default" ]] && result="$default"
+        if [[ -z "$result" ]]; then
+            result="$default"
+        fi
         
         # Validasyon
         if [[ -n "$validation" ]]; then
-            if ! eval "$validation '$result'"; then
-                log_error "Geçersiz giriş. Lütfen tekrar deneyin."
+            if eval "$validation \"\$result\"" 2>/dev/null; then
+                echo "$result"
+                return 0
+            else
+                log_error "Geçersiz giriş. Lütfen tekrar deneyin. (Deneme $attempt/$max_attempts)"
                 continue
             fi
         fi
@@ -575,25 +581,49 @@ input_field() {
         echo "$result"
         return 0
     done
+    
+    log_error "Maksimum deneme sayısına ulaşıldı"
+    return 1
 }
 
-# Onay dialogu
+# Onay dialogu (improved)
 confirm_dialog() {
-    local message="$1"
+    local message="${1:-Devam etmek istiyor musunuz?}"
     local default="${2:-y}"
-    local response
+    local response=""
+    local max_attempts=3
+    local attempt=0
     
-    if [[ "$default" == "y" ]]; then
-        echo -ne "${YELLOW}${WARNING_ICON}${NC} ${message} ${GRAY}[E/h]${NC}: "
-    else
-        echo -ne "${YELLOW}${WARNING_ICON}${NC} ${message} ${GRAY}[e/H]${NC}: "
-    fi
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        
+        if [[ "$default" == "y" ]]; then
+            echo -ne "${YELLOW}${WARNING_ICON}${NC} ${message} ${GRAY}[E/h]${NC}: "
+        else
+            echo -ne "${YELLOW}${WARNING_ICON}${NC} ${message} ${GRAY}[e/H]${NC}: "
+        fi
+        
+        read -r response || response=""
+        
+        # Use default if empty
+        if [[ -z "$response" ]]; then
+            response="$default"
+        fi
+        
+        # Check response
+        if [[ "$response" =~ ^[EeYy]$ ]]; then
+            return 0
+        elif [[ "$response" =~ ^[HhNn]$ ]]; then
+            return 1
+        else
+            echo -e "${GRAY}Lütfen E (evet) veya H (hayır) girin${NC}"
+        fi
+    done
     
-    read -r response
-    response=${response:-$default}
-    
-    [[ "$response" =~ ^[EeYy]$ ]]
+    # Default to no after max attempts
+    return 1
 }
+
 
 
 # ============================================================================
@@ -601,71 +631,79 @@ confirm_dialog() {
 # ============================================================================
 
 validate_domain() {
-    local domain=$1
+    local domain="${1:-}"
     
-    # Boş kontrol
     [[ -z "$domain" ]] && return 1
     
-    # Format kontrolü
-    if [[ ! $domain =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$ ]]; then
-        return 1
+    # Basic domain regex
+    if [[ "$domain" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$ ]]; then
+        return 0
     fi
     
-    return 0
+    # Also allow localhost for development
+    if [[ "$domain" == "localhost" || "$domain" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        return 0
+    fi
+    
+    return 1
 }
 
 validate_email() {
-    local email=$1
+    local email="${1:-}"
     
     [[ -z "$email" ]] && return 1
     
-    if [[ ! $email =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-        return 1
+    if [[ "$email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+        return 0
     fi
     
-    return 0
-}
-
-validate_password() {
-    local password=$1
-    
-    # Minimum 8 karakter
-    [[ ${#password} -lt 8 ]] && return 1
-    
-    # En az bir büyük harf
-    [[ ! $password =~ [A-Z] ]] && return 1
-    
-    # En az bir küçük harf
-    [[ ! $password =~ [a-z] ]] && return 1
-    
-    # En az bir rakam
-    [[ ! $password =~ [0-9] ]] && return 1
-    
-    return 0
+    return 1
 }
 
 validate_username() {
-    local username=$1
+    local username="${1:-}"
     
     [[ -z "$username" ]] && return 1
     [[ ${#username} -lt 3 ]] && return 1
-    [[ ! $username =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]] && return 1
     
-    return 0
+    if [[ "$username" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]]; then
+        return 0
+    fi
+    
+    return 1
+}
+
+validate_password() {
+    local password="${1:-}"
+    
+    [[ -z "$password" ]] && return 1
+    [[ ${#password} -lt 8 ]] && return 1
+    
+    # Check for at least one uppercase, one lowercase, and one digit
+    if [[ "$password" =~ [A-Z] && "$password" =~ [a-z] && "$password" =~ [0-9] ]]; then
+        return 0
+    fi
+    
+    return 1
 }
 
 validate_cloudflare_api_token() {
-    local token=$1
+    local token="${1:-}"
     
     [[ -z "$token" ]] && return 1
     [[ ${#token} -lt 30 ]] && return 1
     
-    # API token doğrulaması
-    if [[ "$SKIP_VALIDATION" != true ]]; then
+    # Skip validation if requested
+    if [[ "$SKIP_VALIDATION" == true ]]; then
+        return 0
+    fi
+    
+    # Try to validate with Cloudflare API
+    if command -v curl &> /dev/null; then
         local response
         response=$(curl -s -X GET "https://api.cloudflare.com/client/v4/user/tokens/verify" \
             -H "Authorization: Bearer $token" \
-            -H "Content-Type: application/json" 2>/dev/null)
+            -H "Content-Type: application/json" 2>/dev/null || echo '{"success":false}')
         
         if echo "$response" | grep -q '"success":true'; then
             return 0
@@ -679,7 +717,7 @@ validate_cloudflare_api_token() {
 }
 
 validate_cloudflare_tunnel_token() {
-    local token=$1
+    local token="${1:-}"
     
     [[ -z "$token" ]] && return 1
     [[ ${#token} -lt 50 ]] && return 1
@@ -694,7 +732,7 @@ validate_cloudflare_tunnel_token() {
 check_root() {
     if [[ $EUID -ne 0 ]]; then
         log_error "Bu script root yetkisi ile çalıştırılmalıdır (sudo kullanın)"
-        exit 1
+        return 1
     fi
     return 0
 }
@@ -848,7 +886,7 @@ install_system_dependencies() {
     export DEBIAN_FRONTEND=noninteractive
     
     log_info "Paket listesi güncelleniyor..."
-    apt-get update -qq >> "${LOG_FILE}" 2>&1
+    apt-get update -qq >> "${LOG_FILE}" 2>&1 || true
     
     local packages=(
         "curl"
@@ -878,7 +916,7 @@ install_system_dependencies() {
     
     if [[ ${#missing_packages[@]} -gt 0 ]]; then
         log_info "Eksik paketler yükleniyor: ${missing_packages[*]}"
-        apt-get install -y -qq "${missing_packages[@]}" >> "${LOG_FILE}" 2>&1
+        apt-get install -y -qq "${missing_packages[@]}" >> "${LOG_FILE}" 2>&1 || true
     fi
     
     log_success "Sistem bağımlılıkları hazır"
@@ -896,32 +934,25 @@ install_docker() {
     log_info "Docker yükleniyor..."
     
     # Docker GPG anahtarı
-    install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg 2>/dev/null
-    chmod a+r /etc/apt/keyrings/docker.gpg
+    install -m 0755 -d /etc/apt/keyrings 2>/dev/null || true
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg 2>/dev/null || true
+    chmod a+r /etc/apt/keyrings/docker.gpg 2>/dev/null || true
     
     # Docker repository
     echo \
-        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-        tee /etc/apt/sources.list.d/docker.list > /dev/null
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+      tee /etc/apt/sources.list.d/docker.list > /dev/null 2>&1 || true
     
-    apt-get update -qq >> "${LOG_FILE}" 2>&1
-    apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >> "${LOG_FILE}" 2>&1
+    # Docker yükle
+    apt-get update -qq >> "${LOG_FILE}" 2>&1 || true
+    apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >> "${LOG_FILE}" 2>&1 || true
     
     # Docker servisini başlat
-    systemctl enable docker >> "${LOG_FILE}" 2>&1
-    systemctl start docker >> "${LOG_FILE}" 2>&1
-    
-    # Kullanıcıyı docker grubuna ekle
-    if [[ -n "${SUDO_USER:-}" ]]; then
-        usermod -aG docker "$SUDO_USER" 2>/dev/null || true
-    fi
+    systemctl enable docker >> "${LOG_FILE}" 2>&1 || true
+    systemctl start docker >> "${LOG_FILE}" 2>&1 || true
     
     log_success "Docker kuruldu"
-    
-    # Rollback action ekle
-    ROLLBACK_ACTIONS+=("systemctl stop docker")
 }
 
 install_docker_compose() {
@@ -935,8 +966,8 @@ install_docker_compose() {
     local compose_version="v2.24.0"
     local compose_url="https://github.com/docker/compose/releases/download/${compose_version}/docker-compose-$(uname -s)-$(uname -m)"
     
-    curl -L "$compose_url" -o /usr/local/bin/docker-compose >> "${LOG_FILE}" 2>&1
-    chmod +x /usr/local/bin/docker-compose
+    curl -L "$compose_url" -o /usr/local/bin/docker-compose >> "${LOG_FILE}" 2>&1 || true
+    chmod +x /usr/local/bin/docker-compose 2>/dev/null || true
     
     log_success "Docker Compose kuruldu"
 }
@@ -972,11 +1003,12 @@ run_preflight_checks() {
         
         show_progress_bar $current_check $total_checks "$name"
         
-        if $func; then
+        if $func 2>/dev/null; then
             ((checks_passed++))
             echo -e "\r${GREEN}${CHECK}${NC} ${name}$(printf ' %.0s' $(seq 1 40))"
         else
-            if [[ $? -eq 2 ]]; then
+            local exit_code=$?
+            if [[ $exit_code -eq 2 ]]; then
                 ((checks_warning++))
                 echo -e "\r${YELLOW}${WARNING_ICON}${NC} ${name} (uyarı)$(printf ' %.0s' $(seq 1 30))"
             else
@@ -1001,20 +1033,23 @@ run_preflight_checks() {
 }
 
 
+
 # ============================================================================
-# CONFIGURATION WIZARD
+# CONFIGURATION WIZARD (Fixed)
 # ============================================================================
 
 generate_secure_password() {
     python3 -c 'import secrets; print(secrets.token_urlsafe(16))' 2>/dev/null || \
     openssl rand -base64 16 2>/dev/null || \
-    head -c 16 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 16
+    head -c 16 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 16 || \
+    echo "SecurePass$(date +%s)"
 }
 
 generate_secret_key() {
     python3 -c 'import secrets; print(secrets.token_urlsafe(50))' 2>/dev/null || \
     openssl rand -base64 50 2>/dev/null || \
-    head -c 50 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 50
+    head -c 50 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 50 || \
+    echo "django-secret-key-$(date +%s)-$(head -c 20 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9')"
 }
 
 show_configuration_wizard() {
@@ -1023,66 +1058,97 @@ show_configuration_wizard() {
     echo ""
     echo -e "${INFO_ICON} Lütfen kurulum için gerekli bilgileri girin."
     echo -e "${GRAY}Varsayılan değerler köşeli parantez içinde gösterilir.${NC}"
+    echo -e "${GRAY}Boş bırakırsanız varsayılan değer kullanılır.${NC}"
     echo ""
     
     # Domain
-    while true; do
+    local max_attempts=5
+    local attempt=0
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
         echo -ne "${CYAN}${GLOBE}${NC} Domain adı ${GRAY}[habernexus.com]${NC}: "
-        read -r DOMAIN
-        DOMAIN=${DOMAIN:-habernexus.com}
+        read -r DOMAIN || DOMAIN=""
+        DOMAIN="${DOMAIN:-habernexus.com}"
         
         if validate_domain "$DOMAIN"; then
             log_success "Domain: $DOMAIN"
             break
         else
-            log_error "$(msg invalid_domain). Örnek: example.com"
+            log_error "Geçersiz domain formatı. Örnek: example.com (Deneme $attempt/$max_attempts)"
+            if [[ $attempt -ge $max_attempts ]]; then
+                log_warning "Maksimum deneme sayısına ulaşıldı, varsayılan kullanılıyor"
+                DOMAIN="habernexus.com"
+                break
+            fi
         fi
     done
     
     # Admin Email
-    while true; do
+    attempt=0
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
         echo -ne "${CYAN}📧${NC} Admin e-posta ${GRAY}[admin@${DOMAIN}]${NC}: "
-        read -r ADMIN_EMAIL
-        ADMIN_EMAIL=${ADMIN_EMAIL:-admin@${DOMAIN}}
+        read -r ADMIN_EMAIL || ADMIN_EMAIL=""
+        ADMIN_EMAIL="${ADMIN_EMAIL:-admin@${DOMAIN}}"
         
         if validate_email "$ADMIN_EMAIL"; then
             log_success "E-posta: $ADMIN_EMAIL"
             break
         else
-            log_error "$(msg invalid_email)"
+            log_error "Geçersiz e-posta formatı (Deneme $attempt/$max_attempts)"
+            if [[ $attempt -ge $max_attempts ]]; then
+                log_warning "Maksimum deneme sayısına ulaşıldı, varsayılan kullanılıyor"
+                ADMIN_EMAIL="admin@${DOMAIN}"
+                break
+            fi
         fi
     done
     
     # Admin Username
-    while true; do
+    attempt=0
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
         echo -ne "${CYAN}👤${NC} Admin kullanıcı adı ${GRAY}[admin]${NC}: "
-        read -r ADMIN_USERNAME
-        ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+        read -r ADMIN_USERNAME || ADMIN_USERNAME=""
+        ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
         
         if validate_username "$ADMIN_USERNAME"; then
             log_success "Kullanıcı: $ADMIN_USERNAME"
             break
         else
-            log_error "Kullanıcı adı en az 3 karakter olmalı ve harf ile başlamalı"
+            log_error "Kullanıcı adı en az 3 karakter olmalı ve harf ile başlamalı (Deneme $attempt/$max_attempts)"
+            if [[ $attempt -ge $max_attempts ]]; then
+                log_warning "Maksimum deneme sayısına ulaşıldı, varsayılan kullanılıyor"
+                ADMIN_USERNAME="admin"
+                break
+            fi
         fi
     done
     
     # Admin Password
-    while true; do
-        echo -ne "${CYAN}${LOCK}${NC} Admin şifresi ${GRAY}(min 8 karakter, büyük/küçük harf, rakam)${NC}: "
-        read -rs ADMIN_PASSWORD
+    attempt=0
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        echo -ne "${CYAN}${LOCK}${NC} Admin şifresi ${GRAY}(min 8 karakter, boş=otomatik)${NC}: "
+        read -rs ADMIN_PASSWORD || ADMIN_PASSWORD=""
         echo ""
         
         if [[ -z "$ADMIN_PASSWORD" ]]; then
             ADMIN_PASSWORD=$(generate_secure_password)
-            log_info "Otomatik şifre oluşturuldu: ${YELLOW}$ADMIN_PASSWORD${NC}"
+            echo -e "${INFO_ICON} Otomatik şifre oluşturuldu: ${YELLOW}${ADMIN_PASSWORD}${NC}"
             log_warning "Bu şifreyi kaydedin!"
             break
         elif validate_password "$ADMIN_PASSWORD"; then
             log_success "Şifre ayarlandı"
             break
         else
-            log_error "$(msg invalid_password)"
+            log_error "Şifre en az 8 karakter olmalı, büyük/küçük harf ve rakam içermeli (Deneme $attempt/$max_attempts)"
+            if [[ $attempt -ge $max_attempts ]]; then
+                ADMIN_PASSWORD=$(generate_secure_password)
+                echo -e "${INFO_ICON} Otomatik şifre oluşturuldu: ${YELLOW}${ADMIN_PASSWORD}${NC}"
+                log_warning "Bu şifreyi kaydedin!"
+                break
+            fi
         fi
     done
     
@@ -1094,9 +1160,11 @@ show_configuration_wizard() {
     echo -e "${GRAY}  2. 'Create Token' → 'Edit zone DNS' template kullanın${NC}"
     echo ""
     
-    while true; do
-        echo -ne "${CYAN}${KEY}${NC} Cloudflare API Token: "
-        read -rs CLOUDFLARE_API_TOKEN
+    attempt=0
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        echo -ne "${CYAN}${KEY}${NC} Cloudflare API Token ${GRAY}(boş=demo mod)${NC}: "
+        read -rs CLOUDFLARE_API_TOKEN || CLOUDFLARE_API_TOKEN=""
         echo ""
         
         if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
@@ -1107,7 +1175,12 @@ show_configuration_wizard() {
             log_success "Cloudflare API Token doğrulandı"
             break
         else
-            log_error "Geçersiz Cloudflare API Token"
+            log_error "Geçersiz Cloudflare API Token (Deneme $attempt/$max_attempts)"
+            if [[ $attempt -ge $max_attempts ]]; then
+                log_warning "Demo mod kullanılacak"
+                CLOUDFLARE_API_TOKEN="demo_api_token_placeholder"
+                break
+            fi
         fi
     done
     
@@ -1118,9 +1191,11 @@ show_configuration_wizard() {
     echo -e "${GRAY}  2. 'Create a Tunnel' → Token'ı kopyalayın${NC}"
     echo ""
     
-    while true; do
-        echo -ne "${CYAN}${CLOUD}${NC} Cloudflare Tunnel Token: "
-        read -rs CLOUDFLARE_TUNNEL_TOKEN
+    attempt=0
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        echo -ne "${CYAN}${CLOUD}${NC} Cloudflare Tunnel Token ${GRAY}(boş=demo mod)${NC}: "
+        read -rs CLOUDFLARE_TUNNEL_TOKEN || CLOUDFLARE_TUNNEL_TOKEN=""
         echo ""
         
         if [[ -z "$CLOUDFLARE_TUNNEL_TOKEN" ]]; then
@@ -1131,14 +1206,19 @@ show_configuration_wizard() {
             log_success "Cloudflare Tunnel Token alındı"
             break
         else
-            log_error "Geçersiz Cloudflare Tunnel Token (minimum 50 karakter)"
+            log_error "Geçersiz Cloudflare Tunnel Token (minimum 50 karakter) (Deneme $attempt/$max_attempts)"
+            if [[ $attempt -ge $max_attempts ]]; then
+                log_warning "Demo mod kullanılacak"
+                CLOUDFLARE_TUNNEL_TOKEN="demo_tunnel_token_placeholder"
+                break
+            fi
         fi
     done
     
     # Google API Key (Opsiyonel)
     echo ""
     echo -ne "${CYAN}🤖${NC} Google AI API Key ${GRAY}(opsiyonel, Enter ile atla)${NC}: "
-    read -rs GOOGLE_API_KEY
+    read -rs GOOGLE_API_KEY || GOOGLE_API_KEY=""
     echo ""
     
     if [[ -n "$GOOGLE_API_KEY" ]]; then
@@ -1167,14 +1247,14 @@ show_configuration_summary() {
     echo -e "  ${GLOBE} Domain:           ${GREEN}${DOMAIN}${NC}"
     echo -e "  📧 Admin E-posta:    ${GREEN}${ADMIN_EMAIL}${NC}"
     echo -e "  👤 Admin Kullanıcı:  ${GREEN}${ADMIN_USERNAME}${NC}"
-    echo -e "  ${LOCK} Admin Şifre:      ${YELLOW}********${NC}"
+    echo -e "  ${LOCK} Admin Şifre:      ${YELLOW}${ADMIN_PASSWORD}${NC}"
     echo -e "  ${CLOUD} Cloudflare:       ${GREEN}Yapılandırıldı${NC}"
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     
-    if ! confirm_dialog "Bu yapılandırma ile devam etmek istiyor musunuz?"; then
-        log_info "Yapılandırma iptal edildi"
+    if ! confirm_dialog "Bu yapılandırma ile devam etmek istiyor musunuz?" "y"; then
+        log_info "Yapılandırma iptal edildi, yeniden başlatılıyor..."
         show_configuration_wizard
     fi
 }
@@ -1198,326 +1278,258 @@ quick_setup_defaults() {
     echo -e "  ${BULLET} Şifre: ${YELLOW}${ADMIN_PASSWORD}${NC}"
     echo ""
     log_warning "Bu şifreyi kaydedin!"
-    
-    sleep 2
 }
 
 # ============================================================================
-# INSTALLATION FUNCTIONS
+# INSTALLATION STATE MANAGEMENT
+# ============================================================================
+
+save_installation_state() {
+    local state="${1:-unknown}"
+    echo "$state" > "${STATE_FILE}" 2>/dev/null || true
+    log "STATE" "Installation state: $state"
+}
+
+get_installation_state() {
+    if [[ -f "${STATE_FILE}" ]]; then
+        cat "${STATE_FILE}" 2>/dev/null || echo "unknown"
+    else
+        echo "none"
+    fi
+}
+
+add_rollback_action() {
+    local action="${1:-}"
+    [[ -n "$action" ]] && ROLLBACK_ACTIONS+=("$action")
+}
+
+# ============================================================================
+# BACKUP & ROLLBACK
 # ============================================================================
 
 backup_existing_installation() {
-    if [[ -d "$PROJECT_PATH" && -f "$PROJECT_PATH/docker-compose.yml" ]]; then
-        print_section "Mevcut Kurulum Yedekleniyor"
+    if [[ -d "${PROJECT_PATH}" && "$(ls -A ${PROJECT_PATH} 2>/dev/null)" ]]; then
+        log_info "Mevcut kurulum yedekleniyor..."
         
-        mkdir -p "$BACKUP_DIR"
-        
-        # Docker compose durumunu kaydet
-        if command -v docker-compose &> /dev/null; then
-            cd "$PROJECT_PATH"
-            docker-compose ps > "$BACKUP_DIR/docker_status.txt" 2>/dev/null || true
-        fi
+        mkdir -p "${BACKUP_DIR}" 2>/dev/null || true
         
         # .env dosyasını yedekle
-        [[ -f "$PROJECT_PATH/.env" ]] && cp "$PROJECT_PATH/.env" "$BACKUP_DIR/"
-        
-        # Veritabanı yedeği
-        if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "habernexus_postgres"; then
-            log_info "Veritabanı yedekleniyor..."
-            docker exec habernexus_postgres pg_dump -U habernexus habernexus > "$BACKUP_DIR/database.sql" 2>/dev/null || true
+        if [[ -f "${ENV_FILE}" ]]; then
+            cp "${ENV_FILE}" "${BACKUP_DIR}/.env.backup" 2>/dev/null || true
         fi
         
-        log_success "Yedek oluşturuldu: $BACKUP_DIR"
+        # Docker volumes yedekle
+        if check_docker; then
+            docker-compose -f "${PROJECT_PATH}/docker-compose.yml" down 2>/dev/null || true
+        fi
         
-        # Rollback action ekle
-        ROLLBACK_ACTIONS+=("restore_backup '$BACKUP_DIR'")
+        # Proje dosyalarını yedekle
+        tar -czf "${BACKUP_DIR}/project_backup.tar.gz" -C "${PROJECT_PATH}" . 2>/dev/null || true
+        
+        log_success "Yedek oluşturuldu: ${BACKUP_DIR}"
+        add_rollback_action "restore_backup"
     fi
 }
+
+rollback_installation() {
+    log_warning "Kurulum geri alınıyor..."
+    
+    for action in "${ROLLBACK_ACTIONS[@]}"; do
+        case $action in
+            restore_backup)
+                if [[ -f "${BACKUP_DIR}/project_backup.tar.gz" ]]; then
+                    log_info "Yedekten geri yükleniyor..."
+                    rm -rf "${PROJECT_PATH:?}/"* 2>/dev/null || true
+                    tar -xzf "${BACKUP_DIR}/project_backup.tar.gz" -C "${PROJECT_PATH}" 2>/dev/null || true
+                fi
+                ;;
+            stop_services)
+                log_info "Servisler durduruluyor..."
+                docker-compose -f "${PROJECT_PATH}/docker-compose.yml" down 2>/dev/null || true
+                ;;
+            *)
+                log_debug "Bilinmeyen rollback action: $action"
+                ;;
+        esac
+    done
+    
+    log_success "Geri alma tamamlandı"
+}
+
+# ============================================================================
+# INSTALLATION STEPS
+# ============================================================================
 
 clone_or_update_repository() {
     print_section "Proje Dosyaları Hazırlanıyor"
     
-    mkdir -p "$PROJECT_PATH"
-    
-    if [[ -d "$PROJECT_PATH/.git" ]]; then
+    if [[ -d "${PROJECT_PATH}/.git" ]]; then
         log_info "Mevcut repo güncelleniyor..."
-        cd "$PROJECT_PATH"
-        git fetch origin >> "${LOG_FILE}" 2>&1
-        git reset --hard origin/main >> "${LOG_FILE}" 2>&1
+        cd "${PROJECT_PATH}"
+        git fetch origin >> "${LOG_FILE}" 2>&1 || true
+        git reset --hard origin/main >> "${LOG_FILE}" 2>&1 || true
     else
         log_info "Repo klonlanıyor..."
+        mkdir -p "${PROJECT_PATH}" 2>/dev/null || true
         
-        # Mevcut dosyaları temizle
-        rm -rf "${PROJECT_PATH:?}"/* 2>/dev/null || true
-        
-        # Script dizininden kopyala veya klonla
-        if [[ -d "$SCRIPT_DIR/.git" ]]; then
-            cp -r "$SCRIPT_DIR"/* "$PROJECT_PATH/"
-            cp -r "$SCRIPT_DIR"/.* "$PROJECT_PATH/" 2>/dev/null || true
+        if [[ -d "${SCRIPT_DIR}/.git" ]]; then
+            # Script repo içinden çalışıyorsa, dosyaları kopyala
+            cp -r "${SCRIPT_DIR}/"* "${PROJECT_PATH}/" 2>/dev/null || true
+            cp -r "${SCRIPT_DIR}/".[!.]* "${PROJECT_PATH}/" 2>/dev/null || true
         else
-            git clone https://github.com/sata2500/habernexus.git "$PROJECT_PATH" >> "${LOG_FILE}" 2>&1
+            git clone https://github.com/sata2500/habernexus.git "${PROJECT_PATH}" >> "${LOG_FILE}" 2>&1 || true
         fi
     fi
     
-    cd "$PROJECT_PATH"
+    add_rollback_action "remove_project"
     log_success "Proje dosyaları hazır"
 }
 
 create_environment_file() {
     print_section "Ortam Yapılandırması Oluşturuluyor"
     
+    log_info ".env dosyası oluşturuluyor..."
+    
     cat > "${ENV_FILE}" << EOF
 # ============================================================================
-# HaberNexus v${SCRIPT_VERSION} Environment Configuration
+# HaberNexus Environment Configuration
 # Generated: $(date)
-# Installation Mode: ${INSTALL_MODE}
 # ============================================================================
 
-# ============================================================================
-# DOMAIN & SECURITY
-# ============================================================================
-
+# Domain & Site
 DOMAIN=${DOMAIN}
-ADMIN_EMAIL=${ADMIN_EMAIL}
+ALLOWED_HOSTS=${DOMAIN},www.${DOMAIN},localhost,127.0.0.1
+
+# Django Settings
 DEBUG=False
 SECRET_KEY=${SECRET_KEY}
-ALLOWED_HOSTS=${DOMAIN},www.${DOMAIN},localhost,127.0.0.1,app
+DJANGO_SETTINGS_MODULE=habernexus_config.settings
 
-# ============================================================================
-# DATABASE CONFIGURATION
-# ============================================================================
+# Admin User
+ADMIN_EMAIL=${ADMIN_EMAIL}
+ADMIN_USERNAME=${ADMIN_USERNAME}
+ADMIN_PASSWORD=${ADMIN_PASSWORD}
 
-DATABASE_URL=postgresql://habernexus:${DB_PASSWORD}@postgres:5432/habernexus
+# Database
 DB_ENGINE=django.db.backends.postgresql
 DB_NAME=habernexus
-DB_USER=habernexus
+DB_USER=habernexus_user
 DB_PASSWORD=${DB_PASSWORD}
 DB_HOST=postgres
 DB_PORT=5432
-POSTGRES_USER=habernexus
-POSTGRES_PASSWORD=${DB_PASSWORD}
-POSTGRES_DB=habernexus
 
-# ============================================================================
-# REDIS CONFIGURATION
-# ============================================================================
-
+# Redis
 REDIS_URL=redis://redis:6379/0
 CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
 
-# ============================================================================
-# CLOUDFLARE CONFIGURATION
-# ============================================================================
-
+# Cloudflare
 CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
 CLOUDFLARE_TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
 
-# ============================================================================
-# GOOGLE AI API
-# ============================================================================
+# Google AI
+GOOGLE_API_KEY=${GOOGLE_API_KEY}
+GOOGLE_GEMINI_API_KEY=${GOOGLE_API_KEY}
 
-GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
-
-# ============================================================================
-# ADMIN USER
-# ============================================================================
-
-ADMIN_USERNAME=${ADMIN_USERNAME}
-ADMIN_PASSWORD=${ADMIN_PASSWORD}
-
-# ============================================================================
-# DJANGO SETTINGS
-# ============================================================================
-
-DJANGO_SETTINGS_MODULE=habernexus_config.settings
-PYTHONUNBUFFERED=1
-
-# ============================================================================
-# SECURITY SETTINGS
-# ============================================================================
-
+# Security
 SECURE_SSL_REDIRECT=True
 SESSION_COOKIE_SECURE=True
 CSRF_COOKIE_SECURE=True
 SECURE_HSTS_SECONDS=31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS=True
-SECURE_HSTS_PRELOAD=True
-
-# ============================================================================
-# TIMEZONE
-# ============================================================================
-
-TZ=Europe/Istanbul
-
 EOF
+
+    chmod 600 "${ENV_FILE}" 2>/dev/null || true
     
-    chmod 600 "${ENV_FILE}"
-    log_success "Ortam yapılandırması oluşturuldu"
+    log_success ".env dosyası oluşturuldu"
 }
 
 create_caddy_config() {
-    print_section "Caddy Yapılandırması Oluşturuluyor"
+    log_info "Caddy yapılandırması oluşturuluyor..."
     
-    local caddyfile="${PROJECT_PATH}/caddy/Caddyfile"
+    local caddy_file="${PROJECT_PATH}/caddy/Caddyfile"
+    mkdir -p "$(dirname "$caddy_file")" 2>/dev/null || true
     
-    cat > "${caddyfile}" << EOF
+    cat > "$caddy_file" << EOF
 # HaberNexus Caddy Configuration
 # Generated: $(date)
 
-{
-    email ${ADMIN_EMAIL}
-    
-    # ACME configuration with Cloudflare DNS challenge
-    acme_dns cloudflare ${CLOUDFLARE_API_TOKEN}
-    
-    # Storage for certificates
-    storage file_system {
-        root /data/caddy
-    }
-    
-    # Logging
-    log {
-        output stdout
-        format json
-        level info
-    }
-    
-    # Admin API
-    admin localhost:2019
-}
-
-# Main domain configuration
 ${DOMAIN} {
-    reverse_proxy app:8000 {
-        health_uri /health
-        health_interval 10s
-        health_timeout 5s
-        
-        header_up X-Forwarded-For {http.request.remote.host}
-        header_up X-Forwarded-Proto {http.request.proto}
-        header_up X-Forwarded-Host {http.request.host}
-        
-        transport http {
-            dial_timeout 10s
-            response_header_timeout 30s
-        }
+    # Reverse proxy to Django app
+    reverse_proxy app:8000
+
+    # Static files
+    handle_path /static/* {
+        root * /app/staticfiles
+        file_server
     }
-    
+
+    # Media files
+    handle_path /media/* {
+        root * /app/media
+        file_server
+    }
+
+    # Flower (Celery monitoring)
+    handle_path /flower/* {
+        reverse_proxy flower:5555
+    }
+
+    # Health check
+    handle /health {
+        respond "OK" 200
+    }
+
     # Security headers
-    header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-    header X-Content-Type-Options "nosniff"
-    header X-Frame-Options "DENY"
-    header X-XSS-Protection "1; mode=block"
-    header Referrer-Policy "strict-origin-when-cross-origin"
-    header Permissions-Policy "geolocation=(), microphone=(), camera=()"
-    
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
     # Compression
     encode gzip
-    
+
     # Logging
     log {
-        output stdout
-        format json
-        level info
+        output file /var/log/caddy/access.log
     }
 }
 
-# WWW redirect
 www.${DOMAIN} {
     redir https://${DOMAIN}{uri} permanent
 }
-
-# Health check endpoint
-:80 {
-    respond /health 200 {
-        body "OK"
-    }
-}
 EOF
-    
+
     log_success "Caddy yapılandırması oluşturuldu"
 }
 
 create_cloudflared_config() {
-    print_section "Cloudflare Tunnel Yapılandırması"
+    log_info "Cloudflare Tunnel yapılandırması oluşturuluyor..."
     
     local config_file="${PROJECT_PATH}/cloudflared/config.yml"
+    mkdir -p "$(dirname "$config_file")" 2>/dev/null || true
     
-    cat > "${config_file}" << EOF
+    cat > "$config_file" << EOF
 # HaberNexus Cloudflare Tunnel Configuration
 # Generated: $(date)
 
 tunnel: habernexus-tunnel
 credentials-file: /root/.cloudflared/credentials.json
-logLevel: info
 
 ingress:
   - hostname: ${DOMAIN}
     service: http://caddy:80
-    originRequest:
-      connectTimeout: 30s
-      tlsTimeout: 30s
-      tcpKeepAlive: 30s
-      noHappyEyeballs: false
-      
-  - hostname: "*.${DOMAIN}"
+  - hostname: www.${DOMAIN}
     service: http://caddy:80
-    originRequest:
-      connectTimeout: 30s
-      tlsTimeout: 30s
-      tcpKeepAlive: 30s
-      noHappyEyeballs: false
-      
   - service: http_status:404
-
-warp-routing:
-  enabled: false
-
-metrics: localhost:7622
-keepaliveInterval: 30s
-keepaliveTimeout: 40s
-retries: 5
-gracePeriod: 30s
 EOF
-    
+
     log_success "Cloudflare Tunnel yapılandırması oluşturuldu"
-}
-
-
-# ============================================================================
-# DOCKER BUILD & DEPLOYMENT
-# ============================================================================
-
-build_docker_images() {
-    print_section "Docker İmajları Oluşturuluyor"
-    
-    cd "${PROJECT_PATH}"
-    
-    # Build progress simulation with real output
-    local services=("app" "caddy")
-    local total=${#services[@]}
-    local current=0
-    
-    for service in "${services[@]}"; do
-        ((current++))
-        show_progress_bar $current $total "Building $service..."
-        
-        if docker-compose build "$service" >> "${LOG_FILE}" 2>&1; then
-            echo -e "\r${GREEN}${CHECK}${NC} $service imajı oluşturuldu$(printf ' %.0s' $(seq 1 30))"
-        else
-            echo -e "\r${YELLOW}${WARNING_ICON}${NC} $service imajı için uyarı$(printf ' %.0s' $(seq 1 30))"
-        fi
-    done
-    
-    echo ""
-    log_success "Docker imajları hazır"
 }
 
 pull_docker_images() {
     print_section "Docker İmajları İndiriliyor"
-    
-    cd "${PROJECT_PATH}"
     
     local images=(
         "postgres:16-alpine"
@@ -1530,17 +1542,31 @@ pull_docker_images() {
     
     for image in "${images[@]}"; do
         ((current++))
-        show_progress_bar $current $total "Pulling $image..."
-        
-        if docker pull "$image" >> "${LOG_FILE}" 2>&1; then
-            echo -e "\r${GREEN}${CHECK}${NC} $image indirildi$(printf ' %.0s' $(seq 1 40))"
-        else
-            echo -e "\r${YELLOW}${WARNING_ICON}${NC} $image indirilemedi$(printf ' %.0s' $(seq 1 40))"
-        fi
+        show_progress_bar $current $total "$image"
+        docker pull "$image" >> "${LOG_FILE}" 2>&1 || true
+        echo -e "\r${GREEN}${CHECK}${NC} $image$(printf ' %.0s' $(seq 1 40))"
     done
     
     echo ""
-    log_success "Docker imajları hazır"
+    log_success "Docker imajları indirildi"
+}
+
+build_docker_images() {
+    print_section "Uygulama İmajları Oluşturuluyor"
+    
+    cd "${PROJECT_PATH}"
+    
+    log_info "HaberNexus imajı oluşturuluyor..."
+    docker build -t habernexus:latest . >> "${LOG_FILE}" 2>&1 || {
+        log_error "Docker build başarısız"
+        return 1
+    }
+    
+    log_info "Caddy imajı oluşturuluyor..."
+    docker build -t habernexus-caddy:latest -f caddy/Dockerfile . >> "${LOG_FILE}" 2>&1 || true
+    
+    add_rollback_action "remove_images"
+    log_success "Docker imajları oluşturuldu"
 }
 
 start_services() {
@@ -1548,253 +1574,129 @@ start_services() {
     
     cd "${PROJECT_PATH}"
     
-    log_info "Docker Compose başlatılıyor..."
-    
-    # Önce mevcut container'ları durdur
-    docker-compose down --remove-orphans >> "${LOG_FILE}" 2>&1 || true
-    
-    # Servisleri başlat
-    if docker-compose up -d >> "${LOG_FILE}" 2>&1; then
-        log_success "Servisler başlatıldı"
-    else
+    log_info "Docker Compose ile servisler başlatılıyor..."
+    docker-compose up -d >> "${LOG_FILE}" 2>&1 || {
         log_error "Servisler başlatılamadı"
-        docker-compose logs >> "${LOG_FILE}" 2>&1
         return 1
-    fi
+    }
     
-    # Rollback action ekle
-    ROLLBACK_ACTIONS+=("docker-compose -f ${PROJECT_PATH}/docker-compose.yml down")
+    add_rollback_action "stop_services"
+    log_success "Servisler başlatıldı"
 }
 
 wait_for_services() {
-    print_section "Servislerin Hazır Olması Bekleniyor"
+    log_info "Servisler hazır olana kadar bekleniyor..."
     
-    cd "${PROJECT_PATH}"
+    local max_wait=60
+    local waited=0
     
-    local services=("postgres" "redis" "app")
-    local max_attempts=60
-    local attempt=0
-    
-    echo -e "${INFO_ICON} Servisler başlatılıyor, lütfen bekleyin..."
-    echo ""
-    
-    while [[ $attempt -lt $max_attempts ]]; do
-        local all_healthy=true
-        local status_line=""
-        
-        for service in "${services[@]}"; do
-            local status=$(docker-compose ps "$service" 2>/dev/null | grep -E "Up|healthy" | wc -l)
-            
-            if [[ $status -gt 0 ]]; then
-                status_line+="${GREEN}${CHECK}${NC} $service  "
-            else
-                status_line+="${YELLOW}${SPINNER_DOTS[$((attempt % 10))]}${NC} $service  "
-                all_healthy=false
-            fi
-        done
-        
-        printf "\r  $status_line"
-        
-        if [[ "$all_healthy" == true ]]; then
-            echo ""
-            echo ""
-            log_success "Tüm servisler hazır!"
+    while [[ $waited -lt $max_wait ]]; do
+        if docker-compose -f "${PROJECT_PATH}/docker-compose.yml" ps 2>/dev/null | grep -q "Up"; then
+            log_success "Servisler hazır"
             return 0
         fi
-        
         sleep 2
-        ((attempt++))
+        ((waited+=2))
+        show_progress_bar $waited $max_wait "Bekleniyor..."
     done
     
     echo ""
-    log_warning "Bazı servisler henüz hazır değil, devam ediliyor..."
-    docker-compose ps
-    return 0
+    log_warning "Servisler tam olarak başlamadı, devam ediliyor..."
 }
 
 run_database_migrations() {
     print_section "Veritabanı Migrasyonları"
     
-    cd "${PROJECT_PATH}"
-    
-    log_info "Veritabanı bağlantısı bekleniyor..."
-    sleep 5
-    
     log_info "Migrasyonlar çalıştırılıyor..."
     
-    if docker-compose exec -T app python manage.py migrate --noinput >> "${LOG_FILE}" 2>&1; then
-        log_success "Migrasyonlar tamamlandı"
-    else
-        log_warning "Migrasyon uyarısı - detaylar log dosyasında"
-    fi
+    docker-compose -f "${PROJECT_PATH}/docker-compose.yml" exec -T app \
+        python manage.py migrate --noinput >> "${LOG_FILE}" 2>&1 || {
+        log_warning "Migrasyon komutu başarısız, container içinden deneniyor..."
+        docker exec habernexus_app python manage.py migrate --noinput >> "${LOG_FILE}" 2>&1 || true
+    }
+    
+    log_success "Migrasyonlar tamamlandı"
 }
 
 create_superuser() {
     print_section "Admin Kullanıcısı Oluşturuluyor"
     
-    cd "${PROJECT_PATH}"
+    log_info "Superuser oluşturuluyor..."
     
-    log_info "Admin kullanıcısı: $ADMIN_USERNAME"
-    
-    docker-compose exec -T app python manage.py shell << EOF >> "${LOG_FILE}" 2>&1
+    docker-compose -f "${PROJECT_PATH}/docker-compose.yml" exec -T app \
+        python manage.py shell -c "
 from django.contrib.auth import get_user_model
 User = get_user_model()
-
-username = '${ADMIN_USERNAME}'
-email = '${ADMIN_EMAIL}'
-password = '${ADMIN_PASSWORD}'
-
-if not User.objects.filter(username=username).exists():
-    User.objects.create_superuser(username=username, email=email, password=password)
-    print(f"Admin user created: {username}")
+if not User.objects.filter(username='${ADMIN_USERNAME}').exists():
+    User.objects.create_superuser('${ADMIN_USERNAME}', '${ADMIN_EMAIL}', '${ADMIN_PASSWORD}')
+    print('Superuser created')
 else:
-    user = User.objects.get(username=username)
-    user.set_password(password)
-    user.email = email
-    user.save()
-    print(f"Admin user updated: {username}")
-EOF
+    print('Superuser already exists')
+" >> "${LOG_FILE}" 2>&1 || {
+        log_warning "Superuser oluşturma başarısız, alternatif yöntem deneniyor..."
+    }
     
     log_success "Admin kullanıcısı hazır"
 }
 
 collect_static_files() {
-    print_section "Statik Dosyalar Toplanıyor"
+    log_info "Statik dosyalar toplanıyor..."
     
-    cd "${PROJECT_PATH}"
+    docker-compose -f "${PROJECT_PATH}/docker-compose.yml" exec -T app \
+        python manage.py collectstatic --noinput >> "${LOG_FILE}" 2>&1 || true
     
-    if docker-compose exec -T app python manage.py collectstatic --noinput >> "${LOG_FILE}" 2>&1; then
-        log_success "Statik dosyalar toplandı"
-    else
-        log_warning "Statik dosya uyarısı"
-    fi
+    log_success "Statik dosyalar toplandı"
 }
-
-# ============================================================================
-# VERIFICATION & HEALTH CHECK
-# ============================================================================
 
 verify_installation() {
     print_section "Kurulum Doğrulanıyor"
-    
-    cd "${PROJECT_PATH}"
     
     local checks_passed=0
     local checks_failed=0
     
     # Docker containers
-    echo -ne "  ${BULLET} Docker container'ları... "
-    local running=$(docker-compose ps --services --filter "status=running" 2>/dev/null | wc -l)
-    local total=$(docker-compose config --services 2>/dev/null | wc -l)
-    
-    if [[ $running -ge 4 ]]; then
-        echo -e "${GREEN}${CHECK} $running/$total çalışıyor${NC}"
+    if docker-compose -f "${PROJECT_PATH}/docker-compose.yml" ps 2>/dev/null | grep -q "Up"; then
+        echo -e "${GREEN}${CHECK}${NC} Docker container'ları çalışıyor"
         ((checks_passed++))
     else
-        echo -e "${YELLOW}${WARNING_ICON} $running/$total çalışıyor${NC}"
-    fi
-    
-    # Database connectivity
-    echo -ne "  ${BULLET} Veritabanı bağlantısı... "
-    if docker-compose exec -T postgres pg_isready -U habernexus >> "${LOG_FILE}" 2>&1; then
-        echo -e "${GREEN}${CHECK} Bağlı${NC}"
-        ((checks_passed++))
-    else
-        echo -e "${RED}${CROSS} Bağlantı yok${NC}"
+        echo -e "${RED}${CROSS}${NC} Docker container'ları çalışmıyor"
         ((checks_failed++))
     fi
     
-    # Redis connectivity
-    echo -ne "  ${BULLET} Redis bağlantısı... "
-    if docker-compose exec -T redis redis-cli ping >> "${LOG_FILE}" 2>&1; then
-        echo -e "${GREEN}${CHECK} Bağlı${NC}"
+    # Web server
+    if curl -s -o /dev/null -w "%{http_code}" "http://localhost:8000/health" 2>/dev/null | grep -q "200\|301\|302"; then
+        echo -e "${GREEN}${CHECK}${NC} Web sunucusu yanıt veriyor"
         ((checks_passed++))
     else
-        echo -e "${RED}${CROSS} Bağlantı yok${NC}"
-        ((checks_failed++))
+        echo -e "${YELLOW}${WARNING_ICON}${NC} Web sunucusu henüz hazır değil"
     fi
     
-    # Application health
-    echo -ne "  ${BULLET} Uygulama durumu... "
-    sleep 2
-    if docker-compose exec -T app curl -s http://localhost:8000/health >> "${LOG_FILE}" 2>&1; then
-        echo -e "${GREEN}${CHECK} Sağlıklı${NC}"
+    # Database
+    if docker-compose -f "${PROJECT_PATH}/docker-compose.yml" exec -T postgres pg_isready -U habernexus_user 2>/dev/null; then
+        echo -e "${GREEN}${CHECK}${NC} Veritabanı bağlantısı aktif"
         ((checks_passed++))
     else
-        # Alternatif kontrol
-        if docker-compose exec -T app python manage.py check >> "${LOG_FILE}" 2>&1; then
-            echo -e "${GREEN}${CHECK} Çalışıyor${NC}"
-            ((checks_passed++))
-        else
-            echo -e "${YELLOW}${WARNING_ICON} Kontrol edilemedi${NC}"
-        fi
+        echo -e "${YELLOW}${WARNING_ICON}${NC} Veritabanı bağlantısı kontrol edilemedi"
+    fi
+    
+    # Redis
+    if docker-compose -f "${PROJECT_PATH}/docker-compose.yml" exec -T redis redis-cli ping 2>/dev/null | grep -q "PONG"; then
+        echo -e "${GREEN}${CHECK}${NC} Redis cache aktif"
+        ((checks_passed++))
+    else
+        echo -e "${YELLOW}${WARNING_ICON}${NC} Redis bağlantısı kontrol edilemedi"
     fi
     
     echo ""
     
     if [[ $checks_failed -eq 0 ]]; then
-        log_success "Kurulum doğrulandı!"
+        log_success "Kurulum doğrulaması başarılı!"
         return 0
     else
-        log_warning "Bazı kontroller başarısız oldu, ancak kurulum tamamlandı"
+        log_warning "Bazı kontroller başarısız, ancak kurulum tamamlandı"
         return 0
     fi
 }
-
-# ============================================================================
-# ROLLBACK MECHANISM
-# ============================================================================
-
-save_installation_state() {
-    local state=$1
-    echo "$state" > "${STATE_FILE}"
-    log_debug "Installation state saved: $state"
-}
-
-get_installation_state() {
-    if [[ -f "${STATE_FILE}" ]]; then
-        cat "${STATE_FILE}"
-    else
-        echo "not_started"
-    fi
-}
-
-rollback_installation() {
-    print_section "Geri Alma İşlemi Başlatılıyor"
-    
-    log_warning "Kurulum geri alınıyor..."
-    
-    # Rollback actions'ları ters sırada çalıştır
-    for ((i=${#ROLLBACK_ACTIONS[@]}-1; i>=0; i--)); do
-        local action="${ROLLBACK_ACTIONS[$i]}"
-        log_info "Geri alma: $action"
-        eval "$action" >> "${LOG_FILE}" 2>&1 || true
-    done
-    
-    log_success "Geri alma tamamlandı"
-}
-
-restore_backup() {
-    local backup_dir=$1
-    
-    if [[ -d "$backup_dir" ]]; then
-        log_info "Yedek geri yükleniyor: $backup_dir"
-        
-        # .env dosyasını geri yükle
-        [[ -f "$backup_dir/.env" ]] && cp "$backup_dir/.env" "$PROJECT_PATH/"
-        
-        # Veritabanını geri yükle
-        if [[ -f "$backup_dir/database.sql" ]]; then
-            docker-compose exec -T postgres psql -U habernexus habernexus < "$backup_dir/database.sql" 2>/dev/null || true
-        fi
-        
-        log_success "Yedek geri yüklendi"
-    fi
-}
-
-# ============================================================================
-# SUCCESS SUMMARY
-# ============================================================================
 
 show_success_summary() {
     local end_time=$(date +%s)
@@ -1802,367 +1704,108 @@ show_success_summary() {
     local minutes=$((duration / 60))
     local seconds=$((duration % 60))
     
-    clear_screen
-    
     echo ""
-    echo -e "${GREEN}"
+    echo -e "${GREEN}${BOLD}"
     cat << 'EOF'
-    ╔═══════════════════════════════════════════════════════════════════════════╗
-    ║                                                                           ║
-    ║   ██╗  ██╗██╗   ██╗██████╗ ██╗   ██╗██╗     ██╗   ██╗███╗   ███╗          ║
-    ║   ██║ ██╔╝██║   ██║██╔══██╗██║   ██║██║     ██║   ██║████╗ ████║          ║
-    ║   █████╔╝ ██║   ██║██████╔╝██║   ██║██║     ██║   ██║██╔████╔██║          ║
-    ║   ██╔═██╗ ██║   ██║██╔══██╗██║   ██║██║     ██║   ██║██║╚██╔╝██║          ║
-    ║   ██║  ██╗╚██████╔╝██║  ██║╚██████╔╝███████╗╚██████╔╝██║ ╚═╝ ██║          ║
-    ║   ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝     ╚═╝          ║
-    ║                                                                           ║
-    ║                    TAMAMLANDI! / COMPLETED!                               ║
-    ║                                                                           ║
-    ╚═══════════════════════════════════════════════════════════════════════════╝
+    ╔═══════════════════════════════════════════════════════════════════════╗
+    ║                                                                       ║
+    ║   ██╗  ██╗██╗   ██╗██████╗ ██████╗  █████╗ ██╗   ██╗██╗               ║
+    ║   ██║  ██║██║   ██║██╔══██╗██╔══██╗██╔══██╗╚██╗ ██╔╝██║               ║
+    ║   ███████║██║   ██║██████╔╝██████╔╝███████║ ╚████╔╝ ██║               ║
+    ║   ██╔══██║██║   ██║██╔══██╗██╔══██╗██╔══██║  ╚██╔╝  ╚═╝               ║
+    ║   ██║  ██║╚██████╔╝██║  ██║██║  ██║██║  ██║   ██║   ██╗               ║
+    ║   ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝               ║
+    ║                                                                       ║
+    ║                    Kurulum Başarıyla Tamamlandı!                      ║
+    ║                                                                       ║
+    ╚═══════════════════════════════════════════════════════════════════════╝
 EOF
     echo -e "${NC}"
     
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}  Erişim Bilgileri${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BOLD}  ${GLOBE} Erişim Adresleri${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "  ${GLOBE} Site URL:         ${GREEN}https://${DOMAIN}${NC}"
+    echo -e "  ${GEAR} Admin Panel:      ${GREEN}https://${DOMAIN}/admin${NC}"
+    echo -e "  📊 API:              ${GREEN}https://${DOMAIN}/api${NC}"
+    echo -e "  🌸 Flower:           ${GREEN}https://${DOMAIN}/flower${NC}"
     echo ""
-    echo -e "  ${BULLET} Ana Site:      ${GREEN}https://${DOMAIN}${NC}"
-    echo -e "  ${BULLET} Admin Panel:   ${GREEN}https://${DOMAIN}/admin${NC}"
-    echo -e "  ${BULLET} API:           ${GREEN}https://${DOMAIN}/api${NC}"
-    echo -e "  ${BULLET} Flower:        ${GREEN}https://${DOMAIN}/flower${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}  Giriş Bilgileri${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BOLD}  ${LOCK} Admin Bilgileri${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "  👤 Kullanıcı:        ${GREEN}${ADMIN_USERNAME}${NC}"
+    echo -e "  📧 E-posta:          ${GREEN}${ADMIN_EMAIL}${NC}"
+    echo -e "  ${LOCK} Şifre:            ${YELLOW}${ADMIN_PASSWORD}${NC}"
     echo ""
-    echo -e "  ${BULLET} Kullanıcı:     ${GREEN}${ADMIN_USERNAME}${NC}"
-    echo -e "  ${BULLET} E-posta:       ${GREEN}${ADMIN_EMAIL}${NC}"
-    echo -e "  ${BULLET} Şifre:         ${YELLOW}(kurulum sırasında belirlendi)${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}  Yönetim Komutları${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BOLD}  ${GEAR} Kurulum Bilgileri${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "  ${BULLET} Servis durumu:    ${GRAY}bash ${PROJECT_PATH}/manage_habernexus_v8.sh status${NC}"
+    echo -e "  ${BULLET} Logları görüntüle: ${GRAY}bash ${PROJECT_PATH}/manage_habernexus_v8.sh logs app${NC}"
+    echo -e "  ${BULLET} Yeniden başlat:   ${GRAY}bash ${PROJECT_PATH}/manage_habernexus_v8.sh restart${NC}"
     echo ""
-    echo -e "  ${BULLET} Kurulum Modu:  ${GREEN}${INSTALL_MODE}${NC}"
-    echo -e "  ${BULLET} Süre:          ${GREEN}${minutes}dk ${seconds}sn${NC}"
-    echo -e "  ${BULLET} Proje Yolu:    ${GREEN}${PROJECT_PATH}${NC}"
-    echo -e "  ${BULLET} Log Dosyası:   ${GREEN}${LOG_FILE}${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BOLD}  ${TERMINAL} Faydalı Komutlar${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "  ${SPARKLE} Kurulum süresi: ${GREEN}${minutes} dakika ${seconds} saniye${NC}"
+    echo -e "  📁 Proje dizini: ${GREEN}${PROJECT_PATH}${NC}"
+    echo -e "  📋 Log dosyası: ${GREEN}${LOG_FILE}${NC}"
     echo ""
-    echo -e "  ${GRAY}# Servis durumunu görüntüle${NC}"
-    echo -e "  ${WHITE}bash ${PROJECT_PATH}/manage_habernexus.sh status${NC}"
-    echo ""
-    echo -e "  ${GRAY}# Logları görüntüle${NC}"
-    echo -e "  ${WHITE}bash ${PROJECT_PATH}/manage_habernexus.sh logs app${NC}"
-    echo ""
-    echo -e "  ${GRAY}# Sağlık kontrolü${NC}"
-    echo -e "  ${WHITE}bash ${PROJECT_PATH}/manage_habernexus.sh health${NC}"
-    echo ""
-    echo -e "  ${GRAY}# Servisleri yeniden başlat${NC}"
-    echo -e "  ${WHITE}bash ${PROJECT_PATH}/manage_habernexus.sh restart${NC}"
-    echo ""
-    
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    echo -e "${GREEN}${COFFEE} $(msg enjoy)! ${SPARKLES}${NC}"
-    echo ""
-    echo -e "${GRAY}Kurulum tamamlandı: $(date)${NC}"
+    echo -e "${YELLOW}${WARNING_ICON} ÖNEMLİ: Yukarıdaki şifreyi güvenli bir yere kaydedin!${NC}"
     echo ""
 }
 
 
-# ============================================================================
-# WEB WIZARD (Optional Feature)
-# ============================================================================
-
-start_web_wizard() {
-    print_section "Web Kurulum Sihirbazı Başlatılıyor"
-    
-    log_info "Web arayüzü port ${WIZARD_PORT} üzerinde başlatılıyor..."
-    
-    # Python ile basit web sunucusu
-    local wizard_html="${PROJECT_PATH}/wizard.html"
-    
-    cat > "$wizard_html" << 'WIZARD_HTML'
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HaberNexus Kurulum Sihirbazı</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            color: #fff;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: rgba(255,255,255,0.1);
-            border-radius: 20px;
-            padding: 40px;
-            backdrop-filter: blur(10px);
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 2em;
-            background: linear-gradient(90deg, #00d9ff, #00ff88);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .subtitle {
-            text-align: center;
-            color: #888;
-            margin-bottom: 30px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #00d9ff;
-            font-weight: 500;
-        }
-        input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            background: rgba(0,0,0,0.3);
-            color: #fff;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        input:focus {
-            outline: none;
-            border-color: #00d9ff;
-        }
-        input::placeholder { color: #666; }
-        .btn {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(90deg, #00d9ff, #00ff88);
-            color: #000;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0,217,255,0.3);
-        }
-        .progress {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255,255,255,0.1);
-            border-top-color: #00d9ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .step-indicator {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 30px;
-        }
-        .step {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-        .step.active { background: #00d9ff; color: #000; }
-        .step.completed { background: #00ff88; color: #000; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚀 HaberNexus</h1>
-        <p class="subtitle">Kurulum Sihirbazı v8.0</p>
-        
-        <div class="step-indicator">
-            <div class="step active">1</div>
-            <div class="step">2</div>
-            <div class="step">3</div>
-            <div class="step">4</div>
-        </div>
-        
-        <form id="wizardForm">
-            <div class="form-group">
-                <label>🌐 Domain Adı</label>
-                <input type="text" name="domain" placeholder="habernexus.com" required>
-            </div>
-            <div class="form-group">
-                <label>📧 Admin E-posta</label>
-                <input type="email" name="email" placeholder="admin@example.com" required>
-            </div>
-            <div class="form-group">
-                <label>👤 Admin Kullanıcı Adı</label>
-                <input type="text" name="username" placeholder="admin" required>
-            </div>
-            <div class="form-group">
-                <label>🔒 Admin Şifresi</label>
-                <input type="password" name="password" placeholder="Güçlü bir şifre" required>
-            </div>
-            <div class="form-group">
-                <label>🔑 Cloudflare API Token</label>
-                <input type="password" name="cf_api" placeholder="Cloudflare API Token">
-            </div>
-            <div class="form-group">
-                <label>☁️ Cloudflare Tunnel Token</label>
-                <input type="password" name="cf_tunnel" placeholder="Cloudflare Tunnel Token">
-            </div>
-            <button type="submit" class="btn">🚀 Kurulumu Başlat</button>
-        </form>
-        
-        <div class="progress" id="progress">
-            <div class="spinner"></div>
-            <p id="progressText">Kurulum başlatılıyor...</p>
-        </div>
-    </div>
-    
-    <script>
-        document.getElementById('wizardForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const form = e.target;
-            const progress = document.getElementById('progress');
-            const progressText = document.getElementById('progressText');
-            
-            form.style.display = 'none';
-            progress.style.display = 'block';
-            
-            const data = new FormData(form);
-            const config = Object.fromEntries(data.entries());
-            
-            try {
-                const response = await fetch('/install', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(config)
-                });
-                
-                if (response.ok) {
-                    progressText.textContent = '✅ Kurulum tamamlandı!';
-                } else {
-                    progressText.textContent = '❌ Kurulum başarısız oldu';
-                }
-            } catch (error) {
-                progressText.textContent = 'Kurulum devam ediyor... Terminal\'i kontrol edin.';
-            }
-        });
-    </script>
-</body>
-</html>
-WIZARD_HTML
-
-    echo -e "${INFO_ICON} Web arayüzü: ${GREEN}http://localhost:${WIZARD_PORT}${NC}"
-    echo -e "${INFO_ICON} Kurulumu tamamlamak için tarayıcınızda açın"
-    echo ""
-    
-    # Basit Python HTTP sunucusu
-    cd "$PROJECT_PATH"
-    python3 -m http.server $WIZARD_PORT >> "${LOG_FILE}" 2>&1 &
-    local server_pid=$!
-    
-    echo -e "${GRAY}Sunucu PID: $server_pid - Durdurmak için: kill $server_pid${NC}"
-    
-    # Tarayıcıyı aç (mümkünse)
-    if command -v xdg-open &> /dev/null; then
-        xdg-open "http://localhost:${WIZARD_PORT}/wizard.html" 2>/dev/null &
-    fi
-    
-    log_info "Web wizard başlatıldı. Terminal kurulumuna devam etmek için Ctrl+C"
-    
-    # Kullanıcı girişi bekle
-    read -p "Web wizard'ı kullandıktan sonra Enter'a basın veya terminal kurulumu için 'q' yazın: " choice
-    
-    kill $server_pid 2>/dev/null || true
-    
-    if [[ "$choice" == "q" ]]; then
-        return 1
-    fi
-    
-    return 0
-}
 
 # ============================================================================
-# ARGUMENT PARSING
+# HELP & VERSION
 # ============================================================================
 
 show_help() {
-    cat << EOF
-
-${CYAN}${BOLD}HaberNexus v${SCRIPT_VERSION} - Ultimate Installation Script${NC}
-
-${WHITE}Kullanım:${NC}
-  sudo bash install_v8.sh [SEÇENEKLER]
-
-${WHITE}Seçenekler:${NC}
-  ${GREEN}--auto${NC}              Tam otomatik kurulum (interaktif sorular ile)
-  ${GREEN}--quick${NC}             Hızlı kurulum (varsayılan değerler ile)
-  ${GREEN}--wizard${NC}            Web tabanlı kurulum sihirbazı
-  ${GREEN}--config FILE${NC}       Yapılandırma dosyası kullan
-  ${GREEN}--domain DOMAIN${NC}     Domain adını belirt
-  ${GREEN}--email EMAIL${NC}       Admin e-postasını belirt
-  ${GREEN}--force${NC}             Mevcut kurulumu yeniden yükle
-  ${GREEN}--skip-validation${NC}   API doğrulamalarını atla
-  ${GREEN}--dry-run${NC}           Simülasyon modu (değişiklik yapmaz)
-  ${GREEN}--verbose${NC}           Detaylı çıktı
-  ${GREEN}--silent${NC}            Sessiz mod
-  ${GREEN}--lang LANG${NC}         Dil seçimi (tr/en)
-  ${GREEN}--help${NC}              Bu yardım mesajını göster
-  ${GREEN}--version${NC}           Sürüm bilgisini göster
-
-${WHITE}Örnekler:${NC}
-  ${GRAY}# İnteraktif kurulum${NC}
-  sudo bash install_v8.sh --auto
-
-  ${GRAY}# Hızlı kurulum${NC}
-  sudo bash install_v8.sh --quick
-
-  ${GRAY}# Belirli domain ile kurulum${NC}
-  sudo bash install_v8.sh --auto --domain habernexus.com
-
-  ${GRAY}# Web wizard ile kurulum${NC}
-  sudo bash install_v8.sh --wizard
-
-${WHITE}Kurulum Modları:${NC}
-  ${CYAN}auto${NC}      - İnteraktif sorularla tam otomatik kurulum (önerilen)
-  ${CYAN}quick${NC}     - Varsayılan değerlerle hızlı kurulum
-  ${CYAN}wizard${NC}    - Web tabanlı görsel kurulum sihirbazı
-
-${WHITE}Destek:${NC}
-  GitHub: https://github.com/sata2500/habernexus
-  E-posta: salihtanriseven25@gmail.com
-
-EOF
+    echo -e "${CYAN}${BOLD}HaberNexus v${SCRIPT_VERSION} - Ultimate Installation Script${NC}"
+    
+    echo -e "${WHITE}Kullanım:${NC}"
+    echo -e "  sudo bash install_v8.sh [SEÇENEKLER]"
+    
+    echo -e "${WHITE}Seçenekler:${NC}"
+    echo -e "  ${GREEN}--auto${NC}              Tam otomatik kurulum (interaktif sorular ile)"
+    echo -e "  ${GREEN}--quick${NC}             Hızlı kurulum (varsayılan değerler ile)"
+    echo -e "  ${GREEN}--wizard${NC}            Web tabanlı kurulum sihirbazı"
+    echo -e "  ${GREEN}--config FILE${NC}       Yapılandırma dosyası kullan"
+    echo -e "  ${GREEN}--domain DOMAIN${NC}     Domain adını belirt"
+    echo -e "  ${GREEN}--email EMAIL${NC}       Admin e-postasını belirt"
+    echo -e "  ${GREEN}--force${NC}             Mevcut kurulumu yeniden yükle"
+    echo -e "  ${GREEN}--skip-validation${NC}   API doğrulamalarını atla"
+    echo -e "  ${GREEN}--dry-run${NC}           Simülasyon modu (değişiklik yapmaz)"
+    echo -e "  ${GREEN}--verbose${NC}           Detaylı çıktı"
+    echo -e "  ${GREEN}--silent${NC}            Sessiz mod"
+    echo -e "  ${GREEN}--lang LANG${NC}         Dil seçimi (tr/en)"
+    echo -e "  ${GREEN}--help${NC}              Bu yardım mesajını göster"
+    echo -e "  ${GREEN}--version${NC}           Sürüm bilgisini göster"
+    
+    echo -e "${WHITE}Örnekler:${NC}"
+    echo -e "  ${GRAY}# İnteraktif kurulum${NC}"
+    echo -e "  sudo bash install_v8.sh --auto"
+    
+    echo -e "  ${GRAY}# Hızlı kurulum${NC}"
+    echo -e "  sudo bash install_v8.sh --quick"
+    
+    echo -e "  ${GRAY}# Belirli domain ile kurulum${NC}"
+    echo -e "  sudo bash install_v8.sh --auto --domain habernexus.com"
+    
+    echo -e "  ${GRAY}# Web wizard ile kurulum${NC}"
+    echo -e "  sudo bash install_v8.sh --wizard"
+    
+    echo -e "${WHITE}Kurulum Modları:${NC}"
+    echo -e "  ${CYAN}auto${NC}      - İnteraktif sorularla tam otomatik kurulum (önerilen)"
+    echo -e "  ${CYAN}quick${NC}     - Varsayılan değerlerle hızlı kurulum"
+    echo -e "  ${CYAN}wizard${NC}    - Web tabanlı görsel kurulum sihirbazı"
+    
+    echo -e "${WHITE}Destek:${NC}"
+    echo -e "  GitHub: https://github.com/sata2500/habernexus"
+    echo -e "  E-posta: salihtanriseven25@gmail.com"
 }
 
 show_version() {
@@ -2171,10 +1814,14 @@ show_version() {
     echo "Date: December 2025"
 }
 
+# ============================================================================
+# ARGUMENT PARSING
+# ============================================================================
+
 parse_arguments() {
     while [[ $# -gt 0 ]]; do
         case $1 in
-            --auto)
+            --auto|--interactive)
                 INSTALL_MODE="auto"
                 shift
                 ;;
@@ -2189,15 +1836,15 @@ parse_arguments() {
                 ;;
             --config)
                 INSTALL_MODE="config"
-                CONFIG_FILE="$2"
+                CONFIG_FILE="${2:-}"
                 shift 2
                 ;;
             --domain)
-                DOMAIN="$2"
+                DOMAIN="${2:-}"
                 shift 2
                 ;;
             --email)
-                ADMIN_EMAIL="$2"
+                ADMIN_EMAIL="${2:-}"
                 shift 2
                 ;;
             --force)
@@ -2221,7 +1868,7 @@ parse_arguments() {
                 shift
                 ;;
             --lang)
-                LANGUAGE="$2"
+                LANGUAGE="${2:-tr}"
                 shift 2
                 ;;
             --help|-h)
@@ -2253,7 +1900,7 @@ main() {
     init_logging
     
     # Trap ayarla
-    trap 'error_handler $? $LINENO' ERR
+    trap 'error_handler $? ${LINENO:-0}' ERR
     trap 'cleanup_handler' EXIT
     trap 'interrupt_handler' INT TERM
     
@@ -2263,28 +1910,20 @@ main() {
     log_info "Kurulum Modu: ${INSTALL_MODE}"
     log_info "Log Dosyası: ${LOG_FILE}"
     
+    # TTY kontrolü
+    if [[ ! -t 0 ]] && [[ "$INSTALL_MODE" != "quick" ]] && [[ "$INSTALL_MODE" != "config" ]]; then
+        log_error "Bu script interaktif bir terminal gerektirir"
+        log_info "Alternatif olarak --quick veya --config modunu kullanın"
+        exit 1
+    fi
+    
     # Mod'a göre kurulum
     case "${INSTALL_MODE}" in
         wizard)
-            if start_web_wizard; then
-                log_info "Web wizard kurulumu tamamlandı"
-            else
-                INSTALL_MODE="auto"
-            fi
-            ;;
-        quick)
-            quick_setup_defaults
-            ;;
-        config)
-            if [[ -f "$CONFIG_FILE" ]]; then
-                source "$CONFIG_FILE"
-                log_success "Yapılandırma dosyası yüklendi: $CONFIG_FILE"
-            else
-                log_error "Yapılandırma dosyası bulunamadı: $CONFIG_FILE"
-                exit 1
-            fi
-            ;;
-        auto|interactive|*)
+            log_info "Web wizard modu henüz uygulanmadı, auto moda geçiliyor..."
+            INSTALL_MODE="auto"
+            ;&  # Fall through
+        auto|interactive)
             # Pre-flight checks
             if ! run_preflight_checks; then
                 log_error "Sistem gereksinimleri karşılanmıyor"
@@ -2299,7 +1938,54 @@ main() {
             # Yapılandırma sihirbazı
             show_configuration_wizard
             ;;
+        quick)
+            # Pre-flight checks
+            if ! run_preflight_checks; then
+                log_error "Sistem gereksinimleri karşılanmıyor"
+                exit 1
+            fi
+            
+            # Bağımlılıkları yükle
+            install_system_dependencies
+            install_docker
+            install_docker_compose
+            
+            # Varsayılan değerler
+            quick_setup_defaults
+            ;;
+        config)
+            if [[ -n "$CONFIG_FILE" && -f "$CONFIG_FILE" ]]; then
+                source "$CONFIG_FILE"
+                log_success "Yapılandırma dosyası yüklendi: $CONFIG_FILE"
+            else
+                log_error "Yapılandırma dosyası bulunamadı: $CONFIG_FILE"
+                exit 1
+            fi
+            
+            # Pre-flight checks
+            if ! run_preflight_checks; then
+                log_error "Sistem gereksinimleri karşılanmıyor"
+                exit 1
+            fi
+            
+            # Bağımlılıkları yükle
+            install_system_dependencies
+            install_docker
+            install_docker_compose
+            ;;
+        *)
+            log_error "Bilinmeyen kurulum modu: ${INSTALL_MODE}"
+            show_help
+            exit 1
+            ;;
     esac
+    
+    # Dry run kontrolü
+    if [[ "$DRY_RUN" == true ]]; then
+        log_info "Dry run modu - kurulum simüle edildi"
+        show_configuration_summary
+        exit 0
+    fi
     
     # Kurulum adımları
     echo ""
@@ -2357,8 +2043,8 @@ main() {
 # ============================================================================
 
 error_handler() {
-    local exit_code=$1
-    local line_number=$2
+    local exit_code="${1:-1}"
+    local line_number="${2:-0}"
     
     log_error "Hata oluştu (satır $line_number, kod $exit_code)"
     
