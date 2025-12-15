@@ -7,17 +7,94 @@ This guide explains the usage and functions of scripts in the project.
 ## Table of Contents
 
 1. [Installation Scripts](#installation-scripts)
-2. [Backup and Restore](#backup-and-restore)
-3. [Utility Scripts](#utility-scripts)
-4. [Development Scripts](#development-scripts)
+2. [Management Scripts](#management-scripts)
+3. [Backup and Restore](#backup-and-restore)
+4. [Utility Scripts](#utility-scripts)
+5. [Development Scripts](#development-scripts)
 
 ---
 
 ## Installation Scripts
 
-### install_v4.sh (Recommended)
+### install_v7.sh (Recommended) ⭐ NEW
 
-**Purpose:** Universal installer for production deployment with multiple options.
+**Purpose:** Advanced automatic installer with multiple installation modes and enhanced error handling.
+
+**Usage:**
+```bash
+# Quick setup (recommended)
+sudo bash install_v7.sh --quick
+
+# Custom configuration (interactive)
+sudo bash install_v7.sh --custom
+
+# Development mode
+sudo bash install_v7.sh --dev
+
+# Force reinstall with backup
+sudo bash install_v7.sh --quick --force
+
+# Show help
+bash install_v7.sh --help
+```
+
+**Features:**
+- Three installation modes: Quick, Custom, Development
+- Automatic system dependency installation
+- Docker and Docker Compose auto-installation
+- Advanced error handling and recovery
+- Beautiful colored UI with progress indicators
+- Comprehensive logging
+- Pre-flight system checks
+- Automatic configuration file generation
+- Health verification after installation
+- Estimated installation time: 5-10 minutes
+
+**Installation Modes:**
+
+| Mode | Description | Time | Use Case |
+|------|-------------|------|----------|
+| `--quick` | Default values, fully automated | 5-10 min | Production |
+| `--custom` | Interactive configuration | 10-15 min | Custom setup |
+| `--dev` | Development mode with debug | 10-15 min | Development |
+
+**What It Does:**
+1. Checks system requirements
+2. Installs missing dependencies
+3. Installs Docker (if needed)
+4. Clones/updates repository
+5. Creates environment configuration
+6. Builds Docker images
+7. Starts services
+8. Runs database migrations
+9. Creates admin user
+10. Verifies installation
+
+**Log Files:**
+- Installation log: `/var/log/habernexus/install_v7_*.log`
+- Configuration: `/var/log/habernexus/installation_config_*.conf`
+
+### install_v6.sh (Previous)
+
+**Purpose:** Automatic installer with Cloudflare Tunnel and Caddy support.
+
+**Usage:**
+```bash
+curl -O https://raw.githubusercontent.com/sata2500/habernexus/main/install_v6.sh
+sudo bash install_v6.sh
+```
+
+**Features:**
+- Cloudflare Tunnel integration
+- Caddy reverse proxy
+- Automatic HTTPS
+- Interactive configuration
+
+**Note:** Use `install_v7.sh` for new installations.
+
+### install_v4.sh (Legacy)
+
+**Purpose:** Universal installer with multiple deployment options.
 
 **Usage:**
 ```bash
@@ -26,67 +103,73 @@ sudo bash install_v4.sh
 ```
 
 **Features:**
-- Ubuntu 22.04/24.04 LTS support
-- Three deployment options:
-  - Cloudflare Tunnel + Nginx Proxy Manager (Recommended)
-  - Cloudflare Tunnel + Direct Nginx
-  - Direct Port Forwarding
-- System pre-flight checks
-- Interactive configuration
-- Input validation
-- Cloudflare integration
-- Nginx Proxy Manager setup
-- Database migrations
-- Admin user creation
-- Health checks
-- Detailed logging
+- Multiple deployment options
+- Nginx Proxy Manager support
+- Interactive menu
 
-**Installation Time:** 15-20 minutes
-
-**What It Does:**
-1. Checks system requirements
-2. Installs Docker and Docker Compose
-3. Clones repository
-4. Guides through configuration
-5. Sets up Cloudflare (if applicable)
-6. Configures Nginx Proxy Manager (if applicable)
-7. Starts containers
-8. Runs migrations
-9. Creates admin user
-10. Verifies installation
+**Note:** Use `install_v7.sh` for new installations.
 
 ### install.sh (Legacy)
 
 **Purpose:** TUI-based installer for backward compatibility.
 
-**Usage:**
-```bash
-curl -O https://raw.githubusercontent.com/sata2500/habernexus/main/install.sh
-sudo bash install.sh
-```
+**Note:** Use `install_v7.sh` for new installations.
 
-**Features:**
-- Interactive menu
-- Cloudflare Tunnel support
-- Smart migration
-- Admin user creation
+---
 
-**Note:** Use `install_v4.sh` for new installations.
+## Management Scripts
 
-### setup-dev.sh
+### manage_habernexus.sh (NEW)
 
-**Purpose:** Quick development environment setup.
+**Purpose:** Manage and maintain HaberNexus after installation.
 
 **Usage:**
 ```bash
-bash scripts/setup-dev.sh
+bash manage_habernexus.sh [COMMAND] [OPTIONS]
 ```
 
-**Features:**
-- Python virtual environment creation
-- Dependency installation
-- Database setup (SQLite)
-- Development server startup
+**Status & Monitoring:**
+```bash
+bash manage_habernexus.sh status          # Show service status
+bash manage_habernexus.sh logs [SERVICE] # View logs
+bash manage_habernexus.sh health         # Check system health
+bash manage_habernexus.sh troubleshoot   # Run diagnostics
+```
+
+**Service Management:**
+```bash
+bash manage_habernexus.sh start           # Start all services
+bash manage_habernexus.sh stop            # Stop all services
+bash manage_habernexus.sh restart         # Restart all services
+bash manage_habernexus.sh restart [SVC]   # Restart specific service
+```
+
+**Database:**
+```bash
+bash manage_habernexus.sh backup-db       # Backup database
+bash manage_habernexus.sh restore-db FILE # Restore from backup
+bash manage_habernexus.sh migrate         # Run migrations
+```
+
+**User Management:**
+```bash
+bash manage_habernexus.sh create-user U E P    # Create admin user
+bash manage_habernexus.sh change-password U P  # Change password
+bash manage_habernexus.sh list-users           # List all users
+```
+
+**Maintenance:**
+```bash
+bash manage_habernexus.sh cleanup-logs    # Remove old logs
+bash manage_habernexus.sh cleanup-docker  # Clean Docker resources
+bash manage_habernexus.sh update          # Update project
+```
+
+**Backup:**
+```bash
+bash manage_habernexus.sh full-backup     # Create full backup
+bash manage_habernexus.sh list-backups    # List backups
+```
 
 ---
 
@@ -177,6 +260,37 @@ bash scripts/health-check.sh
 ✓ Disk Space: 15 GB free
 ✓ Memory: 6.2 GB available
 ```
+
+### pre_install_check.sh (NEW)
+
+**Purpose:** Verify system compatibility before installation.
+
+**Usage:**
+```bash
+sudo bash pre_install_check.sh
+```
+
+**Checks:**
+- Root privileges
+- Operating system (Ubuntu 20.04+)
+- CPU cores (min 2, recommended 4+)
+- RAM memory (min 4GB, recommended 8+)
+- Disk space (min 20GB)
+- Internet connectivity
+- Required commands
+- Docker installation
+- Docker Compose installation
+- Port availability
+- File permissions
+- Firewall status
+- SELinux status
+- Git repository status
+
+**Output:**
+- Green (✓): Passed checks
+- Yellow (⚠): Warnings
+- Red (✗): Failed checks
+- Summary report
 
 ### migrate_server.sh
 
@@ -346,55 +460,17 @@ sudo bash scripts/restore.sh /path/to/test_backup.tar.gz
 
 ---
 
-## Script Development
+## Quick Reference
 
-### Creating New Scripts
-
-Follow this template:
-
-```bash
-#!/bin/bash
-
-# Script description
-# Usage: bash scripts/my_script.sh
-
-set -e  # Exit on error
-
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-# Logging functions
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Main logic
-main() {
-    log_info "Starting script..."
-    # Your code here
-    log_info "Script completed successfully!"
-}
-
-# Run main function
-main "$@"
-```
-
-### Testing Scripts
-
-```bash
-# Test in dry-run mode
-bash -n scripts/script_name.sh
-
-# Test with debug output
-bash -x scripts/script_name.sh
-```
+| Script | Purpose | Command |
+|--------|---------|---------|
+| `install_v7.sh` | Main installer | `sudo bash install_v7.sh --quick` |
+| `manage_habernexus.sh` | Management | `bash manage_habernexus.sh status` |
+| `pre_install_check.sh` | Pre-flight checks | `sudo bash pre_install_check.sh` |
+| `backup.sh` | Backup system | `sudo bash scripts/backup.sh` |
+| `restore.sh` | Restore system | `sudo bash scripts/restore.sh` |
+| `health-check.sh` | Health check | `bash scripts/health-check.sh` |
+| `setup-dev.sh` | Dev setup | `bash scripts/setup-dev.sh` |
 
 ---
 
@@ -406,5 +482,5 @@ bash -x scripts/script_name.sh
 
 ---
 
-**Last Updated:** December 14, 2024  
-**Version:** 4.0
+**Last Updated:** December 15, 2025  
+**Version:** 7.0

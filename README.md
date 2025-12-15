@@ -1,10 +1,10 @@
-# HaberNexus v6.0
+# HaberNexus v7.0
 
 **Modern, Fully Automated News Aggregation & Content Generation Platform**
 
 > Single-click installation • Automatic HTTPS • Cloudflare Tunnel • Zero Configuration • Production Ready
 
-![Version](https://img.shields.io/badge/version-6.0-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/version-7.0-brightgreen?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.11+-blue?style=flat-square)
 ![Django](https://img.shields.io/badge/django-4.2+-darkgreen?style=flat-square)
 ![Docker](https://img.shields.io/badge/docker-ready-blue?style=flat-square)
@@ -12,17 +12,24 @@
 ![Cloudflare](https://img.shields.io/badge/cloudflare-tunnel-blue?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
-HaberNexus is a powerful, scalable, and **fully automated** news aggregation platform built with Django, PostgreSQL, Redis, and Celery. v6.0 features Caddy for automatic HTTPS, Cloudflare Tunnel for secure connectivity, and complete automation requiring zero manual configuration.
+HaberNexus is a powerful, scalable, and **fully automated** news aggregation platform built with Django, PostgreSQL, Redis, and Celery. v7.0 features advanced installation with multiple modes, comprehensive management tools, and complete automation requiring zero manual configuration.
 
-## 🚀 What's New in v6.0
+## 🚀 What's New in v7.0
 
-### ✨ Complete Automation
-- **5-Minute Setup** - Single command installation
-- **Zero Configuration** - Everything automated
-- **Automatic HTTPS** - Caddy with Cloudflare DNS challenge
-- **Automatic DNS** - Cloudflare records created automatically
-- **Automatic Tunnel** - Cloudflare Tunnel configured automatically
-- **Health Checks** - Automated container monitoring and recovery
+### ✨ Advanced Installation System
+- **Multiple Installation Modes** - Quick, Custom, Development
+- **Automatic Dependency Installation** - Docker, Docker Compose, Git, Python
+- **Pre-flight System Checks** - Verify compatibility before installation
+- **Advanced Error Handling** - Automatic recovery and detailed diagnostics
+- **Beautiful UI** - Colored output, progress indicators, animations
+- **Comprehensive Logging** - Detailed logs for troubleshooting
+
+### 🔧 Management & Maintenance Tools
+- **20+ Management Commands** - Status, logs, health checks, backups
+- **Automatic Backups** - Full system and database backups
+- **User Management** - Create, modify admin users
+- **Service Management** - Start, stop, restart services
+- **Troubleshooting Tools** - Diagnostics and health checks
 
 ### 🔒 Enhanced Security
 - **Caddy Reverse Proxy** - Automatic HTTPS by default
@@ -42,7 +49,7 @@ HaberNexus is a powerful, scalable, and **fully automated** news aggregation pla
 ## 📋 System Requirements
 
 ### Minimum
-- Ubuntu 22.04 LTS or 24.04 LTS
+- Ubuntu 20.04 LTS, 22.04 LTS, or 24.04 LTS
 - 2 CPU cores
 - 4 GB RAM
 - 20 GB disk space
@@ -60,8 +67,12 @@ HaberNexus is a powerful, scalable, and **fully automated** news aggregation pla
 ### One-Command Setup (Recommended)
 
 ```bash
-curl -O https://raw.githubusercontent.com/sata2500/habernexus/main/install_v6.sh
-sudo bash install_v6.sh
+# Clone repository
+git clone https://github.com/sata2500/habernexus.git
+cd habernexus
+
+# Quick installation
+sudo bash install_v7.sh --quick
 ```
 
 That's it! The installer will:
@@ -70,13 +81,34 @@ That's it! The installer will:
 3. ✅ Clone the repository
 4. ✅ Create environment configuration
 5. ✅ Build Docker images
-6. ✅ Create Cloudflare DNS records
-7. ✅ Configure Cloudflare Tunnel
-8. ✅ Start all services
-9. ✅ Create admin user
-10. ✅ Verify SSL certificate
+6. ✅ Start all services
+7. ✅ Create admin user
+8. ✅ Verify installation
 
-**Total time: ~5 minutes**
+**Total time: ~5-10 minutes**
+
+### Pre-Installation Check
+
+```bash
+# Verify system compatibility
+sudo bash pre_install_check.sh
+```
+
+### Installation Modes
+
+```bash
+# Quick setup (recommended)
+sudo bash install_v7.sh --quick
+
+# Custom configuration (interactive)
+sudo bash install_v7.sh --custom
+
+# Development mode
+sudo bash install_v7.sh --dev
+
+# Show help
+bash install_v7.sh --help
+```
 
 ### Manual Installation
 
@@ -88,18 +120,45 @@ cp .env.example .env
 docker-compose up -d
 ```
 
+## 📊 Management Commands
+
+After installation, use the management script:
+
+```bash
+# View service status
+bash manage_habernexus.sh status
+
+# View logs
+bash manage_habernexus.sh logs app
+
+# Check system health
+bash manage_habernexus.sh health
+
+# Backup database
+bash manage_habernexus.sh backup-db
+
+# Create admin user
+bash manage_habernexus.sh create-user admin admin@example.com password
+
+# Full system backup
+bash manage_habernexus.sh full-backup
+
+# See all commands
+bash manage_habernexus.sh help
+```
+
 ## 🏗️ Architecture
 
 ```
-┌──────────────────────────────────────────────┐
-│         Cloudflare Tunnel                    │
-│  (DDoS Protection, No Port Forwarding)       │
-└────────────────┬─────────────────────────────┘
+┌──────────────────────────────────────────┐
+│         Cloudflare Tunnel                │
+│  (DDoS Protection, No Port Forwarding)   │
+└────────────────┬─────────────────────────┘
                  │
-┌────────────────▼─────────────────────────────┐
-│    Caddy Reverse Proxy                       │
-│  (Automatic HTTPS, Load Balancing)           │
-└────────────────┬─────────────────────────────┘
+┌────────────────▼─────────────────────────┐
+│    Caddy Reverse Proxy                   │
+│  (Automatic HTTPS, Load Balancing)       │
+└────────────────┬─────────────────────────┘
                  │
     ┌────────────┼────────────┐
     │            │            │
@@ -137,14 +196,16 @@ docker-compose up -d
 - **REST API** - Programmatic access
 - **Admin Panel** - Comprehensive Django admin
 
-### v6.0 Features
-- **Complete Automation** - One-command setup
-- **Automatic HTTPS** - Caddy with Cloudflare DNS
-- **Cloudflare Tunnel** - Secure connectivity
-- **Zero Configuration** - Everything automated
+### v7.0 Features
+- **Advanced Installation** - Multiple modes, auto-dependency installation
+- **Management Tools** - 20+ commands for system management
+- **Pre-flight Checks** - Verify system compatibility
+- **Automatic Backups** - Full system and database backups
 - **Health Monitoring** - Real-time system status
-- **Service Management** - Start/stop from UI
+- **Service Management** - Start/stop/restart services
+- **User Management** - Create and manage admin users
 - **Log Viewer** - Live application logs
+- **Troubleshooting** - Diagnostic tools and health checks
 - **Performance Optimized** - Minimal resource usage
 
 ## 🎯 Access URLs
@@ -225,41 +286,70 @@ docker-compose logs -f app
 docker-compose down
 ```
 
-## 🧪 Testing
-
-Run the test suite:
-
-```bash
-bash tests/test_v6.sh
-```
-
 ## 📚 Documentation
 
 - [Installation Guide](docs/INSTALLATION.md)
+- [Quick Start](docs/QUICK_START.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [API Documentation](docs/API.md)
 - [Scripts Reference](docs/SCRIPTS.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Configuration](docs/CONFIGURATION.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Deployment](docs/DEPLOYMENT.md)
 
 ## 🐛 Troubleshooting
 
-### Site not accessible
+### Pre-Installation Issues
+
+```bash
+# Check system compatibility
+sudo bash pre_install_check.sh
+```
+
+### Installation Issues
+
+```bash
+# View installation logs
+tail -f /var/log/habernexus/install_v7_*.log
+
+# Run with debug mode
+sudo bash install_v7.sh --custom --debug
+```
+
+### Runtime Issues
+
+```bash
+# Check service status
+bash manage_habernexus.sh status
+
+# View logs
+bash manage_habernexus.sh logs app
+
+# Run health check
+bash manage_habernexus.sh health
+
+# Run diagnostics
+bash manage_habernexus.sh troubleshoot
+```
+
+### Common Issues
+
+**Site not accessible**
 1. Check DNS: `nslookup your-domain.com`
 2. Check Tunnel: `docker-compose logs cloudflared`
 3. Check Caddy: `docker-compose logs caddy`
 
-### SSL certificate not issued
+**SSL certificate not issued**
 1. Verify domain DNS is set
 2. Check Caddy logs: `docker-compose logs caddy`
 3. Wait 5-10 minutes
 
-### Services not starting
+**Services not starting**
 1. Check Docker: `docker ps`
 2. Check logs: `docker-compose logs`
 3. Verify disk space: `df -h`
 
-### Database connection error
+**Database connection error**
 1. Check PostgreSQL: `docker-compose logs postgres`
 2. Verify DATABASE_URL in .env
 3. Check network: `docker network ls`
@@ -311,4 +401,4 @@ If you find HaberNexus useful, please star the repository!
 
 **Made with ❤️ by Salih TANRISEVEN**
 
-v6.0 • December 2025 • Production Ready • Fully Automated
+v7.0 • December 2025 • Production Ready • Fully Automated
