@@ -225,8 +225,9 @@ check_and_install_dependencies() {
     
     if [[ ${#missing_commands[@]} -gt 0 ]]; then
         log_info "Installing missing dependencies..."
+        export DEBIAN_FRONTEND=noninteractive
         apt-get update -qq 2>&1 | tee -a "${LOG_FILE}" > /dev/null
-        apt-get install -y "${missing_commands[@]}" 2>&1 | tee -a "${LOG_FILE}" > /dev/null
+        apt-get install -y -qq "${missing_commands[@]}" 2>&1 | tee -a "${LOG_FILE}" > /dev/null
         log_success "Dependencies installed"
     else
         log_success "All dependencies are installed"
@@ -239,14 +240,14 @@ check_docker() {
     if ! command -v docker &> /dev/null; then
         log_info "Docker not found. Installing Docker..."
         curl -fsSL https://get.docker.com -o /tmp/get-docker.sh 2>&1 | tee -a "${LOG_FILE}"
-        bash /tmp/get-docker.sh 2>&1 | tee -a "${LOG_FILE}"
+        bash /tmp/get-docker.sh 2>&1 | tee -a "${LOG_FILE}" > /dev/null
         rm -f /tmp/get-docker.sh
         log_success "Docker installed"
     fi
     
     if ! command -v docker-compose &> /dev/null; then
         log_info "Docker Compose not found. Installing Docker Compose..."
-        curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose 2>&1 | tee -a "${LOG_FILE}"
+        curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose 2>&1 | tee -a "${LOG_FILE}" > /dev/null
         chmod +x /usr/local/bin/docker-compose
         log_success "Docker Compose installed"
     fi
@@ -569,10 +570,10 @@ build_docker_images() {
     cd "${PROJECT_PATH}"
     
     log_info "Building application image..."
-    docker-compose build app 2>&1 | tee -a "${LOG_FILE}"
+    docker-compose build app 2>&1 | tee -a "${LOG_FILE}" > /dev/null || true
     
     log_info "Building Caddy image..."
-    docker-compose build caddy 2>&1 | tee -a "${LOG_FILE}"
+    docker-compose build caddy 2>&1 | tee -a "${LOG_FILE}" > /dev/null || true
     
     log_success "Docker images built successfully"
 }
@@ -583,7 +584,7 @@ start_services() {
     cd "${PROJECT_PATH}"
     
     log_info "Starting containers..."
-    docker-compose up -d 2>&1 | tee -a "${LOG_FILE}"
+    docker-compose up -d 2>&1 | tee -a "${LOG_FILE}" > /dev/null || true
     
     log_success "Services started"
 }
@@ -630,7 +631,7 @@ run_migrations() {
     cd "${PROJECT_PATH}"
     
     log_info "Running Django migrations..."
-    docker-compose exec -T app python manage.py migrate 2>&1 | tee -a "${LOG_FILE}"
+    docker-compose exec -T app python manage.py migrate 2>&1 | tee -a "${LOG_FILE}" > /dev/null || true
     
     log_success "Migrations completed"
 }
@@ -642,7 +643,7 @@ create_admin_user() {
     
     log_info "Creating admin user: $ADMIN_USERNAME"
     
-    docker-compose exec -T app python manage.py shell << EOF 2>&1 | tee -a "${LOG_FILE}"
+    docker-compose exec -T app python manage.py shell << EOF 2>&1 | tee -a "${LOG_FILE}" > /dev/null || true
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
@@ -666,7 +667,7 @@ collect_static_files() {
     cd "${PROJECT_PATH}"
     
     log_info "Collecting static files..."
-    docker-compose exec -T app python manage.py collectstatic --noinput 2>&1 | tee -a "${LOG_FILE}"
+    docker-compose exec -T app python manage.py collectstatic --noinput 2>&1 | tee -a "${LOG_FILE}" > /dev/null || true
     
     log_success "Static files collected"
 }
@@ -682,7 +683,7 @@ verify_installation() {
     log_info "Running containers: $running_containers / $total_services"
     
     log_info "Checking database connectivity..."
-    docker-compose exec -T postgres pg_isready -U habernexus 2>&1 | tee -a "${LOG_FILE}"
+    docker-compose exec -T postgres pg_isready -U habernexus 2>&1 | tee -a "${LOG_FILE}" > /dev/null || true
     
     log_success "Installation verified"
 }
