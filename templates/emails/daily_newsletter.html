@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Günlük Haber Bülteni - Haber Nexus</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 40px 40px 20px 40px; text-align: center; background-color: #1a1a2e; border-radius: 8px 8px 0 0;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                                Haber Nexus
+                            </h1>
+                            <p style="margin: 10px 0 0 0; color: #a0a0a0; font-size: 14px;">
+                                Günlük Haber Bülteni - {{ date|date:"d F Y" }}
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Greeting -->
+                    <tr>
+                        <td style="padding: 30px 40px 20px 40px;">
+                            <p style="margin: 0; color: #333333; font-size: 16px;">
+                                Merhaba{% if subscriber.name %} {{ subscriber.name }}{% endif %},
+                            </p>
+                            <p style="margin: 10px 0 0 0; color: #666666; font-size: 14px;">
+                                İşte bugünün en önemli haberleri:
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Articles -->
+                    {% for article in articles %}
+                    <tr>
+                        <td style="padding: 15px 40px;">
+                            <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f8f9fa; border-radius: 8px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <span style="display: inline-block; padding: 4px 12px; background-color: #4f46e5; color: #ffffff; font-size: 11px; border-radius: 4px; margin-bottom: 10px;">
+                                            {{ article.category }}
+                                        </span>
+                                        <h3 style="margin: 10px 0; color: #333333; font-size: 18px;">
+                                            <a href="https://habernexus.com/haber/{{ article.slug }}/" style="color: #333333; text-decoration: none;">
+                                                {{ article.title }}
+                                            </a>
+                                        </h3>
+                                        <p style="margin: 0; color: #666666; font-size: 14px; line-height: 1.5;">
+                                            {{ article.excerpt|truncatewords:30 }}
+                                        </p>
+                                        <a href="https://habernexus.com/haber/{{ article.slug }}/" style="display: inline-block; margin-top: 10px; color: #4f46e5; font-size: 14px; text-decoration: none;">
+                                            Devamını Oku →
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    
+                    <!-- CTA -->
+                    <tr>
+                        <td style="padding: 30px 40px; text-align: center;">
+                            <a href="https://habernexus.com" style="display: inline-block; padding: 14px 30px; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: bold; border-radius: 8px;">
+                                Tüm Haberleri Görüntüle
+                            </a>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 20px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0 0 10px 0; color: #999999; font-size: 12px; text-align: center;">
+                                Bu e-postayı {{ subscriber.email }} adresine gönderiyoruz çünkü Haber Nexus bültenine abone oldunuz.
+                            </p>
+                            <p style="margin: 0; color: #999999; font-size: 12px; text-align: center;">
+                                <a href="https://habernexus.com/newsletter/preferences/{{ subscriber.token }}/" style="color: #4f46e5; text-decoration: none;">Tercihlerimi Değiştir</a>
+                                &nbsp;|&nbsp;
+                                <a href="https://habernexus.com/newsletter/unsubscribe/{{ subscriber.token }}/" style="color: #4f46e5; text-decoration: none;">Abonelikten Çık</a>
+                            </p>
+                            <p style="margin: 15px 0 0 0; color: #999999; font-size: 12px; text-align: center;">
+                                © 2025 Haber Nexus. Tüm hakları saklıdır.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -73,6 +73,11 @@ INSTALLED_APPS = [
     "core.apps.CoreConfig",
     "news.apps.NewsConfig",
     "authors.apps.AuthorsConfig",
+    "api.apps.ApiConfig",
+    # Third-party API
+    "rest_framework",
+    "django_filters",
+    "corsheaders",
 ]
 
 # Elasticsearch Configuration
@@ -82,6 +87,7 @@ ELASTICSEARCH_DSL = {
 
 MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -262,15 +268,45 @@ SESSION_CACHE_ALIAS = "default"
 # REST Framework Configuration
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_PAGINATION_CLASS": "api.pagination.StandardResultsSetPagination",
+    "PAGE_SIZE": 10,
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/hour",
+        "user": "1000/hour",
+    },
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
+    ],
 }
 
 # Spectacular Settings
 SPECTACULAR_SETTINGS = {
     "TITLE": "HaberNexus API",
-    "DESCRIPTION": "HaberNexus İçerik Üretim ve Yönetim Sistemi API Dokümantasyonu",
-    "VERSION": "1.0.0",
+    "DESCRIPTION": "HaberNexus v10.0 - AI Destekli Haber Agregasyon Platformu REST API",
+    "VERSION": "10.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX": "/api/v1",
 }
+
+# CORS Settings
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://habernexus.com",
+    "https://www.habernexus.com",
+]
+CORS_ALLOW_CREDENTIALS = True
 
 # Security Settings
 # Production Security Settings

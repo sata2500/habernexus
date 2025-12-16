@@ -83,6 +83,9 @@ class ArticleAdmin(admin.ModelAdmin):
     archive_articles.short_description = "Seçili makaleleri arşivle"
 
 
+# Newsletter Admin
+from .admin_newsletter import *  # noqa
+
 # ============================================================================
 # Geliştirilmiş İçerik Üretim Sistemi - Admin Konfigürasyonu
 # ============================================================================

@@ -3,6 +3,12 @@ from django.urls import path
 
 from . import views
 from .sitemaps import sitemaps
+from .views_newsletter import (
+    NewsletterSubscribeView,
+    NewsletterVerifyView,
+    NewsletterUnsubscribeView,
+    NewsletterPreferencesView,
+)
 
 app_name = "news"
 
@@ -27,4 +33,9 @@ urlpatterns = [
     path("kullanim-kosullari/", views.terms_of_service, name="terms_of_service"),
     # Sitemap
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
+    # Newsletter
+    path("newsletter/subscribe/", NewsletterSubscribeView.as_view(), name="newsletter_subscribe"),
+    path("newsletter/verify/<uuid:token>/", NewsletterVerifyView.as_view(), name="newsletter_verify"),
+    path("newsletter/unsubscribe/<uuid:token>/", NewsletterUnsubscribeView.as_view(), name="newsletter_unsubscribe"),
+    path("newsletter/preferences/<uuid:token>/", NewsletterPreferencesView.as_view(), name="newsletter_preferences"),
 ]

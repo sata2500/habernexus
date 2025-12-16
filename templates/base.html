@@ -3,14 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="{% block meta_description %}Haber Nexus - Profesyonel haber ajansı, 7/24 kusursuz haberler{% endblock %}">
-    <meta name="keywords" content="{% block meta_keywords %}haber, teknoloji, güncel{% endblock %}">
-    <meta property="og:title" content="{% block og_title %}Haber Nexus{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}Profesyonel haber ajansı, 7/24 kusursuz haberler{% endblock %}">
-    <meta property="og:image" content="{% block og_image %}{% endblock %}">
-    <meta property="og:type" content="website">
     
-    <title>{% block title %}Haber Nexus - Profesyonel Haber Ajansı{% endblock %}</title>
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{% block meta_description %}Haber Nexus - AI destekli profesyonel haber ajansı, 7/24 güncel ve güvenilir haberler{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}haber, güncel haberler, teknoloji, spor, ekonomi, siyaset, AI haber{% endblock %}">
+    <meta name="author" content="Haber Nexus">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{% block canonical_url %}https://habernexus.com{% endblock %}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{% block og_url %}https://habernexus.com{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}Haber Nexus - AI Destekli Haber Platformu{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}AI destekli profesyonel haber ajansı, 7/24 güncel ve güvenilir haberler{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}https://habernexus.com/static/images/og-image.jpg{% endblock %}">
+    <meta property="og:site_name" content="Haber Nexus">
+    <meta property="og:locale" content="tr_TR">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="{% block twitter_url %}https://habernexus.com{% endblock %}">
+    <meta name="twitter:title" content="{% block twitter_title %}Haber Nexus{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}AI destekli profesyonel haber ajansı{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}https://habernexus.com/static/images/twitter-card.jpg{% endblock %}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/static/images/apple-touch-icon.png">
+    
+    <title>{% block title %}Haber Nexus - AI Destekli Profesyonel Haber Ajansı{% endblock %}</title>
+    
+    <!-- Structured Data - Organization -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "NewsMediaOrganization",
+        "name": "Haber Nexus",
+        "url": "https://habernexus.com",
+        "logo": "https://habernexus.com/static/images/logo.jpg",
+        "description": "AI destekli profesyonel haber ajansı",
+        "sameAs": [],
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "info@habernexus.com",
+            "contactType": "customer service"
+        }
+    }
+    </script>
+    {% block structured_data %}{% endblock %}
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>

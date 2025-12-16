@@ -7,14 +7,18 @@ class Setting(models.Model):
     Google AI API anahtarı ve diğer genel ayarlar burada saklanır.
     """
 
-    # AI Model Seçenekleri
+    # AI Model Seçenekleri (Google Gen AI SDK v10.0)
     AI_MODEL_CHOICES = [
-        ("gemini-3-pro", "Gemini 3 Pro (En Gelişmiş)"),
         ("gemini-2.5-flash", "Gemini 2.5 Flash (Önerilen - Hızlı ve Akıllı)"),
-        ("gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite (En Hızlı)"),
         ("gemini-2.5-pro", "Gemini 2.5 Pro (Gelişmiş Düşünme)"),
-        ("gemini-2.0-flash", "Gemini 2.0 Flash (Eski)"),
-        ("gemini-2.0-flash-lite", "Gemini 2.0 Flash-Lite (Eski)"),
+        ("gemini-2.0-flash", "Gemini 2.0 Flash"),
+        ("gemini-2.0-flash-lite", "Gemini 2.0 Flash-Lite (En Hızlı)"),
+    ]
+
+    # Image Model Seçenekleri
+    IMAGE_MODEL_CHOICES = [
+        ("imagen-4.0-generate-001", "Imagen 4.0 (En Yüksek Kalite)"),
+        ("imagen-3.0-generate-001", "Imagen 3.0"),
     ]
 
     key = models.CharField(max_length=255, unique=True, help_text="Ayar anahtarı (örn: GOOGLE_API_KEY)")

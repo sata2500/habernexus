@@ -1,3 +1,9 @@
+"""
+HaberNexus v10.0 - News Tasks
+Celery tasks for RSS fetching, AI content generation, and image generation.
+Updated to use the new Google Gen AI SDK.
+"""
+
 import logging
 from io import BytesIO
 
@@ -130,6 +136,47 @@ def download_article_image(article, image_url):
         raise
 
 
+def get_genai_client():
+    """
+    Google Gen AI SDK client oluştur.
+    Yeni SDK kullanımı: google-genai
+    """
+    try:
+        api_key_setting = Setting.objects.get(key="GOOGLE_GEMINI_API_KEY")
+        api_key = api_key_setting.value
+    except Setting.DoesNotExist:
+        raise ValueError("Google Gemini API anahtarı bulunamadı")
+
+    if not api_key:
+        raise ValueError("Google Gemini API anahtarı boş")
+
+    from google import genai
+
+    return genai.Client(api_key=api_key)
+
+
+def get_ai_model_name():
+    """
+    AI model adını ayarlardan al.
+    """
+    try:
+        ai_model_setting = Setting.objects.get(key="AI_MODEL")
+        return ai_model_setting.value
+    except Setting.DoesNotExist:
+        return "gemini-2.5-flash"  # Varsayılan model
+
+
+def get_image_model_name():
+    """
+    Image model adını ayarlardan al.
+    """
+    try:
+        image_model_setting = Setting.objects.get(key="IMAGE_MODEL")
+        return image_model_setting.value
+    except Setting.DoesNotExist:
+        return "imagen-4.0-generate-001"  # Varsayılan model
+
+
 @shared_task(
     bind=True,
     autoretry_for=(Exception,),
@@ -143,6 +190,7 @@ def generate_ai_content(self, article_id):
     Yapay zeka kullanarak haber içeriğini oluştur.
     RSS'den çekilen ham veriyi profesyonel bir metne dönüştür.
 
+    Yeni Google Gen AI SDK kullanılıyor.
     Idempotent: Bu task birden fazla çalıştırılsa bile aynı sonucu verir.
     Retry stratejisi: API hataları durumunda otomatik yeniden deneme.
     """
@@ -156,18 +204,6 @@ def generate_ai_content(self, article_id):
             )
             return f"Makale zaten işlenmiş: {article.title}"
 
-        # Google Gemini API anahtarını al
-        try:
-            api_key_setting = Setting.objects.get(key="GOOGLE_GEMINI_API_KEY")
-            api_key = api_key_setting.value
-        except Setting.DoesNotExist:
-            log_error("generate_ai_content", "Google Gemini API anahtarı bulunamadı", related_id=article_id)
-            return
-
-        if not api_key:
-            log_error("generate_ai_content", "Google Gemini API anahtarı boş", related_id=article_id)
-            return
-
         # Rastgele bir yazar seç
         authors = Author.objects.filter(is_active=True)
         if not authors.exists():
@@ -176,19 +212,19 @@ def generate_ai_content(self, article_id):
 
         import random
 
-        author = random.choice(authors)
+        author = random.choice(list(authors))
         article.author = author
 
-        # Google Generative AI SDK'yı kullan
         try:
-            import google.generativeai as genai
+            # Yeni Google Gen AI SDK kullanımı
+            from google.genai import types
 
-            genai.configure(api_key=api_key)
+            client = get_genai_client()
+            model_name = get_ai_model_name()
 
             # Gelişmiş SEO ve Profesyonellik Promptu
             prompt = f"""
-Sen {author.name} isimli deneyimli bir {author.expertise} yazarısın. Aşağıdaki haber kaynağını kullanarak, """
-            """profesyonel bir haber makalesi yazacaksın.
+Sen {author.name} isimli deneyimli bir {author.expertise} yazarısın. Aşağıdaki haber kaynağını kullanarak, profesyonel bir haber makalesi yazacaksın.
 
 **KAYNAK BİLGİLERİ:**
 Başlık: {article.title}
@@ -233,20 +269,17 @@ Kategori: {article.category}
 **ÖNEMLİ:** Sadece haber makalesini yaz, başka hiçbir açıklama ekleme. Doğrudan HTML formatında içeriği döndür.
             """
 
-            # AI modelini ayarlardan al (varsayılan: gemini-2.5-flash)
-            try:
-                ai_model_setting = Setting.objects.get(key="AI_MODEL")
-                ai_model_name = ai_model_setting.value
-            except Setting.DoesNotExist:
-                ai_model_name = "gemini-2.5-flash"  # Varsayılan model
-                log_info(
-                    "generate_ai_content",
-                    "AI model ayarı bulunamadı, varsayılan kullanılıyor: gemini-2.5-flash",
-                    related_id=article_id,
-                )
-
-            model = genai.GenerativeModel(ai_model_name)
-            response = model.generate_content(prompt)
+            # Yeni SDK ile içerik üretimi
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.7,
+                    top_p=0.95,
+                    top_k=40,
+                    max_output_tokens=2048,
+                ),
+            )
 
             if response and response.text:
                 article.content = response.text
@@ -264,11 +297,13 @@ Kategori: {article.category}
 
         except Exception as e:
             log_error("generate_ai_content", f"Google AI API hatası: {str(e)}", traceback=str(e), related_id=article_id)
+            raise
 
     except Article.DoesNotExist:
         log_error("generate_ai_content", f"Makale bulunamadı (ID: {article_id})", related_id=article_id)
     except Exception as e:
         log_error("generate_ai_content", f"Kritik hata: {str(e)}", traceback=str(e), related_id=article_id)
+        raise
 
 
 @shared_task(queue="video_processing")
@@ -301,7 +336,8 @@ def process_video_content(article_id, video_url):
 )
 def generate_article_image(self, article_id):
     """
-    Haber için AI ile profesyonel görsel oluştur (Imagen 4 Ultra).
+    Haber için AI ile profesyonel görsel oluştur (Imagen 4).
+    Yeni Google Gen AI SDK kullanılıyor.
     """
     try:
         article = Article.objects.get(id=article_id)
@@ -311,35 +347,11 @@ def generate_article_image(self, article_id):
             log_info("generate_article_image", f"Makale zaten görsele sahip: {article.title}", related_id=article_id)
             return f"Görsel zaten mevcut: {article.title}"
 
-        # Google Gemini API anahtarını al
         try:
-            api_key_setting = Setting.objects.get(key="GOOGLE_GEMINI_API_KEY")
-            api_key = api_key_setting.value
-        except Setting.DoesNotExist:
-            log_error("generate_article_image", "Google Gemini API anahtarı bulunamadı", related_id=article_id)
-            return
-
-        if not api_key:
-            log_error("generate_article_image", "Google Gemini API anahtarı boş", related_id=article_id)
-            return
-
-        # Imagen modelini ayarlardan al (varsayılan: imagen-4.0-ultra-generate-001)
-        try:
-            image_model_setting = Setting.objects.get(key="IMAGE_MODEL")
-            image_model_name = image_model_setting.value
-        except Setting.DoesNotExist:
-            image_model_name = "imagen-4.0-ultra-generate-001"  # Varsayılan: En yüksek kalite
-            log_info(
-                "generate_article_image",
-                "Image model ayarı bulunamadı, varsayılan kullanılıyor: imagen-4.0-ultra-generate-001",
-                related_id=article_id,
-            )
-
-        try:
-            from google import genai
             from google.genai import types
 
-            client = genai.Client(api_key=api_key)
+            client = get_genai_client()
+            image_model_name = get_image_model_name()
 
             # Görsel promptu oluştur
             image_prompt = f"""
@@ -357,11 +369,15 @@ Requirements:
 - Visually engaging and relevant to the topic
             """.strip()
 
-            # Görsel üret (basitleştirilmiş parametreler)
+            # Yeni SDK ile görsel üretimi
             response = client.models.generate_images(
                 model=image_model_name,
                 prompt=image_prompt,
-                config=types.GenerateImagesConfig(number_of_images=1, aspect_ratio="16:9"),
+                config=types.GenerateImagesConfig(
+                    number_of_images=1,
+                    aspect_ratio="16:9",
+                    output_mime_type="image/jpeg",
+                ),
             )
 
             if response.generated_images:
@@ -378,6 +394,7 @@ Requirements:
                 # Görseli makaleye kaydet
                 article.featured_image.save(filename, img_buffer, save=True)
                 article.featured_image_alt = article.title
+                article.is_ai_image = True
                 article.save()
 
                 log_info(

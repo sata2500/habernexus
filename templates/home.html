@@ -156,17 +156,88 @@
 {% endif %}
 
 <!-- Newsletter Section -->
-<section class="mt-16 bg-blue-600 text-white rounded-lg p-8 text-center">
-    <h2 class="text-2xl font-bold mb-4">Haberlerden Haberdar Kalın</h2>
-    <p class="mb-6">En son haberleri e-posta ile alın</p>
-    <form class="flex flex-col md:flex-row gap-2 max-w-md mx-auto">
-        <input type="email" placeholder="E-posta adresiniz..." 
-               class="flex-1 px-4 py-2 rounded-lg text-gray-800 focus:outline-none">
-        <button type="submit" class="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded-lg transition">
-            Abone Ol
-        </button>
-    </form>
+<section class="mt-16 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-8 md:p-12 text-center shadow-xl">
+    <div class="max-w-2xl mx-auto">
+        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+        </div>
+        <h2 class="text-3xl font-bold mb-4">Haberlerden Haberdar Kalın</h2>
+        <p class="text-white/80 mb-8">En son haberleri doğrudan e-posta kutunuza gönderelim. Günlük veya haftalık özetlerle hiçbir haberi kaçırmayın.</p>
+        
+        <form id="newsletter-form" class="flex flex-col md:flex-row gap-3 max-w-lg mx-auto">
+            {% csrf_token %}
+            <input type="email" name="email" id="newsletter-email" required
+                   placeholder="E-posta adresiniz..." 
+                   class="flex-1 px-5 py-3 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg">
+            <button type="submit" id="newsletter-submit"
+                    class="bg-white text-blue-600 hover:bg-blue-50 font-bold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                <span id="submit-text">Abone Ol</span>
+                <svg id="submit-spinner" class="hidden animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </form>
+        
+        <div id="newsletter-message" class="mt-4 hidden">
+            <p id="message-text" class="text-sm"></p>
+        </div>
+        
+        <p class="text-white/60 text-xs mt-6">Gizliliğinize saygı duyuyoruz. İstediğiniz zaman abonelikten çıkabilirsiniz.</p>
+    </div>
 </section>
+
+<script>
+document.getElementById('newsletter-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('newsletter-email').value;
+    const submitBtn = document.getElementById('newsletter-submit');
+    const submitText = document.getElementById('submit-text');
+    const submitSpinner = document.getElementById('submit-spinner');
+    const messageDiv = document.getElementById('newsletter-message');
+    const messageText = document.getElementById('message-text');
+    
+    // Loading state
+    submitBtn.disabled = true;
+    submitText.classList.add('hidden');
+    submitSpinner.classList.remove('hidden');
+    messageDiv.classList.add('hidden');
+    
+    try {
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        const response = await fetch('{% url "news:newsletter_subscribe" %}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        messageDiv.classList.remove('hidden');
+        if (data.success) {
+            messageText.textContent = data.message;
+            messageText.className = 'text-sm text-green-200';
+            document.getElementById('newsletter-email').value = '';
+        } else {
+            messageText.textContent = data.message;
+            messageText.className = 'text-sm text-red-200';
+        }
+    } catch (error) {
+        messageDiv.classList.remove('hidden');
+        messageText.textContent = 'Bir hata oluştu. Lütfen tekrar deneyin.';
+        messageText.className = 'text-sm text-red-200';
+    } finally {
+        submitBtn.disabled = false;
+        submitText.classList.remove('hidden');
+        submitSpinner.classList.add('hidden');
+    }
+});
+</script>
 {% endblock %}
 
 {% block extra_css %}

@@ -1,0 +1,41 @@
+# HaberNexus robots.txt
+# https://habernexus.com/robots.txt
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://habernexus.com/sitemap.xml
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /newsletter/preferences/
+Disallow: /newsletter/unsubscribe/
+
+# Allow search engines to crawl static files
+Allow: /static/
+Allow: /media/
+
+# Crawl delay (optional, for politeness)
+Crawl-delay: 1
+
+# Specific bot rules
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Yandex
+Allow: /
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /

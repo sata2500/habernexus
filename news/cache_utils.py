@@ -1,6 +1,15 @@
+"""
+HaberNexus Cache Utilities v10.0
+Önbellekleme yardımcı fonksiyonları.
+Performans optimizasyonu için geliştirilmiş.
+"""
+
+import logging
 from functools import wraps
 
 from django.core.cache import cache
+
+logger = logging.getLogger(__name__)
 
 # Cache timeout değerleri (saniye cinsinden)
 CACHE_TIMEOUT_HOME = 300  # 5 dakika
@@ -9,6 +18,8 @@ CACHE_TIMEOUT_ARTICLE_DETAIL = 3600  # 1 saat
 CACHE_TIMEOUT_CATEGORY = 600  # 10 dakika
 CACHE_TIMEOUT_AUTHOR = 600  # 10 dakika
 CACHE_TIMEOUT_SEARCH = 300  # 5 dakika
+CACHE_TIMEOUT_STATS = 600  # 10 dakika
+CACHE_TIMEOUT_API = 300  # 5 dakika
 
 
 def get_cache_key(prefix, *args):
