@@ -586,6 +586,7 @@ confirm_dialog() {
     local response=""
     local max_attempts=3
     local attempt=0
+    local CONFIRM_TIMEOUT=15
     
     while [[ $attempt -lt $max_attempts ]]; do
         ((attempt++))
@@ -596,7 +597,12 @@ confirm_dialog() {
             echo -ne "${YELLOW}${WARNING_ICON}${NC} ${message} ${GRAY}[e/H]${NC}: "
         fi
         
-        read -r response || response=""
+        if read -t $CONFIRM_TIMEOUT -r response 2>/dev/null; then
+            : # Başarılı okuma
+        else
+            response=""
+            echo ""
+        fi
         
         # Use default if empty
         if [[ -z "$response" ]]; then
@@ -1052,7 +1058,11 @@ show_configuration_wizard() {
     echo -e "${INFO_ICON} Lütfen kurulum için gerekli bilgileri girin."
     echo -e "${GRAY}Varsayılan değerler köşeli parantez içinde gösterilir.${NC}"
     echo -e "${GRAY}Boş bırakırsanız varsayılan değer kullanılır.${NC}"
+    echo -e "${GRAY}30 saniye içinde giriş yapmazsanız varsayılan değer kullanılır.${NC}"
     echo ""
+    
+    # Read timeout (saniye)
+    local READ_TIMEOUT=30
     
     # Domain
     local max_attempts=5
@@ -1060,7 +1070,12 @@ show_configuration_wizard() {
     while [[ $attempt -lt $max_attempts ]]; do
         ((attempt++))
         echo -ne "${CYAN}${GLOBE}${NC} Domain adı ${GRAY}[habernexus.com]${NC}: "
-        read -r DOMAIN || DOMAIN=""
+        if read -t $READ_TIMEOUT -r DOMAIN 2>/dev/null; then
+            : # Başarılı okuma
+        else
+            DOMAIN=""
+            echo "" # Yeni satır
+        fi
         DOMAIN="${DOMAIN:-habernexus.com}"
         
         if validate_domain "$DOMAIN"; then
@@ -1081,7 +1096,12 @@ show_configuration_wizard() {
     while [[ $attempt -lt $max_attempts ]]; do
         ((attempt++))
         echo -ne "${CYAN}📧${NC} Admin e-posta ${GRAY}[admin@${DOMAIN}]${NC}: "
-        read -r ADMIN_EMAIL || ADMIN_EMAIL=""
+        if read -t $READ_TIMEOUT -r ADMIN_EMAIL 2>/dev/null; then
+            : # Başarılı okuma
+        else
+            ADMIN_EMAIL=""
+            echo ""
+        fi
         ADMIN_EMAIL="${ADMIN_EMAIL:-admin@${DOMAIN}}"
         
         if validate_email "$ADMIN_EMAIL"; then
@@ -1102,7 +1122,12 @@ show_configuration_wizard() {
     while [[ $attempt -lt $max_attempts ]]; do
         ((attempt++))
         echo -ne "${CYAN}👤${NC} Admin kullanıcı adı ${GRAY}[admin]${NC}: "
-        read -r ADMIN_USERNAME || ADMIN_USERNAME=""
+        if read -t $READ_TIMEOUT -r ADMIN_USERNAME 2>/dev/null; then
+            : # Başarılı okuma
+        else
+            ADMIN_USERNAME=""
+            echo ""
+        fi
         ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
         
         if validate_username "$ADMIN_USERNAME"; then
@@ -1123,8 +1148,12 @@ show_configuration_wizard() {
     while [[ $attempt -lt $max_attempts ]]; do
         ((attempt++))
         echo -ne "${CYAN}${LOCK}${NC} Admin şifresi ${GRAY}(min 8 karakter, boş=otomatik)${NC}: "
-        read -rs ADMIN_PASSWORD || ADMIN_PASSWORD=""
-        echo ""
+        if read -t $READ_TIMEOUT -rs ADMIN_PASSWORD 2>/dev/null; then
+            echo ""
+        else
+            ADMIN_PASSWORD=""
+            echo ""
+        fi
         
         if [[ -z "$ADMIN_PASSWORD" ]]; then
             ADMIN_PASSWORD=$(generate_secure_password)
@@ -1157,8 +1186,12 @@ show_configuration_wizard() {
     while [[ $attempt -lt $max_attempts ]]; do
         ((attempt++))
         echo -ne "${CYAN}${KEY}${NC} Cloudflare API Token ${GRAY}(boş=demo mod)${NC}: "
-        read -rs CLOUDFLARE_API_TOKEN || CLOUDFLARE_API_TOKEN=""
-        echo ""
+        if read -t $READ_TIMEOUT -rs CLOUDFLARE_API_TOKEN 2>/dev/null; then
+            echo ""
+        else
+            CLOUDFLARE_API_TOKEN=""
+            echo ""
+        fi
         
         if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
             log_warning "Cloudflare API Token boş bırakıldı - demo mod kullanılacak"
@@ -1188,8 +1221,12 @@ show_configuration_wizard() {
     while [[ $attempt -lt $max_attempts ]]; do
         ((attempt++))
         echo -ne "${CYAN}${CLOUD}${NC} Cloudflare Tunnel Token ${GRAY}(boş=demo mod)${NC}: "
-        read -rs CLOUDFLARE_TUNNEL_TOKEN || CLOUDFLARE_TUNNEL_TOKEN=""
-        echo ""
+        if read -t $READ_TIMEOUT -rs CLOUDFLARE_TUNNEL_TOKEN 2>/dev/null; then
+            echo ""
+        else
+            CLOUDFLARE_TUNNEL_TOKEN=""
+            echo ""
+        fi
         
         if [[ -z "$CLOUDFLARE_TUNNEL_TOKEN" ]]; then
             log_warning "Cloudflare Tunnel Token boş bırakıldı - demo mod kullanılacak"
@@ -1211,8 +1248,12 @@ show_configuration_wizard() {
     # Google API Key (Opsiyonel)
     echo ""
     echo -ne "${CYAN}🤖${NC} Google AI API Key ${GRAY}(opsiyonel, Enter ile atla)${NC}: "
-    read -rs GOOGLE_API_KEY || GOOGLE_API_KEY=""
-    echo ""
+    if read -t $READ_TIMEOUT -rs GOOGLE_API_KEY 2>/dev/null; then
+        echo ""
+    else
+        GOOGLE_API_KEY=""
+        echo ""
+    fi
     
     if [[ -n "$GOOGLE_API_KEY" ]]; then
         log_success "Google AI API Key alındı"
@@ -1903,17 +1944,21 @@ main() {
     log_info "Kurulum Modu: ${INSTALL_MODE}"
     log_info "Log Dosyası: ${LOG_FILE}"
     
-    # TTY kontrolü - SSH bağlantılarında /dev/tty kullan
-    if [[ ! -t 0 ]] && [[ "$INSTALL_MODE" != "quick" ]] && [[ "$INSTALL_MODE" != "config" ]]; then
-        # /dev/tty mevcut mu kontrol et (SSH için)
-        if [[ -e /dev/tty ]]; then
-            log_info "SSH bağlantısı tespit edildi, /dev/tty kullanılacak"
-            exec < /dev/tty
-        else
-            log_error "Bu script interaktif bir terminal gerektirir"
-            log_info "Alternatif olarak --quick veya --config modunu kullanın"
-            log_info "Ya da SSH bağlantınıza -t parametresi ekleyin: ssh -t user@host"
-            exit 1
+    # TTY kontrolü - Google Cloud Console ve diğer tarayıcı tabanlı SSH için
+    if [[ "$INSTALL_MODE" != "quick" ]] && [[ "$INSTALL_MODE" != "config" ]]; then
+        # Stdin'in terminal olup olmadığını kontrol et
+        if [[ ! -t 0 ]]; then
+            # /dev/tty mevcut mu kontrol et
+            if [[ -e /dev/tty ]] && [[ -r /dev/tty ]]; then
+                log_info "Tarayıcı tabanlı SSH tespit edildi, /dev/tty kullanılacak"
+                # /dev/tty'yi stdin olarak kullan
+                exec 0</dev/tty
+            else
+                log_warning "Interaktif terminal bulunamadı, varsayılan değerler kullanılacak"
+                log_info "Kurulum varsayılan değerlerle devam edecek..."
+                # Quick moda geç
+                INSTALL_MODE="quick"
+            fi
         fi
     fi
     
