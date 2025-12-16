@@ -1,7 +1,4 @@
-"""
-HaberNexus Middleware
-Request işleme ve monitoring için middleware sınıfları.
-"""
+"""\nHaberNexus v10.2 Middleware\nRequest işleme, monitoring ve güvenlik için middleware sınıfları.\n\nAuthor: Salih TANRISEVEN\nUpdated: December 2025\n"""
 
 import logging
 import threading
@@ -281,4 +278,121 @@ class MaintenanceModeMiddleware(MiddlewareMixin):
 
             return render(request, "maintenance.html", status=503)
 
+        return None
+
+
+class RateLimitMiddleware(MiddlewareMixin):
+    """
+    Basit rate limiting middleware.
+    Redis tabanlı rate limiting için django-ratelimit kullanılabilir.
+    """
+
+    # Varsayılan limitler
+    DEFAULT_RATE_LIMIT = 100  # istek/dakika
+    API_RATE_LIMIT = 60  # API istekleri için
+
+    def __init__(self, get_response: Callable = None):
+        self.get_response = get_response
+        self._request_counts = {}  # In-memory cache (production'da Redis kullanın)
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        client_ip = self._get_client_ip(request)
+        current_minute = int(time.time() / 60)
+        cache_key = f"{client_ip}:{current_minute}"
+
+        # Rate limit kontrolü
+        is_api = request.path.startswith("/api/")
+        limit = self.API_RATE_LIMIT if is_api else self.DEFAULT_RATE_LIMIT
+
+        # İstek sayısını kontrol et
+        count = self._request_counts.get(cache_key, 0)
+        if count >= limit:
+            logger.warning(
+                f"Rate limit exceeded for {client_ip}",
+                extra={
+                    "ip": client_ip,
+                    "path": request.path,
+                    "count": count,
+                    "limit": limit,
+                },
+            )
+            return JsonResponse(
+                {
+                    "error": True,
+                    "code": "rate_limit_exceeded",
+                    "message": "Çok fazla istek gönderdiniz. Lütfen bir dakika bekleyin.",
+                },
+                status=429,
+            )
+
+        # İstek sayısını artır
+        self._request_counts[cache_key] = count + 1
+
+        # Eski kayıtları temizle (basit garbage collection)
+        self._cleanup_old_entries(current_minute)
+
+        response = self.get_response(request)
+
+        # Rate limit header'ları ekle
+        response["X-RateLimit-Limit"] = str(limit)
+        response["X-RateLimit-Remaining"] = str(max(0, limit - count - 1))
+
+        return response
+
+    def _get_client_ip(self, request: HttpRequest) -> str:
+        """Client IP adresini al."""
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+        if x_forwarded_for:
+            return x_forwarded_for.split(",")[0].strip()
+        return request.META.get("REMOTE_ADDR", "unknown")
+
+    def _cleanup_old_entries(self, current_minute: int) -> None:
+        """Eski rate limit kayıtlarını temizle."""
+        keys_to_delete = [key for key in self._request_counts.keys() if int(key.split(":")[1]) < current_minute - 1]
+        for key in keys_to_delete:
+            del self._request_counts[key]
+
+
+class CORSMiddleware(MiddlewareMixin):
+    """
+    CORS (Cross-Origin Resource Sharing) middleware.
+    django-cors-headers ile birlikte veya yerine kullanılabilir.
+    """
+
+    ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://habernexus.com",
+        "https://www.habernexus.com",
+    ]
+
+    def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
+        origin = request.META.get("HTTP_ORIGIN")
+
+        if origin in self.ALLOWED_ORIGINS:
+            response["Access-Control-Allow-Origin"] = origin
+            response["Access-Control-Allow-Credentials"] = "true"
+            response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+            response["Access-Control-Allow-Headers"] = (
+                "Accept, Accept-Language, Content-Language, Content-Type, "
+                "Authorization, X-Requested-With, X-CSRFToken"
+            )
+            response["Access-Control-Max-Age"] = "86400"  # 24 saat
+
+        return response
+
+    def process_request(self, request: HttpRequest) -> Optional[HttpResponse]:
+        # OPTIONS preflight isteklerini işle
+        if request.method == "OPTIONS":
+            response = HttpResponse()
+            origin = request.META.get("HTTP_ORIGIN")
+            if origin in self.ALLOWED_ORIGINS:
+                response["Access-Control-Allow-Origin"] = origin
+                response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+                response["Access-Control-Allow-Headers"] = (
+                    "Accept, Accept-Language, Content-Language, Content-Type, "
+                    "Authorization, X-Requested-With, X-CSRFToken"
+                )
+                response["Access-Control-Max-Age"] = "86400"
+            return response
         return None
