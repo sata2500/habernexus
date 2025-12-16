@@ -504,13 +504,6 @@ safe_read() {
     local var_name="${4:-REPLY}"
     local result=""
     
-    # Check if we have a terminal
-    if [[ ! -t 0 ]]; then
-        log_error "Bu script interaktif bir terminal gerektirir"
-        log_info "Lütfen 'sudo bash install_v8.sh' komutu ile çalıştırın"
-        exit 1
-    fi
-    
     # Show prompt
     if [[ -n "$default" ]]; then
         echo -ne "${prompt} ${GRAY}[${default}]${NC}: "
@@ -1910,11 +1903,18 @@ main() {
     log_info "Kurulum Modu: ${INSTALL_MODE}"
     log_info "Log Dosyası: ${LOG_FILE}"
     
-    # TTY kontrolü
+    # TTY kontrolü - SSH bağlantılarında /dev/tty kullan
     if [[ ! -t 0 ]] && [[ "$INSTALL_MODE" != "quick" ]] && [[ "$INSTALL_MODE" != "config" ]]; then
-        log_error "Bu script interaktif bir terminal gerektirir"
-        log_info "Alternatif olarak --quick veya --config modunu kullanın"
-        exit 1
+        # /dev/tty mevcut mu kontrol et (SSH için)
+        if [[ -e /dev/tty ]]; then
+            log_info "SSH bağlantısı tespit edildi, /dev/tty kullanılacak"
+            exec < /dev/tty
+        else
+            log_error "Bu script interaktif bir terminal gerektirir"
+            log_info "Alternatif olarak --quick veya --config modunu kullanın"
+            log_info "Ya da SSH bağlantınıza -t parametresi ekleyin: ssh -t user@host"
+            exit 1
+        fi
     fi
     
     # Mod'a göre kurulum
