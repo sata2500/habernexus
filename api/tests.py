@@ -3,156 +3,154 @@ HaberNexus API Tests
 REST API endpoint'leri için test sınıfları.
 """
 
-from django.test import TestCase
+import pytest
 from django.urls import reverse
-
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient
 
 from authors.models import Author
 from news.models import Article
 
 
-class ArticleAPITests(APITestCase):
-    """
-    Article API endpoint testleri.
-    """
+@pytest.fixture
+def api_client():
+    """API client fixture."""
+    return APIClient()
 
-    def setUp(self):
-        """Test verilerini oluştur."""
-        self.author = Author.objects.create(
-            name="Test Yazar",
-            slug="test-yazar",
-            bio="Test bio",
-            expertise="Teknoloji",
-            is_active=True,
-        )
 
-        self.article = Article.objects.create(
-            title="Test Haber",
-            slug="test-haber",
-            content="<p>Test içerik</p>",
-            excerpt="Test özet",
-            category="Teknoloji",
-            author=self.author,
-            status="published",
-            is_ai_generated=True,
-        )
+@pytest.fixture
+def test_author(db):
+    """Test yazar fixture."""
+    return Author.objects.create(
+        name="Test Yazar",
+        slug="test-yazar",
+        bio="Test bio",
+        expertise="Teknoloji",
+        is_active=True,
+    )
 
-    def test_list_articles(self):
+
+@pytest.fixture
+def test_article(db, test_author):
+    """Test makale fixture."""
+    from django.utils import timezone
+
+    return Article.objects.create(
+        title="Test Haber",
+        slug="test-haber",
+        content="<p>Test içerik</p>",
+        excerpt="Test özet",
+        category="Teknoloji",
+        author=test_author,
+        status="published",
+        published_at=timezone.now(),
+    )
+
+
+@pytest.mark.django_db
+class TestArticleAPI:
+    """Article API endpoint testleri."""
+
+    def test_list_articles(self, api_client, test_article):
         """Haber listesi endpoint'ini test et."""
         url = reverse("api:article-list")
-        response = self.client.get(url)
+        response = api_client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("results", response.data)
+        assert response.status_code == status.HTTP_200_OK
+        assert "results" in response.data
 
-    def test_retrieve_article(self):
+    def test_retrieve_article(self, api_client, test_article):
         """Haber detay endpoint'ini test et."""
-        url = reverse("api:article-detail", kwargs={"slug": self.article.slug})
-        response = self.client.get(url)
+        url = reverse("api:article-detail", kwargs={"slug": test_article.slug})
+        response = api_client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["title"], "Test Haber")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["title"] == "Test Haber"
 
-    def test_featured_articles(self):
+    def test_featured_articles(self, api_client, test_article):
         """Öne çıkan haberler endpoint'ini test et."""
         url = reverse("api:article-featured")
-        response = self.client.get(url)
+        response = api_client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
 
-    def test_latest_articles(self):
+    def test_latest_articles(self, api_client, test_article):
         """En son haberler endpoint'ini test et."""
         url = reverse("api:article-latest")
-        response = self.client.get(url)
+        response = api_client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
 
-    def test_search_articles(self):
+    def test_search_articles(self, api_client, test_article):
         """Arama endpoint'ini test et."""
         url = reverse("api:article-search")
-        response = self.client.get(url, {"q": "Test"})
+        response = api_client.get(url, {"q": "Test"})
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
 
-    def test_search_articles_short_query(self):
+    def test_search_articles_short_query(self, api_client):
         """Kısa arama terimi hata döndürmeli."""
         url = reverse("api:article-search")
-        response = self.client.get(url, {"q": "T"})
+        response = api_client.get(url, {"q": "T"})
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-class AuthorAPITests(APITestCase):
-    """
-    Author API endpoint testleri.
-    """
+@pytest.mark.django_db
+class TestAuthorAPI:
+    """Author API endpoint testleri."""
 
-    def setUp(self):
-        """Test verilerini oluştur."""
-        self.author = Author.objects.create(
-            name="Test Yazar",
-            slug="test-yazar",
-            bio="Test bio",
-            expertise="Teknoloji",
-            is_active=True,
-        )
-
-    def test_list_authors(self):
+    def test_list_authors(self, api_client, test_author):
         """Yazar listesi endpoint'ini test et."""
         url = reverse("api:author-list")
-        response = self.client.get(url)
+        response = api_client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
 
-    def test_retrieve_author(self):
+    def test_retrieve_author(self, api_client, test_author):
         """Yazar detay endpoint'ini test et."""
-        url = reverse("api:author-detail", kwargs={"slug": self.author.slug})
-        response = self.client.get(url)
+        url = reverse("api:author-detail", kwargs={"slug": test_author.slug})
+        response = api_client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["name"], "Test Yazar")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["name"] == "Test Yazar"
 
 
-class CategoryAPITests(APITestCase):
-    """
-    Category API endpoint testleri.
-    """
+@pytest.mark.django_db
+class TestCategoryAPI:
+    """Category API endpoint testleri."""
 
-    def test_list_categories(self):
+    def test_list_categories(self, api_client):
         """Kategori listesi endpoint'ini test et."""
         url = reverse("api:category-list")
-        response = self.client.get(url)
+        response = api_client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
 
 
-class StatsAPITests(APITestCase):
-    """
-    Stats API endpoint testleri.
-    """
+@pytest.mark.django_db
+class TestStatsAPI:
+    """Stats API endpoint testleri."""
 
-    def test_stats(self):
+    def test_stats(self, api_client):
         """İstatistik endpoint'ini test et."""
         url = reverse("api:stats")
-        response = self.client.get(url)
+        response = api_client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("total_articles", response.data)
-        self.assertIn("total_authors", response.data)
+        assert response.status_code == status.HTTP_200_OK
+        assert "total_articles" in response.data
+        assert "total_authors" in response.data
 
 
-class HealthCheckAPITests(APITestCase):
-    """
-    Health check API endpoint testleri.
-    """
+@pytest.mark.django_db
+class TestHealthCheckAPI:
+    """Health check API endpoint testleri."""
 
-    def test_health_check(self):
+    def test_health_check(self, api_client):
         """Sağlık kontrolü endpoint'ini test et."""
         url = reverse("api:health")
-        response = self.client.get(url)
+        response = api_client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["status"], "healthy")
-        self.assertEqual(response.data["version"], "10.0")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == "healthy"
+        assert response.data["version"] == "10.0"
