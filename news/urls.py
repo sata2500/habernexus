@@ -4,10 +4,10 @@ from django.urls import path
 from . import views
 from .sitemaps import sitemaps
 from .views_newsletter import (
-    NewsletterSubscribeView,
-    NewsletterVerifyView,
-    NewsletterUnsubscribeView,
     NewsletterPreferencesView,
+    NewsletterSubscribeView,
+    NewsletterUnsubscribeView,
+    NewsletterVerifyView,
 )
 
 app_name = "news"

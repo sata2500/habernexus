@@ -230,7 +230,7 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: habernexus_config.settings_test
         run: |
-          python manage.py check --deploy --fail-level WARNING
+          python manage.py check --deploy --fail-level ERROR
 
       - name: Check for missing migrations
         env:

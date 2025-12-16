@@ -43,8 +43,9 @@ class NewsSitemap(Sitemap):
     protocol = "https"
 
     def items(self):
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         two_days_ago = timezone.now() - timedelta(days=2)
         return Article.objects.filter(status="published", published_at__gte=two_days_ago).order_by("-published_at")

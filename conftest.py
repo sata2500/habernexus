@@ -6,6 +6,7 @@ Pytest fixtures ve yapılandırması.
 import os
 
 import django
+
 import pytest
 
 # Django ayarlarını yükle
@@ -91,6 +92,7 @@ def api_client():
 def authenticated_api_client(db):
     """Kimlik doğrulamalı API client fixture'ı."""
     from django.contrib.auth import get_user_model
+
     from rest_framework.test import APIClient
 
     User = get_user_model()
@@ -108,6 +110,7 @@ def authenticated_api_client(db):
 def admin_api_client(db):
     """Admin API client fixture'ı."""
     from django.contrib.auth import get_user_model
+
     from rest_framework.test import APIClient
 
     User = get_user_model()

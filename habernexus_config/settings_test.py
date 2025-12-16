@@ -88,3 +88,12 @@ REST_FRAMEWORK = {
 
 # Disable rate limiting for tests
 RATELIMIT_ENABLE = False
+
+# DRF Spectacular settings for tests
+REST_FRAMEWORK["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "HaberNexus API",
+    "DESCRIPTION": "Test API",
+    "VERSION": "1.0.0",
+}

@@ -3,15 +3,17 @@ HaberNexus v6.0 Admin Dashboard
 Provides system status, monitoring, and configuration management
 """
 
-from django.shortcuts import render
+import json
+import os
+import subprocess
+from datetime import datetime
+
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
+
 import docker
-import os
-import json
-from datetime import datetime
-import subprocess
 
 
 def is_admin(user):
@@ -24,14 +26,14 @@ def is_admin(user):
 def dashboard(request):
     """Main admin dashboard"""
     context = {
-        'page_title': 'Admin Dashboard',
-        'services_status': get_services_status(),
-        'system_health': get_system_health(),
-        'ssl_status': get_ssl_status(),
-        'tunnel_status': get_tunnel_status(),
-        'recent_logs': get_recent_logs(),
+        "page_title": "Admin Dashboard",
+        "services_status": get_services_status(),
+        "system_health": get_system_health(),
+        "ssl_status": get_ssl_status(),
+        "tunnel_status": get_tunnel_status(),
+        "recent_logs": get_recent_logs(),
     }
-    return render(request, 'admin/dashboard.html', context)
+    return render(request, "admin/dashboard.html", context)
 
 
 def get_services_status():
@@ -39,67 +41,67 @@ def get_services_status():
     try:
         client = docker.from_env()
         containers = client.containers.list(all=True)
-        
+
         services = {}
         for container in containers:
-            if 'habernexus' in container.name:
+            if "habernexus" in container.name:
                 services[container.name] = {
-                    'status': container.status,
-                    'state': container.state,
-                    'health': container.attrs.get('State', {}).get('Health', {}).get('Status', 'unknown'),
-                    'image': container.image.tags[0] if container.image.tags else 'unknown',
-                    'created': container.attrs['Created'],
+                    "status": container.status,
+                    "state": container.state,
+                    "health": container.attrs.get("State", {}).get("Health", {}).get("Status", "unknown"),
+                    "image": container.image.tags[0] if container.image.tags else "unknown",
+                    "created": container.attrs["Created"],
                 }
-        
+
         return services
     except Exception as e:
-        return {'error': str(e)}
+        return {"error": str(e)}
 
 
 def get_system_health():
     """Get system health metrics"""
     try:
         import psutil
-        
+
         health = {
-            'cpu_percent': psutil.cpu_percent(interval=1),
-            'memory': psutil.virtual_memory()._asdict(),
-            'disk': psutil.disk_usage('/')._asdict(),
-            'timestamp': datetime.now().isoformat(),
+            "cpu_percent": psutil.cpu_percent(interval=1),
+            "memory": psutil.virtual_memory()._asdict(),
+            "disk": psutil.disk_usage("/")._asdict(),
+            "timestamp": datetime.now().isoformat(),
         }
-        
+
         return health
     except Exception as e:
-        return {'error': str(e)}
+        return {"error": str(e)}
 
 
 def get_ssl_status():
     """Get SSL certificate status"""
     try:
         # Check Caddy certificate
-        caddy_certs_path = '/data/caddy/certificates'
-        
+        caddy_certs_path = "/data/caddy/certificates"
+
         if os.path.exists(caddy_certs_path):
             certs = []
             for root, dirs, files in os.walk(caddy_certs_path):
                 for file in files:
-                    if file.endswith('.crt'):
+                    if file.endswith(".crt"):
                         cert_path = os.path.join(root, file)
-                        certs.append({
-                            'path': cert_path,
-                            'modified': datetime.fromtimestamp(
-                                os.path.getmtime(cert_path)
-                            ).isoformat(),
-                        })
-            
+                        certs.append(
+                            {
+                                "path": cert_path,
+                                "modified": datetime.fromtimestamp(os.path.getmtime(cert_path)).isoformat(),
+                            }
+                        )
+
             return {
-                'certificates': certs,
-                'status': 'active' if certs else 'none',
+                "certificates": certs,
+                "status": "active" if certs else "none",
             }
         else:
-            return {'status': 'pending', 'message': 'Waiting for certificate'}
+            return {"status": "pending", "message": "Waiting for certificate"}
     except Exception as e:
-        return {'error': str(e)}
+        return {"error": str(e)}
 
 
 def get_tunnel_status():
@@ -107,15 +109,15 @@ def get_tunnel_status():
     try:
         # Check if cloudflared is running
         client = docker.from_env()
-        tunnel_container = client.containers.get('habernexus_cloudflared')
-        
+        tunnel_container = client.containers.get("habernexus_cloudflared")
+
         return {
-            'status': tunnel_container.status,
-            'health': tunnel_container.attrs.get('State', {}).get('Health', {}).get('Status', 'unknown'),
-            'uptime': tunnel_container.attrs['State']['StartedAt'],
+            "status": tunnel_container.status,
+            "health": tunnel_container.attrs.get("State", {}).get("Health", {}).get("Status", "unknown"),
+            "uptime": tunnel_container.attrs["State"]["StartedAt"],
         }
     except Exception as e:
-        return {'error': str(e), 'status': 'unknown'}
+        return {"error": str(e), "status": "unknown"}
 
 
 def get_recent_logs(lines=50):
@@ -123,22 +125,24 @@ def get_recent_logs(lines=50):
     try:
         logs = []
         client = docker.from_env()
-        
+
         containers = client.containers.list(all=True)
         for container in containers:
-            if 'habernexus' in container.name:
+            if "habernexus" in container.name:
                 try:
-                    container_logs = container.logs(tail=lines).decode('utf-8')
-                    logs.append({
-                        'container': container.name,
-                        'logs': container_logs.split('\n')[-lines:],
-                    })
+                    container_logs = container.logs(tail=lines).decode("utf-8")
+                    logs.append(
+                        {
+                            "container": container.name,
+                            "logs": container_logs.split("\n")[-lines:],
+                        }
+                    )
                 except:
                     pass
-        
+
         return logs
     except Exception as e:
-        return [{'error': str(e)}]
+        return [{"error": str(e)}]
 
 
 @login_required
@@ -178,8 +182,8 @@ def api_tunnel_status(request):
 @require_http_methods(["GET"])
 def api_logs(request):
     """API endpoint for logs"""
-    lines = request.GET.get('lines', 50)
-    return JsonResponse({'logs': get_recent_logs(int(lines))})
+    lines = request.GET.get("lines", 50)
+    return JsonResponse({"logs": get_recent_logs(int(lines))})
 
 
 @login_required
@@ -187,22 +191,27 @@ def api_logs(request):
 @require_http_methods(["POST"])
 def restart_service(request):
     """Restart a service"""
-    service_name = request.POST.get('service')
-    
+    service_name = request.POST.get("service")
+
     try:
         client = docker.from_env()
         container = client.containers.get(service_name)
         container.restart()
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Service {service_name} restarted',
-        })
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"Service {service_name} restarted",
+            }
+        )
     except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e),
-        }, status=400)
+        return JsonResponse(
+            {
+                "success": False,
+                "error": str(e),
+            },
+            status=400,
+        )
 
 
 @login_required
@@ -210,22 +219,27 @@ def restart_service(request):
 @require_http_methods(["POST"])
 def stop_service(request):
     """Stop a service"""
-    service_name = request.POST.get('service')
-    
+    service_name = request.POST.get("service")
+
     try:
         client = docker.from_env()
         container = client.containers.get(service_name)
         container.stop()
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Service {service_name} stopped',
-        })
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"Service {service_name} stopped",
+            }
+        )
     except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e),
-        }, status=400)
+        return JsonResponse(
+            {
+                "success": False,
+                "error": str(e),
+            },
+            status=400,
+        )
 
 
 @login_required
@@ -233,19 +247,24 @@ def stop_service(request):
 @require_http_methods(["POST"])
 def start_service(request):
     """Start a service"""
-    service_name = request.POST.get('service')
-    
+    service_name = request.POST.get("service")
+
     try:
         client = docker.from_env()
         container = client.containers.get(service_name)
         container.start()
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Service {service_name} started',
-        })
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"Service {service_name} started",
+            }
+        )
     except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e),
-        }, status=400)
+        return JsonResponse(
+            {
+                "success": False,
+                "error": str(e),
+            },
+            status=400,
+        )

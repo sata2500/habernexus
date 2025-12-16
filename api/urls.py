@@ -7,14 +7,7 @@ from django.urls import include, path
 
 from rest_framework.routers import DefaultRouter
 
-from .views import (
-    ArticleViewSet,
-    AuthorViewSet,
-    CategoryListView,
-    HealthCheckView,
-    RssSourceViewSet,
-    StatsView,
-)
+from .views import ArticleViewSet, AuthorViewSet, CategoryListView, HealthCheckView, RssSourceViewSet, StatsView
 
 app_name = "api"
 

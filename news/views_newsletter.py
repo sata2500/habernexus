@@ -56,9 +56,7 @@ class NewsletterSubscribeView(View):
 
             if not created:
                 if subscriber.is_active:
-                    return JsonResponse(
-                        {"success": False, "message": "Bu e-posta adresi zaten abone."}, status=400
-                    )
+                    return JsonResponse({"success": False, "message": "Bu e-posta adresi zaten abone."}, status=400)
                 else:
                     # Tekrar abone ol
                     subscriber.resubscribe()
