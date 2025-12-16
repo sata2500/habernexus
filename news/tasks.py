@@ -9,8 +9,6 @@ Updated: December 2025
 
 import logging
 from io import BytesIO
-from typing import Optional
-
 from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
@@ -557,7 +555,7 @@ Requirements:
                 traceback=str(e),
                 related_id=article_id,
             )
-            return f"Hata: SDK import hatası"
+            return "Hata: SDK import hatası"
         except Exception as e:
             log_error("generate_article_image", f"Imagen API hatası: {str(e)}", traceback=str(e), related_id=article_id)
             # Görsel üretilemezse, RSS'den gelen görseli kullan (varsa)

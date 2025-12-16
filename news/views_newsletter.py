@@ -8,13 +8,10 @@ import logging
 from django.conf import settings
 from django.core.mail import send_mail
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-
 from .models_newsletter import NewsletterSubscriber
 
 logger = logging.getLogger(__name__)

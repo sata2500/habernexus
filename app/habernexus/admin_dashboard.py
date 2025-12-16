@@ -3,9 +3,7 @@ HaberNexus v6.0 Admin Dashboard
 Provides system status, monitoring, and configuration management
 """
 
-import json
 import os
-import subprocess
 from datetime import datetime
 
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -137,7 +135,7 @@ def get_recent_logs(lines=50):
                             "logs": container_logs.split("\n")[-lines:],
                         }
                     )
-                except:
+                except Exception:
                     pass
 
         return logs

@@ -12,8 +12,6 @@ from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from django.conf import settings
-
 
 class JSONFormatter(logging.Formatter):
     """

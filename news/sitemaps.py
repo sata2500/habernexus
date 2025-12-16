@@ -100,7 +100,6 @@ class StaticSitemap(Sitemap):
     """
 
     changefreq = "monthly"
-    priority = 0.5
     protocol = "https"
 
     def items(self):
