@@ -9,6 +9,7 @@ Updated: December 2025
 
 import logging
 from io import BytesIO
+
 from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify

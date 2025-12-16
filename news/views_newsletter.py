@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.views import View
+
 from .models_newsletter import NewsletterSubscriber
 
 logger = logging.getLogger(__name__)
