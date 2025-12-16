@@ -47,7 +47,7 @@
 Tek komutla tam otomatik kurulum:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/one_click_install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/install_v9.sh | sudo bash -s -- --quick
 ```
 
 ### Manuel Kurulum
@@ -57,20 +57,29 @@ curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/one_click_
 git clone https://github.com/sata2500/habernexus.git
 cd habernexus
 
-# İnteraktif kurulum
-sudo bash install_v8.sh --auto
+# İnteraktif kurulum (Whiptail dialog'ları ile)
+sudo bash install_v9.sh
 
 # Hızlı kurulum (varsayılan değerlerle)
-sudo bash install_v8.sh --quick
+sudo bash install_v9.sh --quick
 
-# Web wizard ile kurulum
-sudo bash install_v8.sh --wizard
+# Parametreli kurulum
+sudo bash install_v9.sh --domain example.com --email admin@example.com
+
+# Config dosyası ile kurulum
+sudo bash install_v9.sh --config install_config.yml
 ```
 
 ### Kurulum Öncesi Kontrol
 
 ```bash
 sudo bash pre_install_check_v8.sh
+```
+
+### Dry Run (Simülasyon)
+
+```bash
+sudo bash install_v9.sh --dry-run --quick
 ```
 
 ---
@@ -165,31 +174,29 @@ sudo bash pre_install_check_v8.sh
 ## 📊 Yönetim Komutları
 
 ```bash
-# Servis durumu
-bash manage_habernexus_v8.sh status
+# Kurulum dizinine git
+cd /opt/habernexus
 
-# Sağlık kontrolü
-bash manage_habernexus_v8.sh health
+# Servis durumu
+docker compose ps
 
 # Logları görüntüle
+docker compose logs -f
+
+# Servisleri yeniden başlat
+docker compose restart
+
+# Servisleri durdur
+docker compose down
+
+# Servisleri başlat
+docker compose up -d
+
+# Yönetim scripti ile
+bash manage_habernexus_v8.sh status
+bash manage_habernexus_v8.sh health
 bash manage_habernexus_v8.sh logs app
-
-# Veritabanı yedeği
 bash manage_habernexus_v8.sh backup-db
-
-# Sistemi güncelle
-bash manage_habernexus_v8.sh update
-
-# Kullanıcı oluştur
-bash manage_habernexus_v8.sh create-user admin admin@example.com
-
-# Tam yedek
-bash manage_habernexus_v8.sh full-backup
-
-# Sorun giderme
-bash manage_habernexus_v8.sh troubleshoot
-
-# Tüm komutlar
 bash manage_habernexus_v8.sh help
 ```
 
@@ -210,7 +217,8 @@ bash manage_habernexus_v8.sh help
 
 ```
 habernexus/
-├── 📄 install_v8.sh              # Ana kurulum scripti
+├── 📄 install_v9.sh              # Ana kurulum scripti (Whiptail + Fallback)
+├── 📄 install_v8.sh              # Alternatif kurulum scripti
 ├── 📄 one_click_install.sh       # Tek tıkla kurulum
 ├── 📄 pre_install_check_v8.sh    # Sistem kontrol scripti
 ├── 📄 manage_habernexus_v8.sh    # Yönetim scripti
