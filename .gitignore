@@ -91,3 +91,23 @@ ssl/
 # OS
 .DS_Store
 Thumbs.db
+
+# CI/CD Reports
+bandit-report.json
+bandit-results.sarif
+pip-audit-report.json
+flake8-report.json
+ruff-report.json
+trivy-results.sarif
+test-results.xml
+*-output.log
+
+# Test artifacts
+test_media/
+
+# Research and development notes
+research_notes.md
+DEVELOPMENT_PLAN_*.md
+
+# Backup files
+.backups/

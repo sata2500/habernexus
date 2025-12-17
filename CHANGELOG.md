@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [10.4.0] - 2025-12-17
+
+### 🆕 Added
+- **Enhanced CI/CD Error Handling:** The CI/CD pipeline now automatically creates a GitHub issue on failure, providing detailed error reports and summaries.
+- **New Unit Tests:** Added comprehensive unit tests for `ThinkingConfig` creation and `get_thinking_level` logic to ensure robustness.
+- **SARIF Uploads:** Bandit and Trivy security scan results are now uploaded to the GitHub Security tab in SARIF format for better vulnerability management.
+
+### 🔄 Changed
+- **Google Gen AI SDK Update:** The `create_thinking_config` function has been completely refactored to support the latest Google Gen AI SDK updates:
+  - **Gemini 2.5 Series:** Now uses `thinkingBudget` (integer) for more granular control (`0` for disabled, `-1` for dynamic, or a positive integer for a manual budget).
+  - **Gemini 3 Series:** Now uses `thinkingLevel` (string: `"low"` or `"high"`) for simplified reasoning control.
+- **API Documentation:** Updated `drf-spectacular` settings to include version `10.4.0` and added developer `CONTACT` and `LICENSE` information.
+- **CI/CD Pipeline:** The pipeline is now more robust with improved error handling, detailed job summaries, and more reliable test execution steps.
+- **README.md:** Updated to reflect all v10.4 features, including the new `ThinkingConfig` logic and enhanced CI/CD capabilities.
+
+### 🐛 Fixed
+- **Test Failures:** Resolved all failing tests in `test_tasks_comprehensive.py` by updating them to match the new `ThinkingConfig` API and fixing assertion logic.
+- **Module Not Found Error:** Fixed `ModuleNotFoundError: No module named 'google'` in tests by properly mocking the `google.genai` module.
+- **Test Environment:** Excluded `tailwind` and `django_elasticsearch_dsl` from `INSTALLED_APPS` in the test environment to prevent `ModuleNotFoundError` during tests.
+
+---
+
 ## [10.3.0] - 2025-12-17
 
 ### 🆕 Added
@@ -262,98 +284,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Monitoring** - Prometheus and Grafana integration
 - **Search** - Elasticsearch integration for full-text search
 - **Task Monitoring** - Flower for Celery task visualization
-
----
-
-## Version Comparison
-
-| Feature | v1.0 | v1.1 | v1.2 | v2.0 | v3.1 | v4.0 |
-|---------|------|------|------|------|------|------|
-| AI Content Generation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| RSS Integration | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Docker Support | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Automated Installation | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| TUI Installer | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Cloudflare Tunnel | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Nginx Proxy Manager | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Multiple Deployment Options | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Input Validation | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Health Check System | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-
----
-
-## Upgrade Guide
-
-### From v3.1 to v4.0
-
-1. **Backup your data:**
-   ```bash
-   sudo bash scripts/backup.sh
-   ```
-
-2. **Download new installer:**
-   ```bash
-   curl -O https://raw.githubusercontent.com/sata2500/habernexus/main/install_v4.sh
-   ```
-
-3. **Run new installer:**
-   ```bash
-   sudo bash install_v4.sh
-   ```
-
-4. **Select upgrade option** from the menu
-
-### From v1.x to v4.0
-
-Use smart migration feature:
-```bash
-# On old server
-sudo bash scripts/migrate_server.sh backup
-
-# On new server
-sudo bash install_v4.sh
-# Select smart migration option
-```
-
----
-
-## Future Roadmap
-
-### Planned for v4.1
-- [ ] Advanced analytics dashboard
-- [ ] API rate limiting dashboard
-- [ ] Multi-language content generation
-
-### Planned for v5.0
-- [ ] Kubernetes support
-- [ ] Multi-server deployment
-- [ ] Advanced AI models support
-- [ ] Automated S3 backups
-- [ ] GraphQL API
-
-### Long-term Goals
-- [ ] Mobile app
-- [ ] Advanced user roles and permissions
-- [ ] Custom AI model training
-- [ ] Real-time collaboration features
-- [ ] Advanced content scheduling
-
----
-
-## Support
-
-- **GitHub Issues:** https://github.com/sata2500/habernexus/issues
-- **Email:** salihtanriseven25@gmail.com
-- **Documentation:** https://github.com/sata2500/habernexus/tree/main/docs
-
----
-
-## Contributors
-
-- **Salih TANRISEVEN** - Lead Developer
-- **Manus AI** - v4.0 Installer & Documentation
-
----
-
-**Last Updated:** December 14, 2024  
-**Current Version:** 4.0.0

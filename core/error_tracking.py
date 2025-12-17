@@ -1,5 +1,5 @@
 """
-HaberNexus v10.3 - Error Tracking Module
+HaberNexus v10.4 - Error Tracking Module
 Gelişmiş hata takibi ve Sentry entegrasyonu.
 
 Author: Salih TANRISEVEN
@@ -138,7 +138,7 @@ def init_sentry() -> bool:
             profiles_sample_rate=getattr(settings, "SENTRY_PROFILES_SAMPLE_RATE", 0.1),
             # Environment
             environment=getattr(settings, "ENVIRONMENT", "development"),
-            release=getattr(settings, "VERSION", "10.3"),
+            release=getattr(settings, "VERSION", "10.4"),
             # Error filtering
             before_send=_before_send_filter,
             # Additional options

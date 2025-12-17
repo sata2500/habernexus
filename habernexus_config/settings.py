@@ -307,11 +307,20 @@ REST_FRAMEWORK = {
 # Spectacular Settings
 SPECTACULAR_SETTINGS = {
     "TITLE": "HaberNexus API",
-    "DESCRIPTION": "HaberNexus v10.0 - AI Destekli Haber Agregasyon Platformu REST API",
-    "VERSION": "10.0.0",
+    "DESCRIPTION": "HaberNexus v10.4 - AI Destekli Haber Agregasyon Platformu REST API",
+    "VERSION": "10.4.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SCHEMA_PATH_PREFIX": "/api/v1",
+    "CONTACT": {
+        "name": "Salih TANRISEVEN",
+        "email": "salihtanriseven25@gmail.com",
+        "url": "https://habernexus.com",
+    },
+    "LICENSE": {
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT",
+    },
 }
 
 # CORS Settings

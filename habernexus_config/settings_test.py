@@ -7,6 +7,15 @@ from pathlib import Path
 
 from .settings import *  # noqa: F401, F403
 
+# Test ortamı için gereksiz uygulamaları kaldır
+INSTALLED_APPS = [
+    app for app in INSTALLED_APPS  # noqa: F405
+    if app not in (
+        "tailwind",
+        "django_elasticsearch_dsl",
+    )
+]
+
 # Redefine BASE_DIR to avoid F405
 BASE_DIR = Path(__file__).resolve().parent.parent
 

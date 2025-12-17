@@ -1,6 +1,7 @@
 # =============================================================================
-# HaberNexus v10.3 - CI/CD Pipeline
+# HaberNexus v10.4 - CI/CD Pipeline
 # Comprehensive testing, code quality, security scanning, and Docker build
+# Enhanced error handling and notification system
 # Author: Salih TANRISEVEN
 # Updated: December 2025
 # =============================================================================
@@ -15,6 +16,13 @@ on:
   schedule:
     # Weekly security scan on Sundays at 00:00 UTC
     - cron: '0 0 * * 0'
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled'
+        required: false
+        default: false
 
 # Minimum required permissions - security best practice
 permissions:
@@ -23,6 +31,7 @@ permissions:
   pull-requests: write
   security-events: write
   actions: read
+  issues: write
 
 env:
   DJANGO_SECRET_KEY: test-secret-key-for-ci-${{ github.run_id }}
@@ -34,6 +43,7 @@ env:
   COMPOSE_DOCKER_CLI_BUILD: 1
   PYTHONDONTWRITEBYTECODE: 1
   PYTHONUNBUFFERED: 1
+  VERSION: "10.4.0"
 
 # Cancel in-progress runs for the same branch
 concurrency:
@@ -47,6 +57,7 @@ jobs:
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
@@ -82,11 +93,12 @@ jobs:
           pip install pytest pytest-django pytest-cov pytest-xdist pytest-timeout
 
       - name: Run tests with coverage
+        id: test
         env:
           DJANGO_SETTINGS_MODULE: habernexus_config.settings_test
           REDIS_URL: redis://localhost:6379/0
-        continue-on-error: true
         run: |
+          set +e
           pytest \
             --cov=news \
             --cov=core \
@@ -98,10 +110,19 @@ jobs:
             --cov-fail-under=30 \
             --timeout=300 \
             -v \
-            --tb=short
+            --tb=short \
+            --junitxml=test-results.xml 2>&1 | tee test-output.log
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
+          if [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo "::error::Tests failed with exit code $TEST_EXIT_CODE"
+            # Extract failed test names
+            grep -E "^FAILED" test-output.log || true
+          fi
+          exit $TEST_EXIT_CODE
 
       - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.11'
+        if: matrix.python-version == '3.11' && steps.test.outputs.exit_code == '0'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
@@ -118,7 +139,16 @@ jobs:
             coverage.xml
             htmlcov/
             .coverage
+            test-results.xml
+            test-output.log
           retention-days: 14
+
+      - name: Test Summary
+        if: always()
+        uses: test-summary/action@v2
+        with:
+          paths: test-results.xml
+        continue-on-error: true
 
   # ===========================================================================
   # Code Quality Job - Linting and Formatting
@@ -126,6 +156,7 @@ jobs:
   lint:
     name: Code Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -143,32 +174,75 @@ jobs:
           pip install flake8 black isort ruff mypy
 
       - name: Run Black (code formatting)
+        id: black
         run: |
           black --check . \
             --exclude='migrations|.venv|venv|node_modules' \
-            --line-length=120
+            --line-length=120 2>&1 | tee black-output.log
+        continue-on-error: true
 
       - name: Run isort (import sorting)
+        id: isort
         run: |
           isort --check-only . \
             --skip-glob='*/migrations/*' \
             --skip-glob='.venv' \
             --skip-glob='venv' \
-            --skip-glob='node_modules'
+            --skip-glob='node_modules' 2>&1 | tee isort-output.log
+        continue-on-error: true
 
       - name: Run flake8 (linting)
+        id: flake8
         run: |
           flake8 . \
             --max-line-length=120 \
             --exclude='migrations,venv,.venv,node_modules' \
-            --ignore=E203,W503,E501
+            --ignore=E203,W503,E501 \
+            --format=json \
+            --output-file=flake8-report.json || true
+          flake8 . \
+            --max-line-length=120 \
+            --exclude='migrations,venv,.venv,node_modules' \
+            --ignore=E203,W503,E501 2>&1 | tee flake8-output.log
+        continue-on-error: true
 
       - name: Run Ruff (fast linting)
+        id: ruff
         run: |
           ruff check . \
             --exclude='migrations,venv,.venv,node_modules' \
-            --ignore=E501
+            --ignore=E501 \
+            --output-format=json > ruff-report.json 2>&1 || true
+          ruff check . \
+            --exclude='migrations,venv,.venv,node_modules' \
+            --ignore=E501 2>&1 | tee ruff-output.log
         continue-on-error: true
+
+      - name: Upload lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports
+          path: |
+            black-output.log
+            isort-output.log
+            flake8-output.log
+            flake8-report.json
+            ruff-output.log
+            ruff-report.json
+          retention-days: 14
+
+      - name: Lint Summary
+        if: always()
+        run: |
+          echo "## Code Quality Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Tool | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Black | ${{ steps.black.outcome == 'success' && '✅ Passed' || '⚠️ Issues found' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| isort | ${{ steps.isort.outcome == 'success' && '✅ Passed' || '⚠️ Issues found' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| flake8 | ${{ steps.flake8.outcome == 'success' && '✅ Passed' || '⚠️ Issues found' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ruff | ${{ steps.ruff.outcome == 'success' && '✅ Passed' || '⚠️ Issues found' }} |" >> $GITHUB_STEP_SUMMARY
 
   # ===========================================================================
   # Security Job - Vulnerability Scanning
@@ -176,6 +250,7 @@ jobs:
   security:
     name: Security Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -192,32 +267,57 @@ jobs:
           pip install bandit safety pip-audit
 
       - name: Run Bandit (security linting)
+        id: bandit
         run: |
           bandit -r news core authors api \
             -f json \
             -o bandit-report.json \
             --exclude '*/tests/*,*/migrations/*' \
-            -ll
+            -ll 2>&1 | tee bandit-output.log || true
+          # Also generate SARIF for GitHub Security tab
+          bandit -r news core authors api \
+            -f sarif \
+            -o bandit-results.sarif \
+            --exclude '*/tests/*,*/migrations/*' \
+            -ll 2>&1 || true
+        continue-on-error: true
+
+      - name: Upload Bandit SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: bandit-results.sarif
+          category: bandit
         continue-on-error: true
 
       - name: Run pip-audit (dependency vulnerabilities)
+        id: pip_audit
         run: |
           pip install -r requirements.txt
-          pip-audit --format json --output pip-audit-report.json || true
+          pip-audit --format json --output pip-audit-report.json 2>&1 | tee pip-audit-output.log || true
         continue-on-error: true
 
       - name: Check for critical security issues
+        id: security_check
         run: |
+          CRITICAL_COUNT=0
+          HIGH_COUNT=0
+          
           if [ -f bandit-report.json ]; then
-            CRITICAL_ISSUES=$(python -c "import json; data=json.load(open('bandit-report.json')); print(len([r for r in data.get('results', []) if r.get('issue_severity') == 'HIGH' and r.get('issue_confidence') == 'HIGH']))")
-            if [ "$CRITICAL_ISSUES" -gt 0 ]; then
-              echo "::error::Found $CRITICAL_ISSUES critical security issues (HIGH severity + HIGH confidence)"
-              exit 1
-            fi
-            HIGH_ISSUES=$(python -c "import json; data=json.load(open('bandit-report.json')); print(len([r for r in data.get('results', []) if r.get('issue_severity') == 'HIGH']))")
-            if [ "$HIGH_ISSUES" -gt 0 ]; then
-              echo "::warning::Found $HIGH_ISSUES high severity security issues"
-            fi
+            CRITICAL_ISSUES=$(python -c "import json; data=json.load(open('bandit-report.json')); print(len([r for r in data.get('results', []) if r.get('issue_severity') == 'HIGH' and r.get('issue_confidence') == 'HIGH']))" 2>/dev/null || echo "0")
+            HIGH_ISSUES=$(python -c "import json; data=json.load(open('bandit-report.json')); print(len([r for r in data.get('results', []) if r.get('issue_severity') == 'HIGH']))" 2>/dev/null || echo "0")
+            CRITICAL_COUNT=$((CRITICAL_COUNT + CRITICAL_ISSUES))
+            HIGH_COUNT=$((HIGH_COUNT + HIGH_ISSUES))
+          fi
+          
+          echo "critical_count=$CRITICAL_COUNT" >> $GITHUB_OUTPUT
+          echo "high_count=$HIGH_COUNT" >> $GITHUB_OUTPUT
+          
+          if [ "$CRITICAL_COUNT" -gt 0 ]; then
+            echo "::error::Found $CRITICAL_COUNT critical security issues (HIGH severity + HIGH confidence)"
+          fi
+          if [ "$HIGH_COUNT" -gt 0 ]; then
+            echo "::warning::Found $HIGH_COUNT high severity security issues"
           fi
 
       - name: Upload security reports
@@ -227,8 +327,21 @@ jobs:
           name: security-reports
           path: |
             bandit-report.json
+            bandit-results.sarif
+            bandit-output.log
             pip-audit-report.json
+            pip-audit-output.log
           retention-days: 30
+
+      - name: Security Summary
+        if: always()
+        run: |
+          echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Critical Issues | ${{ steps.security_check.outputs.critical_count || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| High Severity Issues | ${{ steps.security_check.outputs.high_count || '0' }} |" >> $GITHUB_STEP_SUMMARY
 
   # ===========================================================================
   # CodeQL Analysis - Advanced Security Scanning
@@ -236,6 +349,7 @@ jobs:
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       actions: read
       contents: read
@@ -262,6 +376,7 @@ jobs:
   django-check:
     name: Django Configuration Check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -279,23 +394,39 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Django system checks
+        id: django_check
         env:
           DJANGO_SETTINGS_MODULE: habernexus_config.settings_test
-        continue-on-error: true
         run: |
-          python manage.py check --fail-level ERROR || echo "::warning::Django check failed - continuing anyway"
+          python manage.py check --fail-level ERROR 2>&1 | tee django-check-output.log
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
 
       - name: Check for missing migrations
+        id: migration_check
         env:
           DJANGO_SETTINGS_MODULE: habernexus_config.settings_test
         run: |
-          python manage.py makemigrations --check --dry-run || echo "::warning::Migration check failed - this may be expected in CI environment"
+          python manage.py makemigrations --check --dry-run 2>&1 | tee migration-check-output.log || true
+        continue-on-error: true
 
       - name: Validate URL patterns
+        id: url_check
         env:
           DJANGO_SETTINGS_MODULE: habernexus_config.settings_test
         run: |
-          python -c "from django.urls import get_resolver; resolver = get_resolver(); print(f'URL patterns loaded: {len(resolver.url_patterns)} patterns')"
+          python -c "from django.urls import get_resolver; resolver = get_resolver(); print(f'URL patterns loaded: {len(resolver.url_patterns)} patterns')" 2>&1 | tee url-check-output.log
+
+      - name: Upload Django check reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: django-check-reports
+          path: |
+            django-check-output.log
+            migration-check-output.log
+            url-check-output.log
+          retention-days: 14
 
   # ===========================================================================
   # Build Job - Docker Image Build
@@ -303,6 +434,7 @@ jobs:
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [test, lint, security, django-check]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && !cancelled()
 
@@ -314,6 +446,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
+        id: docker_build
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -325,7 +458,7 @@ jobs:
           build-args: |
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             VCS_REF=${{ github.sha }}
-            VERSION=10.3
+            VERSION=${{ env.VERSION }}
 
       - name: Test Docker image
         run: |
@@ -349,6 +482,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
+          category: trivy
         continue-on-error: true
 
   # ===========================================================================
@@ -370,12 +504,102 @@ jobs:
           deny-licenses: GPL-3.0, AGPL-3.0
 
   # ===========================================================================
+  # Error Notification Job - Create Issue on Failure
+  # ===========================================================================
+  error-notification:
+    name: Error Notification
+    runs-on: ubuntu-latest
+    needs: [test, lint, security, django-check]
+    if: failure() && github.event_name == 'push'
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Collect Error Information
+        id: error_info
+        run: |
+          echo "workflow_url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
+          echo "commit_url=https://github.com/${{ github.repository }}/commit/${{ github.sha }}" >> $GITHUB_OUTPUT
+          
+          FAILED_JOBS=""
+          if [ "${{ needs.test.result }}" == "failure" ]; then
+            FAILED_JOBS="${FAILED_JOBS}- Test\n"
+          fi
+          if [ "${{ needs.lint.result }}" == "failure" ]; then
+            FAILED_JOBS="${FAILED_JOBS}- Lint\n"
+          fi
+          if [ "${{ needs.security.result }}" == "failure" ]; then
+            FAILED_JOBS="${FAILED_JOBS}- Security\n"
+          fi
+          if [ "${{ needs.django-check.result }}" == "failure" ]; then
+            FAILED_JOBS="${FAILED_JOBS}- Django Check\n"
+          fi
+          
+          echo "failed_jobs<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$FAILED_JOBS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Issue on Failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 CI Pipeline Failed - ${context.sha.substring(0, 7)}`;
+            const body = `## CI Pipeline Failure Report
+            
+            **Workflow Run:** [View Details](${{ steps.error_info.outputs.workflow_url }})
+            **Commit:** [${context.sha.substring(0, 7)}](${{ steps.error_info.outputs.commit_url }})
+            **Branch:** ${context.ref.replace('refs/heads/', '')}
+            **Triggered by:** ${context.actor}
+            **Time:** ${new Date().toISOString()}
+            
+            ### Failed Jobs
+            ${{ steps.error_info.outputs.failed_jobs }}
+            
+            ### Job Results
+            | Job | Status |
+            |-----|--------|
+            | Test | ${{ needs.test.result }} |
+            | Lint | ${{ needs.lint.result }} |
+            | Security | ${{ needs.security.result }} |
+            | Django Check | ${{ needs.django-check.result }} |
+            
+            ---
+            *This issue was automatically created by the CI pipeline.*
+            `;
+            
+            // Check if similar issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'ci-failure'
+            });
+            
+            const existingIssue = issues.data.find(issue => 
+              issue.title.includes(context.sha.substring(0, 7))
+            );
+            
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['ci-failure', 'automated']
+              });
+            }
+
+  # ===========================================================================
   # Notification Job - Status Summary
   # ===========================================================================
   notify:
     name: Pipeline Status
     runs-on: ubuntu-latest
-    needs: [test, lint, security, django-check]
+    needs: [test, lint, security, django-check, codeql]
     if: always()
 
     steps:
@@ -385,21 +609,29 @@ jobs:
           echo "Lint: ${{ needs.lint.result }}"
           echo "Security: ${{ needs.security.result }}"
           echo "Django Check: ${{ needs.django-check.result }}"
+          echo "CodeQL: ${{ needs.codeql.result }}"
 
       - name: Pipeline Summary
         run: |
-          echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 CI Pipeline Summary - HaberNexus v${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Test | ${{ needs.test.result == 'success' && '✅' || '❌' }} ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint | ${{ needs.lint.result == 'success' && '✅' || '❌' }} ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security | ${{ needs.security.result == 'success' && '✅' || '❌' }} ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Django Check | ${{ needs.django-check.result == 'success' && '✅' || '❌' }} ${{ needs.django-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | ${{ needs.test.result == 'success' && '✅' || needs.test.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result == 'success' && '✅' || needs.lint.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.security.result == 'success' && '✅' || needs.security.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Django Check | ${{ needs.django-check.result == 'success' && '✅' || needs.django-check.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.django-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CodeQL | ${{ needs.codeql.result == 'success' && '✅' || needs.codeql.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.codeql.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Information" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Fail if any job failed
         if: contains(needs.*.result, 'failure')

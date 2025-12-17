@@ -1,7 +1,9 @@
 """
-HaberNexus v10.3 - News Tasks
+HaberNexus v10.4 - News Tasks
 Celery tasks for RSS fetching, AI content generation, and image generation.
-Updated to use the new Google Gen AI SDK with ThinkingConfig and ThinkingLevel support.
+Updated to use the new Google Gen AI SDK with proper ThinkingConfig support.
+- Gemini 2.5 series: Uses thinkingBudget (integer)
+- Gemini 3 series: Uses thinkingLevel (string: "low" or "high")
 
 Author: Salih TANRISEVEN
 Updated: December 2025
@@ -91,19 +93,26 @@ def get_image_model_name() -> str:
 def get_thinking_level() -> Optional[str]:
     """
     Thinking level değerini ayarlardan al.
-    Desteklenen değerler: MINIMAL, LOW, MEDIUM, HIGH veya None (devre dışı)
+    Gemini 3 modelleri için: "low" veya "high" değerleri desteklenir.
+    Gemini 2.5 modelleri için thinkingLevel desteklenmez, thinkingBudget kullanılmalı.
 
     Returns:
-        Optional[str]: Thinking level (varsayılan: None - devre dışı)
+        Optional[str]: Thinking level (varsayılan: None - model varsayılanı)
     """
     try:
         thinking_setting = Setting.objects.get(key="AI_THINKING_LEVEL")
-        level = thinking_setting.value.upper()
-        if level in ("MINIMAL", "LOW", "MEDIUM", "HIGH"):
+        level = thinking_setting.value.lower().strip()
+        # Gemini 3 için sadece "low" ve "high" geçerli
+        if level in ("low", "high"):
             return level
-        return None
+        # Eski değerleri yeni değerlere dönüştür (geriye uyumluluk)
+        legacy_map = {
+            "minimal": "low",
+            "medium": "high",
+        }
+        return legacy_map.get(level, None)
     except Setting.DoesNotExist:
-        return None  # Varsayılan: thinking devre dışı (hız için)
+        return None  # Varsayılan: model kendi varsayılanını kullanır
 
 
 def get_thinking_budget() -> int:
@@ -124,35 +133,43 @@ def get_thinking_budget() -> int:
 def create_thinking_config():
     """
     ThinkingConfig oluştur.
-    Yeni SDK'da ThinkingLevel enum kullanılıyor.
+    
+    Google Gen AI SDK Aralık 2025 güncellemesi:
+    - Gemini 2.5 serisi: thinkingBudget kullanır (integer)
+      - 0: Thinking devre dışı
+      - -1: Dinamik thinking (model karar verir)
+      - Pozitif değer: Manuel budget (örn: 1024, 2048)
+    - Gemini 3 serisi: thinkingLevel kullanır (string)
+      - "low": Düşük reasoning
+      - "high": Yüksek reasoning (varsayılan)
+      - Gemini 3 Pro için thinking devre dışı bırakılamaz
 
     Returns:
-        Optional[ThinkingConfig]: Thinking yapılandırması veya None
+        ThinkingConfig: Thinking yapılandırması
     """
     from google.genai import types
 
+    model_name = get_ai_model_name().lower()
     thinking_level = get_thinking_level()
     thinking_budget = get_thinking_budget()
 
-    # Thinking devre dışı
-    if thinking_level is None and thinking_budget == 0:
-        return types.ThinkingConfig(thinking_budget=0)
+    # Gemini 3 modelleri için thinkingLevel kullan
+    if "gemini-3" in model_name:
+        if thinking_level:
+            return types.ThinkingConfig(thinking_level=thinking_level)
+        # Gemini 3 için varsayılan: high
+        return types.ThinkingConfig(thinking_level="high")
 
-    # ThinkingLevel kullan
-    if thinking_level:
-        level_map = {
-            "MINIMAL": types.ThinkingLevel.MINIMAL,
-            "LOW": types.ThinkingLevel.LOW,
-            "MEDIUM": types.ThinkingLevel.MEDIUM,
-            "HIGH": types.ThinkingLevel.HIGH,
-        }
-        return types.ThinkingConfig(thinking_level=level_map.get(thinking_level))
-
-    # Sadece budget kullan
-    if thinking_budget > 0:
+    # Gemini 2.5 ve diğer modeller için thinkingBudget kullan
+    # -1: Dinamik thinking (model karar verir)
+    # 0: Thinking devre dışı
+    # Pozitif: Manuel budget
+    if thinking_budget == -1:
+        return types.ThinkingConfig(thinking_budget=-1)  # Dinamik
+    elif thinking_budget > 0:
         return types.ThinkingConfig(thinking_budget=thinking_budget)
-
-    return None
+    else:
+        return types.ThinkingConfig(thinking_budget=0)  # Devre dışı
 
 
 # =============================================================================

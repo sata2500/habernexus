@@ -1,8 +1,8 @@
-# 🚀 HaberNexus v10.3
+# 🚀 HaberNexus v10.4
 
 <div align="center">
 
-![HaberNexus Logo](https://img.shields.io/badge/HaberNexus-v10.3-blue?style=for-the-badge&logo=newspaper)
+![HaberNexus Logo](https://img.shields.io/badge/HaberNexus-v10.4-blue?style=for-the-badge&logo=newspaper)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green?style=for-the-badge&logo=python)](https://python.org)
 [![Django](https://img.shields.io/badge/Django-5.1-green?style=for-the-badge&logo=django)](https://djangoproject.com)
@@ -17,31 +17,34 @@
 
 ---
 
-## ✨ v10.3'te Yenilikler
+## ✨ v10.4 Yenilikleri
 
 ### 🤖 Google Gen AI SDK Güncellemeleri
-- **ThinkingLevel Enum Desteği:** `MINIMAL`, `LOW`, `MEDIUM`, `HIGH` seviyeleri ile thinking kontrolü.
-- **ThinkingConfig İyileştirmeleri:** Daha esnek thinking_budget ve thinking_level yapılandırması.
-- **Retry Mekanizması:** Exponential backoff ile gelişmiş hata yönetimi.
-- **Batch Processing:** Toplu içerik üretimi için yeni task'lar.
+- **Gelişmiş ThinkingConfig Desteği:**
+  - **Gemini 2.5 Serisi:** `thinkingBudget` (integer) ile daha hassas kontrol.
+    - `0`: Thinking devre dışı.
+    - `-1`: Dinamik thinking (model karar verir).
+    - `Pozitif değer`: Manuel budget (örn: 1024, 2048).
+  - **Gemini 3 Serisi:** `thinkingLevel` (string) ile basitleştirilmiş kontrol.
+    - `"low"`: Düşük reasoning.
+    - `"high"`: Yüksek reasoning (varsayılan).
+- **Geriye Uyumluluk:** Eski `ThinkingLevel` enum değerleri (`MINIMAL`, `MEDIUM`) otomatik olarak yeni `thinkingLevel` string değerlerine (`low`, `high`) dönüştürülür.
 
 ### 🛡️ Güçlendirilmiş CI/CD Pipeline
-- **CodeQL Entegrasyonu:** Gelişmiş güvenlik analizi ve kod taraması.
-- **Dependency Review:** PR'larda otomatik bağımlılık güvenlik kontrolü.
-- **Redis Service:** Test ortamında Redis desteği.
-- **Haftalık Güvenlik Taraması:** Zamanlanmış güvenlik kontrolleri.
-- **Test Timeout:** Uzun süren testler için timeout mekanizması.
+- **Gelişmiş Hata Raporlama:** Başarısız testler ve linting hataları için detaylı özetler ve loglar.
+- **Otomatik Issue Oluşturma:** `main` branch üzerindeki pipeline hatalarında otomatik olarak GitHub issue oluşturulur.
+- **Detaylı Özetler:** Her pipeline çalışması sonunda tüm adımların durumunu gösteren kapsamlı bir özet oluşturulur.
+- **Güvenlik Taraması İyileştirmeleri:** Bandit ve Trivy tarama sonuçları artık GitHub Security tabına SARIF formatında yükleniyor.
+- **Daha Sağlam Test Adımları:** Testlerin `continue-on-error` yerine `set +e` ve `PIPESTATUS` ile daha güvenilir şekilde çalışması sağlandı.
 
-### 🔒 Gelişmiş Hata Takibi
-- **Sentry Entegrasyonu:** Kapsamlı hata izleme ve raporlama.
-- **Error Context Manager:** Hata bağlamı yönetimi.
-- **Breadcrumb Tracking:** İşlem geçmişi takibi.
-- **Error Report Generator:** Detaylı hata raporları.
+### 📝 API ve Dokümantasyon
+- **API Versiyon Güncellemesi:** `drf-spectacular` ile oluşturulan API dokümantasyonu v10.4 olarak güncellendi.
+- **Geliştirici Bilgileri:** API dokümantasyonuna `CONTACT` ve `LICENSE` bilgileri eklendi.
 
-### 📁 Proje Organizasyonu
-- **Arşiv Sistemi:** Eski dosyalar için sistematik arşivleme.
-- **Temizlenmiş Kök Dizin:** Daha düzenli proje yapısı.
-- **Güncellenmiş Dokümantasyon:** Tüm belgeler v10.3 için güncellendi.
+### 🧪 Kapsamlı Testler
+- **Yeni Test Senaryoları:** `ThinkingConfig` ve `get_thinking_level` fonksiyonları için yeni birim testleri eklendi.
+- **Mock İyileştirmeleri:** `google.genai` modülü, testlerin harici bağımlılık olmadan çalışabilmesi için mocklandı.
+- **Hata Düzeltmeleri:** Mevcut testlerdeki hatalar giderildi ve testler daha kararlı hale getirildi.
 
 ---
 
@@ -93,8 +96,8 @@ docker compose logs -f
 ## ✨ Özellikler
 
 ### 🤖 AI-Destekli İçerik
-- **Google Gemini AI:** Otomatik haber özetleme ve içerik üretimi (Gemini 2.5 Flash).
-- **ThinkingConfig:** Gelişmiş reasoning için thinking_level ve thinking_budget desteği.
+- **Google Gemini AI:** Otomatik haber özetleme ve içerik üretimi (Gemini 2.5 Flash, Gemini 3 Pro).
+- **ThinkingConfig:** Gelişmiş reasoning için `thinkingLevel` ve `thinkingBudget` desteği.
 - **Akıllı Kategori Sınıflandırma:** İçeriklerin otomatik olarak kategorize edilmesi.
 - **Duygu Analizi:** Haber metinlerinin duygu analizinin yapılması.
 - **Görsel Üretimi:** Google Imagen 4.0 ile AI destekli görsel oluşturma.
@@ -165,7 +168,7 @@ docker compose logs -f
 | Reverse Proxy | Caddy | 2.7+ |
 | Tunnel | Cloudflare Tunnel | Latest |
 | Container | Docker | 24+ |
-| AI | Google Gemini | 2.5 Flash |
+| AI | Google Gemini | 2.5 Flash / 3 Pro |
 | Image AI | Google Imagen | 4.0 |
 | API Framework | Django REST Framework | 3.15+ |
 | API Docs | drf-spectacular | 0.28+ |
@@ -256,11 +259,12 @@ GitHub Actions ile otomatik CI/CD:
 # Her push'ta çalışan job'lar:
 - Test (Python 3.10, 3.11, 3.12)  # Paralel test matrix
 - Code Quality                     # Black, isort, flake8, Ruff
-- Security Checks                  # Bandit, pip-audit
+- Security Checks                  # Bandit, pip-audit, Trivy
 - CodeQL Analysis                  # Gelişmiş güvenlik taraması
 - Django Configuration Check       # System checks
 - Dependency Review                # PR güvenlik kontrolü
 - Build Docker Image               # Docker build (main branch)
+- Error Notification               # Hata durumunda issue oluşturma
 - Pipeline Status                  # Durum bildirimi
 ```
 
@@ -329,8 +333,8 @@ Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır.
 - [x] REST API Modülü
 - [x] Newsletter Sistemi
 - [x] Gelişmiş Hata Yakalama
-- [x] Güçlendirilmiş CI/CD
-- [x] Google Gen AI SDK Güncellemeleri
+- [x] Güçlendirilmiş CI/CD (v10.4)
+- [x] Google Gen AI SDK Güncellemeleri (v10.4)
 - [x] Rate Limiting Middleware
 - [x] Security Headers
 - [x] Sentry Entegrasyonu
@@ -351,6 +355,7 @@ Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır.
 
 | Versiyon | Tarih | Önemli Değişiklikler |
 |----------|-------|---------------------|
+| v10.4 | Aralık 2025 | Gelişmiş ThinkingConfig, Güçlendirilmiş CI/CD, API güncellemeleri |
 | v10.3 | Aralık 2025 | ThinkingLevel enum, CodeQL, Sentry, proje organizasyonu |
 | v10.2 | Aralık 2025 | Google Gen AI SDK güncellemeleri, CI/CD güçlendirme |
 | v10.1 | Aralık 2025 | CI/CD düzeltmeleri, hata yakalama sistemi |
@@ -362,7 +367,7 @@ Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır.
 
 <div align="center">
 
-**HaberNexus v10.3** - Modern, Otomatik, Güvenli
+**HaberNexus v10.4** - Modern, Otomatik, Güvenli
 
 **Geliştirici:** Salih TANRISEVEN | Aralık 2025
 
