@@ -1,3 +1,10 @@
+# =============================================================================
+# HaberNexus - Release Workflow
+# Creates GitHub releases when tags are pushed
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
 name: Release
 
 on:
@@ -35,23 +42,29 @@ jobs:
         # Get previous tag
         PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
         
-        # Generate changelog content
+        # Generate changelog content to a temporary file
+        CHANGELOG_FILE=$(mktemp)
+        
         if [ -z "$PREV_TAG" ]; then
-          CHANGELOG_CONTENT="Initial release - no previous tags found
-
-$(git log --pretty=format:'- %s (%h)' | head -20)"
+          echo "Initial release - no previous tags found" > "$CHANGELOG_FILE"
+          echo "" >> "$CHANGELOG_FILE"
+          git log --pretty=format:'- %s (%h)' | head -20 >> "$CHANGELOG_FILE"
         else
-          CHANGELOG_CONTENT="Changes since $PREV_TAG:
-
-$(git log $PREV_TAG..HEAD --pretty=format:'- %s (%h)')"
+          echo "Changes since $PREV_TAG:" > "$CHANGELOG_FILE"
+          echo "" >> "$CHANGELOG_FILE"
+          git log "$PREV_TAG"..HEAD --pretty=format:'- %s (%h)' >> "$CHANGELOG_FILE"
         fi
         
         # Write multiline output using delimiter
         {
           echo 'CHANGELOG<<CHANGELOG_EOF'
-          echo "$CHANGELOG_CONTENT"
+          cat "$CHANGELOG_FILE"
+          echo ''
           echo 'CHANGELOG_EOF'
         } >> $GITHUB_OUTPUT
+        
+        # Cleanup
+        rm -f "$CHANGELOG_FILE"
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2

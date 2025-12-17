@@ -1,3 +1,10 @@
+# =============================================================================
+# HaberNexus - CD Pipeline
+# Continuous Deployment to production server
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
 name: CD Pipeline
 
 on:
@@ -36,27 +43,33 @@ jobs:
 
     - name: Check if secrets are configured
       id: check_secrets
+      env:
+        VM_HOST: ${{ secrets.VM_HOST }}
+        VM_USER: ${{ secrets.VM_USER }}
+        VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+        DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       run: |
         MISSING_SECRETS=""
         CONFIGURED="true"
         
-        if [ -z "${{ secrets.VM_HOST }}" ]; then
+        if [ -z "$VM_HOST" ]; then
           MISSING_SECRETS="${MISSING_SECRETS}VM_HOST, "
           CONFIGURED="false"
         fi
-        if [ -z "${{ secrets.VM_USER }}" ]; then
+        if [ -z "$VM_USER" ]; then
           MISSING_SECRETS="${MISSING_SECRETS}VM_USER, "
           CONFIGURED="false"
         fi
-        if [ -z "${{ secrets.VM_SSH_KEY }}" ]; then
+        if [ -z "$VM_SSH_KEY" ]; then
           MISSING_SECRETS="${MISSING_SECRETS}VM_SSH_KEY, "
           CONFIGURED="false"
         fi
-        if [ -z "${{ secrets.DJANGO_SECRET_KEY }}" ]; then
+        if [ -z "$DJANGO_SECRET_KEY" ]; then
           MISSING_SECRETS="${MISSING_SECRETS}DJANGO_SECRET_KEY, "
           CONFIGURED="false"
         fi
-        if [ -z "${{ secrets.DB_PASSWORD }}" ]; then
+        if [ -z "$DB_PASSWORD" ]; then
           MISSING_SECRETS="${MISSING_SECRETS}DB_PASSWORD, "
           CONFIGURED="false"
         fi
@@ -65,7 +78,7 @@ jobs:
         
         if [ "$CONFIGURED" = "false" ]; then
           echo "⚠️ Missing secrets: ${MISSING_SECRETS%,*}"
-          echo "::warning::Deployment secrets are not fully configured. Please configure the following secrets in repository settings: ${MISSING_SECRETS%,*}"
+          echo "::notice::Deployment secrets are not fully configured. Please configure the following secrets in repository settings: ${MISSING_SECRETS%,*}"
           echo ""
           echo "📝 Required secrets for deployment:"
           echo "  - VM_HOST: Your server IP or hostname"
@@ -94,7 +107,7 @@ jobs:
       env:
         DJANGO_SETTINGS_MODULE: habernexus_config.settings_test
       run: |
-        python manage.py check --deploy 2>&1 || echo "::warning::Some Django deployment checks failed. Review before production deployment."
+        python manage.py check --deploy 2>&1 || echo "::notice::Some Django deployment checks need attention. Review before production deployment."
 
   deploy:
     name: Deploy to Production
@@ -156,7 +169,7 @@ jobs:
     - name: Backup database before deployment
       run: |
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "cd /opt/habernexus && bash scripts/backup.sh" || echo "::warning::Backup warning - continuing deployment"
+          "cd /opt/habernexus && bash scripts/backup.sh" || echo "::notice::Backup warning - continuing deployment"
       continue-on-error: true
 
     - name: Copy .env file to VM
@@ -206,7 +219,7 @@ jobs:
     - name: Health check
       run: |
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "cd /opt/habernexus && bash scripts/health-check.sh" || echo "::warning::Health check returned warnings"
+          "cd /opt/habernexus && bash scripts/health-check.sh" || echo "::notice::Health check returned warnings"
 
     - name: Create deployment status - success
       if: success()
