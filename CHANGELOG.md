@@ -1,9 +1,113 @@
-# Haber Nexus - Changelog
+# HaberNexus - Changelog
 
 All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [10.3.0] - 2025-12-17
+
+### 🆕 Added
+- **ThinkingLevel Enum Support:** Google Gen AI SDK now supports `MINIMAL`, `LOW`, `MEDIUM`, `HIGH` levels for thinking control
+- **CodeQL Integration:** Advanced security analysis added to CI/CD pipeline
+- **Dependency Review:** Automatic dependency security checks in pull requests
+- **Sentry Integration:** Comprehensive error tracking and reporting module (`core/error_tracking.py`)
+- **Error Context Manager:** New class for error context management
+- **Breadcrumb Tracking:** Operation history tracking
+- **Batch Processing Tasks:** `batch_regenerate_content` and `cleanup_draft_articles` tasks for bulk content generation
+- **Archive System:** Systematic archiving structure for old files (`archive/`)
+- **Comprehensive Test Suite:** Middleware, API, and task tests added
+
+### 🔄 Changed
+- **Google Gen AI SDK:** ThinkingConfig now uses ThinkingLevel enum
+- **CI/CD Pipeline:** Redis service, test timeout, weekly security scan added
+- **Test Coverage:** Target increased from 30% to 35%
+- **Project Structure:** Old files moved to `archive/` folder
+- **README.md:** Completely updated for v10.3
+
+### 🐛 Fixed
+- Retry mechanism improved with exponential backoff
+- ThinkingConfig creation logic fixed
+- Missing coverage in middleware tests addressed
+
+### 🗑️ Removed
+- Old installation scripts moved to archive (install_v4.sh - install_v8.sh)
+- Old documentation files moved to archive
+
+### 📁 Archived Files
+- `install_v4.sh`, `install_v5.sh`, `install_v6.sh`, `install_v7.sh`, `install_v8.sh`
+- `manage_habernexus.sh`, `pre_install_check.sh`
+- `CHANGELOG_v10.md`, `CHANGELOG_v10.2.md`
+- `DEBUGGING_REPORT_v10.1.md`, `DEVELOPMENT_PLAN_v10.md`, `DEVELOPMENT_REPORT_v10.2.md`
+- `INSTALLATION_GUIDE_v7.md`, `INSTALLATION_SCRIPTS_README.md`
+- `COMPLETION_PLAN.md`, `RESEARCH_NOTES.md`, `research_findings_v10.2.md`
+
+---
+
+## [10.2.0] - 2025-12-16
+
+### 🆕 Added
+- Google Gen AI SDK thinking_config support
+- Multi-Python test matrix (3.10, 3.11, 3.12)
+- Bandit, pip-audit security scans
+- Rate limiting middleware
+- Security headers middleware
+
+### 🔄 Changed
+- Coverage threshold reduced from 70% to 30%
+- Migration check CI compatibility improved
+
+### 🐛 Fixed
+- isort import ordering errors
+- flake8 linting errors
+- Black formatting inconsistencies
+
+---
+
+## [10.1.0] - 2025-12-15
+
+### 🆕 Added
+- Advanced error handling system
+- Custom exception classes
+- REST Framework exception handler
+
+### 🐛 Fixed
+- CI/CD pipeline errors
+- Concurrency issues
+
+---
+
+## [10.0.0] - 2025-12-14
+
+### 🆕 Added
+- REST API module (Django REST Framework)
+- Newsletter system
+- Google Gen AI SDK integration
+- Swagger/ReDoc API documentation
+- Celery Beat periodic tasks
+
+### 🔄 Changed
+- Project structure reorganized
+- Database models updated
+
+---
+
+## [9.0.0] - 2025-12-10
+
+### 🆕 Added
+- Whiptail-based interactive installation system
+- Installation wizard
+
+---
+
+## [8.0.0] - 2025-12-05
+
+### 🆕 Added
+- Ultimate installation system
+- Docker Compose configuration
+- Cloudflare Tunnel integration
 
 ---
 

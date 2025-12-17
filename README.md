@@ -1,8 +1,8 @@
-# 🚀 HaberNexus v10.2
+# 🚀 HaberNexus v10.3
 
 <div align="center">
 
-![HaberNexus Logo](https://img.shields.io/badge/HaberNexus-v10.2-blue?style=for-the-badge&logo=newspaper)
+![HaberNexus Logo](https://img.shields.io/badge/HaberNexus-v10.3-blue?style=for-the-badge&logo=newspaper)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green?style=for-the-badge&logo=python)](https://python.org)
 [![Django](https://img.shields.io/badge/Django-5.1-green?style=for-the-badge&logo=django)](https://djangoproject.com)
@@ -17,32 +17,31 @@
 
 ---
 
-## ✨ v10.2'de Yenilikler
+## ✨ v10.3'te Yenilikler
 
 ### 🤖 Google Gen AI SDK Güncellemeleri
-- **Thinking Config Desteği:** Gemini 2.5 Flash modeli için `thinking_config` parametresi eklendi.
-- **Gelişmiş Hata Yönetimi:** API çağrılarında retry mekanizması ve detaylı hata loglaması.
-- **Model Parametreleri:** `temperature`, `top_p`, `top_k` parametreleri optimize edildi.
-- **Response Handling:** Daha güvenli response parsing ve validation.
+- **ThinkingLevel Enum Desteği:** `MINIMAL`, `LOW`, `MEDIUM`, `HIGH` seviyeleri ile thinking kontrolü.
+- **ThinkingConfig İyileştirmeleri:** Daha esnek thinking_budget ve thinking_level yapılandırması.
+- **Retry Mekanizması:** Exponential backoff ile gelişmiş hata yönetimi.
+- **Batch Processing:** Toplu içerik üretimi için yeni task'lar.
 
 ### 🛡️ Güçlendirilmiş CI/CD Pipeline
-- **Multi-Python Testing:** Python 3.10, 3.11 ve 3.12 için paralel test matrix.
-- **Güvenlik Taramaları:** Bandit, Safety ve pip-audit ile otomatik güvenlik kontrolü.
-- **Kod Kalitesi:** Black, isort, flake8 ve Ruff ile kapsamlı kod analizi.
-- **Docker Build:** Otomatik Docker image build ve cache optimizasyonu.
-- **Artifact Management:** Test raporları ve güvenlik raporları artifact olarak saklanır.
+- **CodeQL Entegrasyonu:** Gelişmiş güvenlik analizi ve kod taraması.
+- **Dependency Review:** PR'larda otomatik bağımlılık güvenlik kontrolü.
+- **Redis Service:** Test ortamında Redis desteği.
+- **Haftalık Güvenlik Taraması:** Zamanlanmış güvenlik kontrolleri.
+- **Test Timeout:** Uzun süren testler için timeout mekanizması.
 
-### 🔒 Gelişmiş Güvenlik Middleware
-- **Rate Limiting:** IP bazlı istek sınırlama (varsayılan: 100 istek/dakika).
-- **Security Headers:** X-Content-Type-Options, X-Frame-Options, X-XSS-Protection.
-- **Request Logging:** Detaylı istek loglaması ve performans izleme.
-- **Error Handling:** Global exception handler ile tutarlı hata yanıtları.
+### 🔒 Gelişmiş Hata Takibi
+- **Sentry Entegrasyonu:** Kapsamlı hata izleme ve raporlama.
+- **Error Context Manager:** Hata bağlamı yönetimi.
+- **Breadcrumb Tracking:** İşlem geçmişi takibi.
+- **Error Report Generator:** Detaylı hata raporları.
 
-### 🐛 Hata Düzeltmeleri
-- isort import sıralaması düzeltmeleri
-- flake8 linting hatalarının giderilmesi
-- Black kod formatlama uyumluluğu
-- Migration check CI uyumluluğu
+### 📁 Proje Organizasyonu
+- **Arşiv Sistemi:** Eski dosyalar için sistematik arşivleme.
+- **Temizlenmiş Kök Dizin:** Daha düzenli proje yapısı.
+- **Güncellenmiş Dokümantasyon:** Tüm belgeler v10.3 için güncellendi.
 
 ---
 
@@ -95,7 +94,7 @@ docker compose logs -f
 
 ### 🤖 AI-Destekli İçerik
 - **Google Gemini AI:** Otomatik haber özetleme ve içerik üretimi (Gemini 2.5 Flash).
-- **Thinking Config:** Gelişmiş reasoning için thinking_config desteği.
+- **ThinkingConfig:** Gelişmiş reasoning için thinking_level ve thinking_budget desteği.
 - **Akıllı Kategori Sınıflandırma:** İçeriklerin otomatik olarak kategorize edilmesi.
 - **Duygu Analizi:** Haber metinlerinin duygu analizinin yapılması.
 - **Görsel Üretimi:** Google Imagen 4.0 ile AI destekli görsel oluşturma.
@@ -123,7 +122,7 @@ docker compose logs -f
 - **Otomatik SSL:** Let's Encrypt ile otomatik SSL sertifikası.
 - **Rate Limiting:** DDoS koruması için istek sınırlama.
 - **Security Headers:** Modern güvenlik başlıkları.
-- **Gelişmiş Hata Yakalama:** Kapsamlı logging ve hata yönetimi.
+- **Sentry Entegrasyonu:** Kapsamlı hata takibi ve raporlama.
 
 ---
 
@@ -170,6 +169,7 @@ docker compose logs -f
 | Image AI | Google Imagen | 4.0 |
 | API Framework | Django REST Framework | 3.15+ |
 | API Docs | drf-spectacular | 0.28+ |
+| Error Tracking | Sentry | 2.19+ |
 
 ---
 
@@ -228,12 +228,12 @@ habernexus/
 │   └── celery.py                 # Celery yapılandırması
 ├── 📁 core/                      # Çekirdek uygulama
 │   ├── exceptions.py             # Özel exception sınıfları
+│   ├── error_tracking.py         # Sentry entegrasyonu
 │   ├── middleware.py             # Güvenlik ve logging middleware
 │   ├── logging_config.py         # Yapılandırılmış logging
 │   └── health.py                 # Health check endpoints
 ├── 📁 news/                      # Haber modülü
 │   ├── tasks.py                  # AI içerik üretimi (Gemini)
-│   ├── tasks_v2.py               # Gelişmiş task'lar
 │   ├── models.py                 # Veri modelleri
 │   └── views.py                  # View'lar
 ├── 📁 api/                       # REST API
@@ -242,7 +242,8 @@ habernexus/
 │   └── permissions.py            # Yetkilendirme
 ├── 📁 templates/                 # HTML şablonları
 ├── 📁 static/                    # Statik dosyalar
-└── 📁 docs/                      # Dökümanlar
+├── 📁 docs/                      # Güncel dökümanlar
+└── 📁 archive/                   # Arşivlenmiş dosyalar
 ```
 
 ---
@@ -256,7 +257,9 @@ GitHub Actions ile otomatik CI/CD:
 - Test (Python 3.10, 3.11, 3.12)  # Paralel test matrix
 - Code Quality                     # Black, isort, flake8, Ruff
 - Security Checks                  # Bandit, pip-audit
+- CodeQL Analysis                  # Gelişmiş güvenlik taraması
 - Django Configuration Check       # System checks
+- Dependency Review                # PR güvenlik kontrolü
 - Build Docker Image               # Docker build (main branch)
 - Pipeline Status                  # Durum bildirimi
 ```
@@ -273,7 +276,7 @@ GitHub Actions ile otomatik CI/CD:
 | [CONFIGURATION.md](docs/CONFIGURATION.md) | Yapılandırma seçenekleri |
 | [CICD.md](docs/CICD.md) | CI/CD pipeline detayları |
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Sorun giderme |
-| [CHANGELOG_v10.md](CHANGELOG_v10.md) | v10.x değişiklik günlüğü |
+| [CHANGELOG.md](CHANGELOG.md) | Değişiklik günlüğü |
 
 ---
 
@@ -330,6 +333,9 @@ Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır.
 - [x] Google Gen AI SDK Güncellemeleri
 - [x] Rate Limiting Middleware
 - [x] Security Headers
+- [x] Sentry Entegrasyonu
+- [x] CodeQL Analizi
+- [x] Proje Organizasyonu
 
 ### Planlanan
 - [ ] Çoklu dil desteği (i18n)
@@ -345,6 +351,7 @@ Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır.
 
 | Versiyon | Tarih | Önemli Değişiklikler |
 |----------|-------|---------------------|
+| v10.3 | Aralık 2025 | ThinkingLevel enum, CodeQL, Sentry, proje organizasyonu |
 | v10.2 | Aralık 2025 | Google Gen AI SDK güncellemeleri, CI/CD güçlendirme |
 | v10.1 | Aralık 2025 | CI/CD düzeltmeleri, hata yakalama sistemi |
 | v10.0 | Aralık 2025 | REST API, Newsletter, Google Gen AI SDK |
@@ -355,7 +362,7 @@ Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır.
 
 <div align="center">
 
-**HaberNexus v10.2** - Modern, Otomatik, Güvenli
+**HaberNexus v10.3** - Modern, Otomatik, Güvenli
 
 **Geliştirici:** Salih TANRISEVEN | Aralık 2025
 

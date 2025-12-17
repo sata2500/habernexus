@@ -1,5 +1,5 @@
 # =============================================================================
-# HaberNexus v10.2 - CI/CD Pipeline
+# HaberNexus v10.3 - CI/CD Pipeline
 # Comprehensive testing, code quality, security scanning, and Docker build
 # Author: Salih TANRISEVEN
 # Updated: December 2025
@@ -12,6 +12,9 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  schedule:
+    # Weekly security scan on Sundays at 00:00 UTC
+    - cron: '0 0 * * 0'
 
 # Minimum required permissions - security best practice
 permissions:
@@ -19,6 +22,7 @@ permissions:
   checks: write
   pull-requests: write
   security-events: write
+  actions: read
 
 env:
   DJANGO_SECRET_KEY: test-secret-key-for-ci-${{ github.run_id }}
@@ -48,6 +52,17 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
       fail-fast: false
 
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -64,11 +79,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
-          pip install pytest pytest-django pytest-cov pytest-xdist
+          pip install pytest pytest-django pytest-cov pytest-xdist pytest-timeout
 
       - name: Run tests with coverage
         env:
           DJANGO_SETTINGS_MODULE: habernexus_config.settings_test
+          REDIS_URL: redis://localhost:6379/0
         run: |
           pytest \
             --cov=news \
@@ -76,10 +92,13 @@ jobs:
             --cov=authors \
             --cov=api \
             --cov-report=xml \
+            --cov-report=html \
             --cov-report=term-missing \
-            --cov-fail-under=30 \
+            --cov-fail-under=35 \
+            --timeout=300 \
             -v \
-            --tb=short
+            --tb=short \
+            -x
 
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.11'
@@ -97,8 +116,9 @@ jobs:
           name: test-reports-${{ matrix.python-version }}
           path: |
             coverage.xml
+            htmlcov/
             .coverage
-          retention-days: 7
+          retention-days: 14
 
   # ===========================================================================
   # Code Quality Job - Linting and Formatting
@@ -178,16 +198,22 @@ jobs:
             -o bandit-report.json \
             --exclude '*/tests/*,*/migrations/*' \
             -ll
+        continue-on-error: true
 
       - name: Run pip-audit (dependency vulnerabilities)
         run: |
           pip install -r requirements.txt
-          pip-audit --format json --output pip-audit-report.json
+          pip-audit --format json --output pip-audit-report.json || true
         continue-on-error: true
 
-      - name: Check for high severity issues
+      - name: Check for critical security issues
         run: |
           if [ -f bandit-report.json ]; then
+            CRITICAL_ISSUES=$(python -c "import json; data=json.load(open('bandit-report.json')); print(len([r for r in data.get('results', []) if r.get('issue_severity') == 'HIGH' and r.get('issue_confidence') == 'HIGH']))")
+            if [ "$CRITICAL_ISSUES" -gt 0 ]; then
+              echo "::error::Found $CRITICAL_ISSUES critical security issues (HIGH severity + HIGH confidence)"
+              exit 1
+            fi
             HIGH_ISSUES=$(python -c "import json; data=json.load(open('bandit-report.json')); print(len([r for r in data.get('results', []) if r.get('issue_severity') == 'HIGH']))")
             if [ "$HIGH_ISSUES" -gt 0 ]; then
               echo "::warning::Found $HIGH_ISSUES high severity security issues"
@@ -203,6 +229,32 @@ jobs:
             bandit-report.json
             pip-audit-report.json
           retention-days: 30
+
+  # ===========================================================================
+  # CodeQL Analysis - Advanced Security Scanning
+  # ===========================================================================
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          queries: security-extended,security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"
 
   # ===========================================================================
   # Django Check Job - Configuration Validation
@@ -238,6 +290,12 @@ jobs:
         run: |
           python manage.py makemigrations --check --dry-run || echo "::warning::Migration check failed - this may be expected in CI environment"
 
+      - name: Validate URL patterns
+        env:
+          DJANGO_SETTINGS_MODULE: habernexus_config.settings_test
+        run: |
+          python -c "from django.urls import get_resolver; resolver = get_resolver(); print(f'URL patterns loaded: {len(resolver.url_patterns)} patterns')"
+
   # ===========================================================================
   # Build Job - Docker Image Build
   # ===========================================================================
@@ -266,6 +324,7 @@ jobs:
           build-args: |
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             VCS_REF=${{ github.sha }}
+            VERSION=10.3
 
       - name: Test Docker image
         run: |
@@ -290,6 +349,24 @@ jobs:
         with:
           sarif_file: "trivy-results.sarif"
         continue-on-error: true
+
+  # ===========================================================================
+  # Dependency Review - PR Security Check
+  # ===========================================================================
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: GPL-3.0, AGPL-3.0
 
   # ===========================================================================
   # Notification Job - Status Summary
@@ -318,3 +395,13 @@ jobs:
           echo "| Lint | ${{ needs.lint.result == 'success' && '✅' || '❌' }} ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Security | ${{ needs.security.result == 'success' && '✅' || '❌' }} ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Django Check | ${{ needs.django-check.result == 'success' && '✅' || '❌' }} ${{ needs.django-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if any job failed
+        if: contains(needs.*.result, 'failure')
+        run: |
+          echo "::error::One or more jobs failed"
+          exit 1

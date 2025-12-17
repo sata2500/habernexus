@@ -1,14 +1,16 @@
 """
-HaberNexus v10.2 - News Tasks
+HaberNexus v10.3 - News Tasks
 Celery tasks for RSS fetching, AI content generation, and image generation.
-Updated to use the new Google Gen AI SDK with thinking config support.
+Updated to use the new Google Gen AI SDK with ThinkingConfig and ThinkingLevel support.
 
 Author: Salih TANRISEVEN
 Updated: December 2025
 """
 
 import logging
+import time
 from io import BytesIO
+from typing import Optional
 
 from django.db import transaction
 from django.utils import timezone
@@ -86,6 +88,24 @@ def get_image_model_name() -> str:
         return "imagen-4.0-generate-001"
 
 
+def get_thinking_level() -> Optional[str]:
+    """
+    Thinking level değerini ayarlardan al.
+    Desteklenen değerler: MINIMAL, LOW, MEDIUM, HIGH veya None (devre dışı)
+
+    Returns:
+        Optional[str]: Thinking level (varsayılan: None - devre dışı)
+    """
+    try:
+        thinking_setting = Setting.objects.get(key="AI_THINKING_LEVEL")
+        level = thinking_setting.value.upper()
+        if level in ("MINIMAL", "LOW", "MEDIUM", "HIGH"):
+            return level
+        return None
+    except Setting.DoesNotExist:
+        return None  # Varsayılan: thinking devre dışı (hız için)
+
+
 def get_thinking_budget() -> int:
     """
     Thinking budget değerini ayarlardan al.
@@ -99,6 +119,79 @@ def get_thinking_budget() -> int:
         return int(thinking_setting.value)
     except (Setting.DoesNotExist, ValueError):
         return 0  # Varsayılan: thinking devre dışı (hız için)
+
+
+def create_thinking_config():
+    """
+    ThinkingConfig oluştur.
+    Yeni SDK'da ThinkingLevel enum kullanılıyor.
+
+    Returns:
+        Optional[ThinkingConfig]: Thinking yapılandırması veya None
+    """
+    from google.genai import types
+
+    thinking_level = get_thinking_level()
+    thinking_budget = get_thinking_budget()
+
+    # Thinking devre dışı
+    if thinking_level is None and thinking_budget == 0:
+        return types.ThinkingConfig(thinking_budget=0)
+
+    # ThinkingLevel kullan
+    if thinking_level:
+        level_map = {
+            "MINIMAL": types.ThinkingLevel.MINIMAL,
+            "LOW": types.ThinkingLevel.LOW,
+            "MEDIUM": types.ThinkingLevel.MEDIUM,
+            "HIGH": types.ThinkingLevel.HIGH,
+        }
+        return types.ThinkingConfig(thinking_level=level_map.get(thinking_level))
+
+    # Sadece budget kullan
+    if thinking_budget > 0:
+        return types.ThinkingConfig(thinking_budget=thinking_budget)
+
+    return None
+
+
+# =============================================================================
+# Retry Helper with Exponential Backoff
+# =============================================================================
+
+
+def retry_with_backoff(func, max_retries: int = 3, initial_delay: float = 1.0, max_delay: float = 60.0):
+    """
+    Exponential backoff ile retry mekanizması.
+
+    Args:
+        func: Çalıştırılacak fonksiyon
+        max_retries: Maksimum deneme sayısı
+        initial_delay: İlk bekleme süresi (saniye)
+        max_delay: Maksimum bekleme süresi (saniye)
+
+    Returns:
+        Fonksiyon sonucu
+
+    Raises:
+        Exception: Tüm denemeler başarısız olduğunda
+    """
+    last_exception = None
+    delay = initial_delay
+
+    for attempt in range(max_retries):
+        try:
+            return func()
+        except Exception as e:
+            last_exception = e
+            if attempt < max_retries - 1:
+                logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying in {delay}s...")
+                time.sleep(delay)
+                delay = min(delay * 2, max_delay)
+            else:
+                logger.error(f"All {max_retries} attempts failed. Last error: {str(e)}")
+
+    raise last_exception
 
 
 # =============================================================================
@@ -234,7 +327,11 @@ def download_article_image(article: Article, image_url: str) -> None:
         Exception: Görsel işleme hatası
     """
     try:
-        response = requests.get(image_url, timeout=15, headers={"User-Agent": "HaberNexus/10.2 (News Aggregator)"})
+        response = requests.get(
+            image_url,
+            timeout=15,
+            headers={"User-Agent": "HaberNexus/10.3 (News Aggregator)"},
+        )
         response.raise_for_status()
 
         # Görseli aç ve optimize et
@@ -297,7 +394,9 @@ def generate_ai_content(self, article_id: int) -> str:
         # Idempotency kontrolü: Eğer makale zaten AI tarafından üretilmişse, tekrar işleme
         if article.is_ai_generated and article.status == "published":
             log_info(
-                "generate_ai_content", f"Makale zaten AI tarafından üretilmiş: {article.title}", related_id=article_id
+                "generate_ai_content",
+                f"Makale zaten AI tarafından üretilmiş: {article.title}",
+                related_id=article_id,
             )
             return f"Makale zaten işlenmiş: {article.title}"
 
@@ -318,7 +417,6 @@ def generate_ai_content(self, article_id: int) -> str:
 
             client = get_genai_client()
             model_name = get_ai_model_name()
-            thinking_budget = get_thinking_budget()
 
             # Gelişmiş SEO ve Profesyonellik Promptu
             prompt = f"""
@@ -367,7 +465,9 @@ Kategori: {article.category}
 **ÖNEMLİ:** Sadece haber makalesini yaz, başka hiçbir açıklama ekleme. Doğrudan HTML formatında içeriği döndür.
             """
 
-            # Config oluştur - thinking budget'a göre
+            # Config oluştur - ThinkingConfig ile
+            thinking_config = create_thinking_config()
+
             config_params = {
                 "temperature": 0.7,
                 "top_p": 0.95,
@@ -375,18 +475,19 @@ Kategori: {article.category}
                 "max_output_tokens": 2048,
             }
 
-            # Thinking config ekle (0 ise devre dışı)
-            if thinking_budget == 0:
-                config_params["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
-            elif thinking_budget > 0:
-                config_params["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking_budget)
+            # Thinking config ekle (varsa)
+            if thinking_config:
+                config_params["thinking_config"] = thinking_config
 
-            # Yeni SDK ile içerik üretimi
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt,
-                config=types.GenerateContentConfig(**config_params),
-            )
+            # Yeni SDK ile içerik üretimi (retry ile)
+            def generate_content():
+                return client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(**config_params),
+                )
+
+            response = retry_with_backoff(generate_content, max_retries=3)
 
             if response and response.text:
                 article.content = response.text
@@ -395,7 +496,11 @@ Kategori: {article.category}
                 article.published_at = timezone.now()
                 article.save()
 
-                log_info("generate_ai_content", f"Haber başarıyla oluşturuldu: {article.title}", related_id=article_id)
+                log_info(
+                    "generate_ai_content",
+                    f"Haber başarıyla oluşturuldu: {article.title}",
+                    related_id=article_id,
+                )
 
                 # Görsel üretimini tetikle (transaction commit olduktan sonra)
                 transaction.on_commit(lambda: generate_article_image.delay(article_id))
@@ -414,7 +519,12 @@ Kategori: {article.category}
             )
             raise
         except Exception as e:
-            log_error("generate_ai_content", f"Google AI API hatası: {str(e)}", traceback=str(e), related_id=article_id)
+            log_error(
+                "generate_ai_content",
+                f"Google AI API hatası: {str(e)}",
+                traceback=str(e),
+                related_id=article_id,
+            )
             raise
 
     except Article.DoesNotExist:
@@ -488,7 +598,11 @@ def generate_article_image(self, article_id: int) -> str:
 
         # Eğer görsel zaten varsa, tekrar üretme
         if article.featured_image:
-            log_info("generate_article_image", f"Makale zaten görsele sahip: {article.title}", related_id=article_id)
+            log_info(
+                "generate_article_image",
+                f"Makale zaten görsele sahip: {article.title}",
+                related_id=article_id,
+            )
             return f"Görsel zaten mevcut: {article.title}"
 
         try:
@@ -513,16 +627,19 @@ Requirements:
 - Visually engaging and relevant to the topic
             """.strip()
 
-            # Yeni SDK ile görsel üretimi
-            response = client.models.generate_images(
-                model=image_model_name,
-                prompt=image_prompt,
-                config=types.GenerateImagesConfig(
-                    number_of_images=1,
-                    aspect_ratio="16:9",
-                    output_mime_type="image/jpeg",
-                ),
-            )
+            # Yeni SDK ile görsel üretimi (retry ile)
+            def generate_image():
+                return client.models.generate_images(
+                    model=image_model_name,
+                    prompt=image_prompt,
+                    config=types.GenerateImagesConfig(
+                        number_of_images=1,
+                        aspect_ratio="16:9",
+                        output_mime_type="image/jpeg",
+                    ),
+                )
+
+            response = retry_with_backoff(generate_image, max_retries=3)
 
             if response.generated_images:
                 generated_image = response.generated_images[0]
@@ -542,7 +659,9 @@ Requirements:
                 article.save()
 
                 log_info(
-                    "generate_article_image", f"Görsel başarıyla oluşturuldu: {article.title}", related_id=article_id
+                    "generate_article_image",
+                    f"Görsel başarıyla oluşturuldu: {article.title}",
+                    related_id=article_id,
                 )
                 return f"Görsel oluşturuldu: {article.title}"
             else:
@@ -558,7 +677,12 @@ Requirements:
             )
             return "Hata: SDK import hatası"
         except Exception as e:
-            log_error("generate_article_image", f"Imagen API hatası: {str(e)}", traceback=str(e), related_id=article_id)
+            log_error(
+                "generate_article_image",
+                f"Imagen API hatası: {str(e)}",
+                traceback=str(e),
+                related_id=article_id,
+            )
             # Görsel üretilemezse, RSS'den gelen görseli kullan (varsa)
             return f"Görsel üretilemedi, RSS görseli kullanılıyor: {article.title}"
 
@@ -568,3 +692,66 @@ Requirements:
     except Exception as e:
         log_error("generate_article_image", f"Kritik hata: {str(e)}", traceback=str(e), related_id=article_id)
         return f"Hata: {str(e)}"
+
+
+# =============================================================================
+# Batch Processing Tasks
+# =============================================================================
+
+
+@shared_task(bind=True)
+def batch_regenerate_content(self, article_ids: list) -> str:
+    """
+    Birden fazla makale için toplu içerik yeniden üretimi.
+
+    Args:
+        article_ids: Makale ID listesi
+
+    Returns:
+        str: İşlem sonucu mesajı
+    """
+    success_count = 0
+    failed_count = 0
+
+    for article_id in article_ids:
+        try:
+            # Her makale için içerik üretimini tetikle
+            generate_ai_content.delay(article_id)
+            success_count += 1
+        except Exception as e:
+            failed_count += 1
+            log_error(
+                "batch_regenerate_content",
+                f"Makale için görev oluşturulamadı (ID: {article_id}): {str(e)}",
+                related_id=article_id,
+            )
+
+    result_msg = f"Toplu işlem başlatıldı: {success_count} başarılı, {failed_count} başarısız"
+    log_info("batch_regenerate_content", result_msg)
+    return result_msg
+
+
+@shared_task(bind=True)
+def cleanup_draft_articles(self, days_old: int = 7) -> str:
+    """
+    Belirli bir süreden eski taslak makaleleri temizle.
+
+    Args:
+        days_old: Kaç günden eski taslaklar silinecek
+
+    Returns:
+        str: İşlem sonucu mesajı
+    """
+    from datetime import timedelta
+
+    cutoff_date = timezone.now() - timedelta(days=days_old)
+
+    old_drafts = Article.objects.filter(status="draft", created_at__lt=cutoff_date)
+    count = old_drafts.count()
+
+    if count > 0:
+        old_drafts.delete()
+        log_info("cleanup_draft_articles", f"{count} eski taslak makale silindi")
+        return f"{count} eski taslak makale silindi"
+
+    return "Silinecek eski taslak makale bulunamadı"
