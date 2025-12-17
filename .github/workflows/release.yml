@@ -31,23 +31,30 @@ jobs:
       id: changelog
       run: |
         VERSION=${{ steps.tag_name.outputs.VERSION }}
-        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
         
         # Get previous tag
         PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
         
+        # Generate changelog content
         if [ -z "$PREV_TAG" ]; then
-          echo "Initial release - no previous tags found" >> $GITHUB_OUTPUT
-          git log --pretty=format:"- %s (%h)" | head -20 >> $GITHUB_OUTPUT
+          CHANGELOG_CONTENT="Initial release - no previous tags found
+
+$(git log --pretty=format:'- %s (%h)' | head -20)"
         else
-          echo "Changes since $PREV_TAG:" >> $GITHUB_OUTPUT
-          git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" >> $GITHUB_OUTPUT
+          CHANGELOG_CONTENT="Changes since $PREV_TAG:
+
+$(git log $PREV_TAG..HEAD --pretty=format:'- %s (%h)')"
         fi
         
-        echo "EOF" >> $GITHUB_OUTPUT
+        # Write multiline output using delimiter
+        {
+          echo 'CHANGELOG<<CHANGELOG_EOF'
+          echo "$CHANGELOG_CONTENT"
+          echo 'CHANGELOG_EOF'
+        } >> $GITHUB_OUTPUT
 
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.tag_name.outputs.VERSION }}
         body: ${{ steps.changelog.outputs.CHANGELOG }}
@@ -57,7 +64,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Notify Slack
-      uses: slackapi/slack-github-action@v1
+      uses: slackapi/slack-github-action@v2.1.0
       with:
         webhook-url: ${{ secrets.SLACK_WEBHOOK }}
         payload: |
