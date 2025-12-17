@@ -13,9 +13,15 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
-import sentry_sdk
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    SENTRY_AVAILABLE = True
+except ImportError:
+    SENTRY_AVAILABLE = False
+
 from dotenv import load_dotenv
-from sentry_sdk.integrations.django import DjangoIntegration
 
 # Celery imports
 try:
@@ -36,7 +42,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 
 # Sentry Configuration
-if os.getenv("SENTRY_DSN"):
+if SENTRY_AVAILABLE and os.getenv("SENTRY_DSN"):
     sentry_sdk.init(
         dsn=os.getenv("SENTRY_DSN"),
         integrations=[DjangoIntegration()],

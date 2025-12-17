@@ -12,7 +12,7 @@ import sys
 import traceback
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional
 
 from django.conf import settings
 from django.db import connection
@@ -98,12 +98,12 @@ def get_error_context() -> ErrorContext:
 def init_sentry() -> bool:
     """
     Sentry SDK'yı başlat.
-    
+
     Returns:
         bool: Başlatma başarılı mı
     """
     sentry_dsn = getattr(settings, "SENTRY_DSN", None)
-    
+
     if not sentry_dsn:
         logger.info("Sentry DSN not configured, skipping initialization")
         return False
@@ -161,22 +161,22 @@ def init_sentry() -> bool:
 def _before_send_filter(event: Dict, hint: Dict) -> Optional[Dict]:
     """
     Sentry'ye gönderilmeden önce event'leri filtrele.
-    
+
     Args:
         event: Sentry event
         hint: Ek bilgiler
-        
+
     Returns:
         Filtrelenmiş event veya None (göndermemek için)
     """
     # Belirli hataları filtrele
     if "exc_info" in hint:
         exc_type, exc_value, tb = hint["exc_info"]
-        
+
         # 404 hatalarını gönderme
         if exc_type.__name__ == "Http404":
             return None
-        
+
         # Rate limit hatalarını gönderme
         if exc_type.__name__ in ("RateLimitError", "APIRateLimitError"):
             return None
@@ -184,7 +184,7 @@ def _before_send_filter(event: Dict, hint: Dict) -> Optional[Dict]:
     # Hassas bilgileri temizle
     if "request" in event:
         request_data = event["request"]
-        
+
         # Authorization header'ını maskele
         if "headers" in request_data:
             headers = request_data["headers"]
@@ -203,12 +203,12 @@ def capture_exception(
 ) -> Optional[str]:
     """
     Exception'ı Sentry'ye gönder.
-    
+
     Args:
         exception: Yakalanacak exception
         extra: Ek bağlam bilgisi
         tags: Etiketler
-        
+
     Returns:
         Sentry event ID veya None
     """
@@ -220,22 +220,22 @@ def capture_exception(
             if extra:
                 for key, value in extra.items():
                     scope.set_extra(key, value)
-            
+
             # Etiketler ekle
             if tags:
                 for key, value in tags.items():
                     scope.set_tag(key, value)
-            
+
             # Global context'i ekle
             error_ctx = get_error_context()
             ctx_data = error_ctx.get_context()
-            
+
             for key, value in ctx_data.get("context", {}).items():
                 scope.set_extra(key, value)
-            
+
             for key, value in ctx_data.get("tags", {}).items():
                 scope.set_tag(key, value)
-            
+
             for breadcrumb in ctx_data.get("breadcrumbs", []):
                 sentry_sdk.add_breadcrumb(**breadcrumb)
 
@@ -258,13 +258,13 @@ def capture_message(
 ) -> Optional[str]:
     """
     Mesajı Sentry'ye gönder.
-    
+
     Args:
         message: Gönderilecek mesaj
         level: Log seviyesi (info, warning, error)
         extra: Ek bağlam bilgisi
         tags: Etiketler
-        
+
     Returns:
         Sentry event ID veya None
     """
@@ -275,7 +275,7 @@ def capture_message(
             if extra:
                 for key, value in extra.items():
                     scope.set_extra(key, value)
-            
+
             if tags:
                 for key, value in tags.items():
                     scope.set_tag(key, value)
@@ -306,18 +306,19 @@ def track_errors(
 ) -> Callable:
     """
     Fonksiyonlardaki hataları izleyen dekoratör.
-    
+
     Args:
         operation_name: İşlem adı
         capture_to_sentry: Sentry'ye gönder
         log_level: Log seviyesi
         reraise: Hatayı tekrar fırlat
-        
+
     Usage:
         @track_errors("fetch_rss_feed")
         def fetch_feed(url):
             ...
     """
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Any:
@@ -327,7 +328,7 @@ def track_errors(
                 category="function",
                 level="info",
             )
-            
+
             try:
                 result = func(*args, **kwargs)
                 error_ctx.add_breadcrumb(
@@ -336,14 +337,14 @@ def track_errors(
                     level="info",
                 )
                 return result
-                
+
             except Exception as e:
                 error_ctx.add_breadcrumb(
                     message=f"Error in {operation_name}: {str(e)}",
                     category="function",
                     level="error",
                 )
-                
+
                 # Logla
                 log_func = getattr(logger, log_level, logger.error)
                 log_func(
@@ -354,7 +355,7 @@ def track_errors(
                         "function": func.__name__,
                     },
                 )
-                
+
                 # Sentry'ye gönder
                 if capture_to_sentry:
                     capture_exception(
@@ -362,12 +363,13 @@ def track_errors(
                         extra={"operation": operation_name},
                         tags={"operation": operation_name},
                     )
-                
+
                 if reraise:
                     raise
                 return None
-                
+
         return wrapper
+
     return decorator
 
 
@@ -378,25 +380,25 @@ def error_tracking_context(
 ):
     """
     Hata takibi için context manager.
-    
+
     Usage:
         with error_tracking_context("process_article", extra={"article_id": 123}):
             process_article(article)
     """
     error_ctx = get_error_context()
-    
+
     # Bağlam bilgisi ekle
     error_ctx.set_context("operation", operation_name)
     if extra:
         for key, value in extra.items():
             error_ctx.set_context(key, value)
-    
+
     error_ctx.add_breadcrumb(
         message=f"Entering context: {operation_name}",
         category="context",
         level="info",
     )
-    
+
     try:
         yield error_ctx
         error_ctx.add_breadcrumb(
@@ -466,7 +468,7 @@ class ErrorReport:
         """Client IP adresini al."""
         if not self.request:
             return None
-        
+
         x_forwarded_for = self.request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded_for:
             return x_forwarded_for.split(",")[0].strip()
@@ -479,11 +481,11 @@ def create_error_report(
 ) -> Dict[str, Any]:
     """
     Hata raporu oluştur.
-    
+
     Args:
         exception: Yakalanan exception
         request: HTTP request (varsa)
-        
+
     Returns:
         Hata raporu dictionary
     """
@@ -499,7 +501,7 @@ def create_error_report(
 def check_error_tracking_health() -> Dict[str, Any]:
     """
     Hata takip sisteminin sağlık durumunu kontrol et.
-    
+
     Returns:
         Sağlık durumu dictionary
     """
@@ -511,6 +513,7 @@ def check_error_tracking_health() -> Dict[str, Any]:
 
     try:
         import sentry_sdk
+
         health["sentry_initialized"] = sentry_sdk.Hub.current.client is not None
     except ImportError:
         health["sentry_installed"] = False

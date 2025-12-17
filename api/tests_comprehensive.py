@@ -6,8 +6,6 @@ Author: Salih TANRISEVEN
 Updated: December 2025
 """
 
-from unittest.mock import patch
-
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone

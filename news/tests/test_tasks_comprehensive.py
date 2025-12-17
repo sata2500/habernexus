@@ -9,7 +9,7 @@ Updated: December 2025
 from io import BytesIO
 from unittest.mock import MagicMock, Mock, patch
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.utils import timezone
 
 import pytest
@@ -24,7 +24,6 @@ from news.tasks import (
     create_thinking_config,
     download_article_image,
     fetch_rss_feeds,
-    fetch_single_rss,
     generate_ai_content,
     generate_article_image,
     get_ai_model_name,
@@ -34,7 +33,6 @@ from news.tasks import (
     get_thinking_level,
     retry_with_backoff,
 )
-
 
 # =============================================================================
 # Configuration Helper Tests
@@ -147,9 +145,10 @@ class TestCreateThinkingConfig(TestCase):
             mock_types.ThinkingConfig.return_value = mock_config
             mock_types.ThinkingLevel.MEDIUM = "MEDIUM_ENUM"
 
-            config = create_thinking_config()
+            result = create_thinking_config()
 
             mock_types.ThinkingConfig.assert_called_once_with(thinking_level="MEDIUM_ENUM")
+            assert result is not None
 
     @patch("news.tasks.get_thinking_level")
     @patch("news.tasks.get_thinking_budget")
@@ -162,9 +161,10 @@ class TestCreateThinkingConfig(TestCase):
             mock_config = MagicMock()
             mock_types.ThinkingConfig.return_value = mock_config
 
-            config = create_thinking_config()
+            result = create_thinking_config()
 
             mock_types.ThinkingConfig.assert_called_once_with(thinking_budget=2048)
+            assert result is not None
 
 
 # =============================================================================
@@ -238,10 +238,18 @@ class TestFetchRssFeeds(TestCase):
     def test_fetch_rss_feeds_partial_failure(self, mock_log_info, mock_log_error, mock_fetch_single):
         """Kısmi başarısızlık testi."""
         RssSource.objects.create(
-            name="Success RSS", url="https://example.com/rss1", category="Teknoloji", frequency_minutes=60, is_active=True
+            name="Success RSS",
+            url="https://example.com/rss1",
+            category="Teknoloji",
+            frequency_minutes=60,
+            is_active=True,
         )
         RssSource.objects.create(
-            name="Failed RSS", url="https://example.com/rss2", category="Teknoloji", frequency_minutes=60, is_active=True
+            name="Failed RSS",
+            url="https://example.com/rss2",
+            category="Teknoloji",
+            frequency_minutes=60,
+            is_active=True,
         )
 
         mock_fetch_single.side_effect = [3, Exception("Network error")]

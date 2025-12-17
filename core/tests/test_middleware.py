@@ -6,12 +6,10 @@ Author: Salih TANRISEVEN
 Updated: December 2025
 """
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import patch
 
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.test import RequestFactory, TestCase, override_settings
-
-import pytest
 
 from core.middleware import (
     ErrorHandlingMiddleware,
