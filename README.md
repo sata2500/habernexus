@@ -50,29 +50,55 @@
 
 ## 🚀 Hızlı Kurulum
 
-### One-Click Kurulum (Önerilen)
+### ⚡ Tek Komutla Kurulum (Önerilen)
 
-Tek komutla tam otomatik kurulum:
+HaberNexus'u tek bir komutla Ubuntu/Debian sunucularınıza kurun:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/one_click_install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | sudo bash
 ```
 
-### Manuel Kurulum
+**Güvenli Kurulum** (önce scripti incelemek isterseniz):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh -o install.sh
+less install.sh  # İnceleyin
+sudo bash install.sh
+```
+
+**Parametrelerle Kurulum:**
+
+```bash
+# Domain ve email ile kurulum
+curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | \
+  sudo bash -s -- --domain example.com --email admin@example.com
+
+# Hızlı kurulum (varsayılan değerlerle)
+curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | \
+  sudo bash -s -- --quick
+```
+
+### 🔧 Manuel Kurulum
 
 ```bash
 # Repoyu klonlayın
 git clone https://github.com/sata2500/habernexus.git
 cd habernexus
 
-# İnteraktif kurulum
+# Etkileşimli kurulum scripti
+sudo bash get-habernexus.sh
+
+# veya eski versiyon
 sudo bash install_v9.sh
 ```
 
-### Docker ile Kurulum
+### 🐳 Docker ile Kurulum
 
 ```bash
-# Docker Compose ile başlatma
+# Production ortamı
+docker compose -f docker-compose.prod.yml up -d
+
+# Development ortamı
 docker compose up -d
 
 # Logları izleme

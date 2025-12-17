@@ -1,7 +1,7 @@
 # Installation Guide
 
-**Version:** 4.0  
-**Last Updated:** December 14, 2024  
+**Version:** 5.0  
+**Last Updated:** December 17, 2024  
 **Author:** Salih TANRISEVEN
 
 ---
@@ -86,17 +86,30 @@
 
 ## Quick Start
 
-### 1. Download Installer
+### Tek Komutla Kurulum (Önerilen)
 
 ```bash
-curl -O https://raw.githubusercontent.com/sata2500/habernexus/main/install_v4.sh
-chmod +x install_v4.sh
+curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | sudo bash
 ```
 
-### 2. Run Installer
+### Güvenli Kurulum (Önce İncele)
 
 ```bash
-sudo bash install_v4.sh
+curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh -o install.sh
+less install.sh  # İnceleyin
+sudo bash install.sh
+```
+
+### Parametrelerle Kurulum
+
+```bash
+# Domain ve email ile
+curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | \
+  sudo bash -s -- --domain example.com --email admin@example.com
+
+# Hızlı kurulum (varsayılan değerlerle)
+curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | \
+  sudo bash -s -- --quick
 ```
 
 ### 3. Follow Prompts
