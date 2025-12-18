@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "habernexus"
-version = "9.0.0"
+version = "10.8.0"
 description = "Advanced news aggregation and content generation platform with AI-powered features"
 authors = [{name = "Salih TANRISEVEN", email = "salihtanriseven25@gmail.com"}]
 requires-python = ">=3.11"
