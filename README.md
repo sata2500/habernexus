@@ -138,7 +138,21 @@ docker compose logs -f
 
 ## 📚 Proje Yönetimi ve Dokümantasyon
 
-Bu proje, tüm geliştiricilerin katılımını teşvik eden şeffaf ve merkezi bir yönetim sistemi kullanır. Katkıda bulunmadan önce lütfen aşağıdaki belgeleri inceleyin.
+Bu proje, tüm geliştiricilerin katılımını teşvik eden şeffaf ve merkezi bir yönetim sistemi kullanır. Kapsamlı dokümantasyon için **[📖 GitHub Wiki](https://github.com/sata2500/habernexus/wiki)** sayfamızı ziyaret edin.
+
+### Wiki Sayfaları
+
+| Sayfa | Açıklama |
+|---|---|
+| [**Ana Sayfa**](https://github.com/sata2500/habernexus/wiki) | Projeye genel bakış ve hızlı başlangıç. |
+| [**Kurulum Rehberi**](https://github.com/sata2500/habernexus/wiki/Kurulum-Rehberi) | Detaylı kurulum adımları (Docker, yerel geliştirme). |
+| [**API Dokümantasyonu**](https://github.com/sata2500/habernexus/wiki/API-Dokumentasyonu) | REST API endpoint'leri ve kullanım örnekleri. |
+| [**Mimari ve Yapı**](https://github.com/sata2500/habernexus/wiki/Mimari-ve-Yapi) | Proje mimarisi ve klasör yapısı. |
+| [**Geliştirici Rehberi**](https://github.com/sata2500/habernexus/wiki/Gelistirici-Rehberi) | Katkıda bulunma kuralları ve kodlama standartları. |
+| [**Yapılandırma**](https://github.com/sata2500/habernexus/wiki/Yapilandirma) | `.env` dosyası ve yapılandırma seçenekleri. |
+| [**Sorun Giderme**](https://github.com/sata2500/habernexus/wiki/Sorun-Giderme) | Yaygın sorunlar ve çözümleri. |
+
+### Proje Belgeleri
 
 | Belge | Açıklama |
 |---|---|
