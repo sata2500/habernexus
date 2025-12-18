@@ -1,0 +1,290 @@
+# =============================================================================
+# HaberNexus - Pull Request Automation
+# Automatically manages PRs: reviews, reminders, auto-merge
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
+name: PR Automation
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, review_requested]
+  pull_request_review:
+    types: [submitted]
+  schedule:
+    # Her gün saat 10:00 ve 16:00 UTC'de çalış
+    - cron: '0 10,16 * * *'
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  contents: write
+  issues: write
+
+env:
+  OWNER: sata2500
+
+jobs:
+  # ===========================================================================
+  # Welcome New Contributors
+  # ===========================================================================
+  welcome:
+    name: Welcome New Contributors
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+
+    steps:
+      - name: Check if first contribution
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          
+          # Kullanıcının önceki PR'larını kontrol et
+          PR_COUNT=$(gh pr list \
+            --repo ${{ github.repository }} \
+            --author "$AUTHOR" \
+            --state all \
+            --json number \
+            --jq 'length')
+          
+          if [ "$PR_COUNT" -le 1 ]; then
+            echo "is_first=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_first=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Welcome first-time contributor
+        if: steps.check.outputs.is_first == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          
+          gh pr comment $PR_NUMBER --body "🎉 Merhaba @$AUTHOR!
+
+          HaberNexus'a ilk katkınız için teşekkürler! 
+
+          **İnceleme Süreci:**
+          1. CI kontrolleri otomatik çalışacak
+          2. Kod incelemesi yapılacak
+          3. Gerekirse değişiklik talep edilecek
+          4. Onaylandıktan sonra merge edilecek
+
+          **Yararlı Bağlantılar:**
+          - 📖 [Katkı Rehberi](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md)
+          - 🛠️ [Geliştirici Rehberi](https://github.com/${{ github.repository }}/blob/main/DEVELOPER_GUIDE.md)
+
+          Sorularınız varsa çekinmeden sorun!
+
+          > 🤖 Bu mesaj otomatik olarak gönderildi."
+
+  # ===========================================================================
+  # Auto Request Review
+  # ===========================================================================
+  auto-request-review:
+    name: Auto Request Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'ready_for_review'
+
+    steps:
+      - name: Request review from maintainer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          
+          # Yazar maintainer değilse review iste
+          if [ "$AUTHOR" != "${{ env.OWNER }}" ]; then
+            gh pr edit $PR_NUMBER --add-reviewer "${{ env.OWNER }}" || true
+            echo "Requested review from ${{ env.OWNER }}"
+          fi
+
+  # ===========================================================================
+  # Review Reminder
+  # ===========================================================================
+  review-reminder:
+    name: Review Reminder
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - name: Find PRs waiting for review
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 2 günden eski review bekleyen PR'ları bul
+          WAITING_PRS=$(gh pr list \
+            --repo ${{ github.repository }} \
+            --state open \
+            --json number,title,createdAt,author,reviewRequests \
+            --jq '[.[] | select(.reviewRequests | length > 0) | select((now - (.createdAt | fromdateiso8601)) > 172800)] | .[0:5]')
+          
+          if [ "$WAITING_PRS" != "[]" ] && [ -n "$WAITING_PRS" ]; then
+            echo "Found PRs waiting for review"
+            
+            echo "$WAITING_PRS" | jq -r '.[].number' | while read PR_NUM; do
+              if [ -n "$PR_NUM" ]; then
+                gh pr comment $PR_NUM --body "⏰ **Review Hatırlatması**
+
+                Bu PR 2 günden fazla süredir review bekliyor.
+
+                @${{ env.OWNER }} lütfen incelemeyi tamamlayın.
+
+                > 🤖 Bu mesaj otomatik olarak gönderildi."
+              fi
+            done
+          fi
+
+  # ===========================================================================
+  # Auto Merge Dependabot PRs
+  # ===========================================================================
+  auto-merge-dependabot:
+    name: Auto Merge Dependabot
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' && 
+      github.event.action == 'opened' &&
+      github.event.pull_request.user.login == 'dependabot[bot]'
+
+    steps:
+      - name: Enable auto-merge for Dependabot PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          
+          # Sadece minor ve patch güncellemeler için auto-merge
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          
+          if echo "$PR_TITLE" | grep -iE "bump.*from [0-9]+\.[0-9]+\.[0-9]+ to [0-9]+\.[0-9]+\.[0-9]+" > /dev/null; then
+            # Auto-merge etkinleştir (squash merge)
+            gh pr merge $PR_NUMBER --auto --squash || true
+            echo "Auto-merge enabled for Dependabot PR #$PR_NUMBER"
+          fi
+
+  # ===========================================================================
+  # Notify on Review Submission
+  # ===========================================================================
+  notify-review:
+    name: Notify on Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_review'
+
+    steps:
+      - name: Notify PR author
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          REVIEWER="${{ github.event.review.user.login }}"
+          REVIEW_STATE="${{ github.event.review.state }}"
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          
+          case "$REVIEW_STATE" in
+            "approved")
+              MESSAGE="✅ @$AUTHOR, PR'ınız @$REVIEWER tarafından onaylandı! 🎉"
+              ;;
+            "changes_requested")
+              MESSAGE="📝 @$AUTHOR, @$REVIEWER değişiklik talep etti. Lütfen inceleyin."
+              ;;
+            "commented")
+              MESSAGE="💬 @$AUTHOR, @$REVIEWER yorum ekledi."
+              ;;
+            *)
+              exit 0
+              ;;
+          esac
+          
+          gh pr comment $PR_NUMBER --body "$MESSAGE
+
+          > 🤖 Bu mesaj otomatik olarak gönderildi."
+
+  # ===========================================================================
+  # PR Size Labeler
+  # ===========================================================================
+  size-labeler:
+    name: PR Size Labeler
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize')
+
+    steps:
+      - name: Label PR by size
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          ADDITIONS="${{ github.event.pull_request.additions }}"
+          DELETIONS="${{ github.event.pull_request.deletions }}"
+          
+          TOTAL=$((ADDITIONS + DELETIONS))
+          
+          # Mevcut size etiketlerini kaldır
+          gh pr edit $PR_NUMBER --remove-label "size/XS,size/S,size/M,size/L,size/XL" 2>/dev/null || true
+          
+          # Boyuta göre etiket ekle
+          if [ $TOTAL -lt 10 ]; then
+            LABEL="size/XS"
+          elif [ $TOTAL -lt 50 ]; then
+            LABEL="size/S"
+          elif [ $TOTAL -lt 200 ]; then
+            LABEL="size/M"
+          elif [ $TOTAL -lt 500 ]; then
+            LABEL="size/L"
+          else
+            LABEL="size/XL"
+          fi
+          
+          gh pr edit $PR_NUMBER --add-label "$LABEL" || true
+          echo "Added label: $LABEL (total changes: $TOTAL)"
+
+  # ===========================================================================
+  # Conflict Checker
+  # ===========================================================================
+  conflict-checker:
+    name: Conflict Checker
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - name: Check for merge conflicts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Merge conflict olan PR'ları bul
+          CONFLICT_PRS=$(gh pr list \
+            --repo ${{ github.repository }} \
+            --state open \
+            --json number,mergeable,author \
+            --jq '[.[] | select(.mergeable == "CONFLICTING")] | .[0:5]')
+          
+          if [ "$CONFLICT_PRS" != "[]" ] && [ -n "$CONFLICT_PRS" ]; then
+            echo "Found PRs with conflicts"
+            
+            echo "$CONFLICT_PRS" | jq -c '.[]' | while read PR; do
+              PR_NUM=$(echo "$PR" | jq -r '.number')
+              AUTHOR=$(echo "$PR" | jq -r '.author.login')
+              
+              if [ -n "$PR_NUM" ]; then
+                gh pr comment $PR_NUM --body "⚠️ **Merge Conflict Tespit Edildi**
+
+                @$AUTHOR, bu PR'da merge conflict var. Lütfen çözün:
+
+                \`\`\`bash
+                git fetch origin
+                git checkout your-branch
+                git merge origin/main
+                # Conflict'leri çözün
+                git add .
+                git commit -m \"Resolve merge conflicts\"
+                git push
+                \`\`\`
+
+                > 🤖 Bu mesaj otomatik olarak gönderildi."
+              fi
+            done
+          fi

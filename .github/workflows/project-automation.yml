@@ -1,0 +1,235 @@
+# =============================================================================
+# HaberNexus - GitHub Projects Automation
+# Automatically manages project board: status updates, card movements
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
+name: Project Automation
+
+on:
+  issues:
+    types: [opened, closed, reopened, labeled, unlabeled, assigned]
+  pull_request:
+    types: [opened, closed, reopened, ready_for_review, converted_to_draft]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+  repository-projects: write
+
+env:
+  PROJECT_NUMBER: 1  # HaberNexus Development project numarası
+
+jobs:
+  # ===========================================================================
+  # Add New Issues to Project
+  # ===========================================================================
+  add-to-project:
+    name: Add to Project
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+
+    steps:
+      - name: Add issue to project
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Issue'yu projeye ekle
+          gh project item-add ${{ env.PROJECT_NUMBER }} \
+            --owner ${{ github.repository_owner }} \
+            --url ${{ github.event.issue.html_url }} || true
+          
+          echo "Issue #${{ github.event.issue.number }} added to project"
+
+  # ===========================================================================
+  # Add New PRs to Project
+  # ===========================================================================
+  add-pr-to-project:
+    name: Add PR to Project
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+
+    steps:
+      - name: Add PR to project
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # PR'ı projeye ekle
+          gh project item-add ${{ env.PROJECT_NUMBER }} \
+            --owner ${{ github.repository_owner }} \
+            --url ${{ github.event.pull_request.html_url }} || true
+          
+          echo "PR #${{ github.event.pull_request.number }} added to project"
+
+  # ===========================================================================
+  # Update Status Based on Labels
+  # ===========================================================================
+  update-status-on-label:
+    name: Update Status on Label
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+
+    steps:
+      - name: Update project status based on label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LABEL="${{ github.event.label.name }}"
+          ISSUE_URL="${{ github.event.issue.html_url }}"
+          
+          # Label'a göre status belirleme
+          case "$LABEL" in
+            "in-progress"|"wip")
+              STATUS="In Progress"
+              ;;
+            "review"|"needs-review")
+              STATUS="In Review"
+              ;;
+            "ready")
+              STATUS="Ready"
+              ;;
+            "blocked")
+              STATUS="Backlog"
+              ;;
+            *)
+              echo "No status change for label: $LABEL"
+              exit 0
+              ;;
+          esac
+          
+          echo "Would update status to: $STATUS for issue"
+          # Not: GitHub Projects v2 API ile status güncellemesi için GraphQL gerekli
+          # Bu basit implementasyon label bazlı takip sağlar
+
+  # ===========================================================================
+  # Move to Done on Close
+  # ===========================================================================
+  move-to-done:
+    name: Move to Done on Close
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'issues' && github.event.action == 'closed') ||
+      (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged)
+
+    steps:
+      - name: Update status to Done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" == "issues" ]; then
+            ITEM_URL="${{ github.event.issue.html_url }}"
+            ITEM_TYPE="Issue"
+            ITEM_NUMBER="${{ github.event.issue.number }}"
+          else
+            ITEM_URL="${{ github.event.pull_request.html_url }}"
+            ITEM_TYPE="PR"
+            ITEM_NUMBER="${{ github.event.pull_request.number }}"
+          fi
+          
+          echo "$ITEM_TYPE #$ITEM_NUMBER closed/merged - should move to Done"
+          
+          # Kapatılan issue'ya done etiketi ekle
+          if [ "${{ github.event_name }}" == "issues" ]; then
+            gh issue edit $ITEM_NUMBER --add-label "done" --repo ${{ github.repository }} || true
+          fi
+
+  # ===========================================================================
+  # Move to Backlog on Reopen
+  # ===========================================================================
+  move-to-backlog:
+    name: Move to Backlog on Reopen
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'issues' && github.event.action == 'reopened') ||
+      (github.event_name == 'pull_request' && github.event.action == 'reopened')
+
+    steps:
+      - name: Update status to Backlog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" == "issues" ]; then
+            ITEM_NUMBER="${{ github.event.issue.number }}"
+            # Done etiketini kaldır
+            gh issue edit $ITEM_NUMBER --remove-label "done" --repo ${{ github.repository }} || true
+          fi
+          
+          echo "Item reopened - moved back to Backlog"
+
+  # ===========================================================================
+  # Auto Move PR to Review
+  # ===========================================================================
+  pr-ready-for-review:
+    name: PR Ready for Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'ready_for_review'
+
+    steps:
+      - name: Move PR to In Review
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          
+          # Review etiketi ekle
+          gh pr edit $PR_NUMBER --add-label "needs-review" --repo ${{ github.repository }} || true
+          
+          echo "PR #$PR_NUMBER is ready for review"
+
+  # ===========================================================================
+  # Track Work Start via Comments
+  # ===========================================================================
+  track-work-start:
+    name: Track Work Start
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issue_comment' && github.event.action == 'created'
+
+    steps:
+      - name: Check for work start command
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENT_BODY="${{ github.event.comment.body }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          COMMENTER="${{ github.event.comment.user.login }}"
+          
+          # /start komutu ile çalışmaya başlama
+          if echo "$COMMENT_BODY" | grep -iE "^/start|^/başla" > /dev/null; then
+            gh issue edit $ISSUE_NUMBER \
+              --add-label "in-progress" \
+              --add-assignee "$COMMENTER" \
+              --repo ${{ github.repository }}
+            
+            gh issue comment $ISSUE_NUMBER --body "✅ @$COMMENTER bu issue üzerinde çalışmaya başladı.
+
+            > 🤖 Bu mesaj \`/start\` komutu ile tetiklendi."
+          fi
+          
+          # /done komutu ile tamamlama
+          if echo "$COMMENT_BODY" | grep -iE "^/done|^/bitti|^/tamamlandı" > /dev/null; then
+            gh issue edit $ISSUE_NUMBER \
+              --remove-label "in-progress" \
+              --add-label "done" \
+              --repo ${{ github.repository }}
+            
+            gh issue comment $ISSUE_NUMBER --body "🎉 @$COMMENTER bu issue'yu tamamladı!
+
+            > 🤖 Bu mesaj \`/done\` komutu ile tetiklendi."
+          fi
+          
+          # /review komutu ile review'a gönderme
+          if echo "$COMMENT_BODY" | grep -iE "^/review|^/inceleme" > /dev/null; then
+            gh issue edit $ISSUE_NUMBER \
+              --remove-label "in-progress" \
+              --add-label "needs-review" \
+              --repo ${{ github.repository }}
+            
+            gh issue comment $ISSUE_NUMBER --body "👀 @$COMMENTER bu issue'yu incelemeye gönderdi.
+
+            > 🤖 Bu mesaj \`/review\` komutu ile tetiklendi."
+          fi

@@ -1,0 +1,116 @@
+# =============================================================================
+# HaberNexus - GitHub Labels Configuration
+# Defines all labels used in the repository
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
+# Priority Labels
+- name: "priority: high"
+  color: "d73a4a"
+  description: "High priority issues that need immediate attention"
+
+- name: "priority: medium"
+  color: "fbca04"
+  description: "Medium priority issues"
+
+- name: "priority: low"
+  color: "0e8a16"
+  description: "Low priority issues"
+
+# Type Labels
+- name: "bug"
+  color: "d73a4a"
+  description: "Something isn't working"
+
+- name: "enhancement"
+  color: "a2eeef"
+  description: "New feature or request"
+
+- name: "documentation"
+  color: "0075ca"
+  description: "Improvements or additions to documentation"
+
+- name: "question"
+  color: "d876e3"
+  description: "Further information is requested"
+
+- name: "security"
+  color: "ee0701"
+  description: "Security related issues"
+
+# Status Labels
+- name: "in-progress"
+  color: "1d76db"
+  description: "Work in progress"
+
+- name: "needs-review"
+  color: "fbca04"
+  description: "Needs code review"
+
+- name: "blocked"
+  color: "b60205"
+  description: "Blocked by another issue or external factor"
+
+- name: "done"
+  color: "0e8a16"
+  description: "Completed"
+
+- name: "stale"
+  color: "ffffff"
+  description: "No recent activity"
+
+# Automation Labels
+- name: "automated"
+  color: "bfdadc"
+  description: "Automatically created"
+
+- name: "ci-failure"
+  color: "d73a4a"
+  description: "CI/CD pipeline failure"
+
+- name: "report"
+  color: "5319e7"
+  description: "Automated report"
+
+# Size Labels (for PRs)
+- name: "size/XS"
+  color: "3CBF00"
+  description: "Extra small PR (< 10 lines)"
+
+- name: "size/S"
+  color: "5D9801"
+  description: "Small PR (10-50 lines)"
+
+- name: "size/M"
+  color: "7F7203"
+  description: "Medium PR (50-200 lines)"
+
+- name: "size/L"
+  color: "A14C05"
+  description: "Large PR (200-500 lines)"
+
+- name: "size/XL"
+  color: "C32607"
+  description: "Extra large PR (> 500 lines)"
+
+# Area Labels
+- name: "api"
+  color: "006b75"
+  description: "API related"
+
+- name: "frontend"
+  color: "fef2c0"
+  description: "Frontend/UI related"
+
+- name: "database"
+  color: "bfd4f2"
+  description: "Database related"
+
+- name: "ci"
+  color: "d4c5f9"
+  description: "CI/CD related"
+
+- name: "dependencies"
+  color: "0366d6"
+  description: "Dependency updates"

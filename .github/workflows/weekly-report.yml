@@ -1,0 +1,228 @@
+# =============================================================================
+# HaberNexus - Weekly Project Report
+# Generates and posts weekly project status reports
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
+name: Weekly Report
+
+on:
+  schedule:
+    # Her Pazartesi saat 09:00 UTC'de çalış (Türkiye saati 12:00)
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      create_issue:
+        description: 'Create issue with report'
+        type: boolean
+        default: true
+
+permissions:
+  issues: write
+  pull-requests: read
+  contents: read
+
+env:
+  OWNER: sata2500
+
+jobs:
+  generate-report:
+    name: Generate Weekly Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Gather statistics
+        id: stats
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Tarih hesaplamaları
+          TODAY=$(date -u +"%Y-%m-%d")
+          WEEK_AGO=$(date -u -d "7 days ago" +"%Y-%m-%d")
+          
+          echo "report_date=$TODAY" >> $GITHUB_OUTPUT
+          echo "week_start=$WEEK_AGO" >> $GITHUB_OUTPUT
+          
+          # Issue istatistikleri
+          OPEN_ISSUES=$(gh issue list --repo ${{ github.repository }} --state open --json number --jq 'length')
+          CLOSED_THIS_WEEK=$(gh issue list --repo ${{ github.repository }} --state closed --search "closed:>=$WEEK_AGO" --json number --jq 'length')
+          OPENED_THIS_WEEK=$(gh issue list --repo ${{ github.repository }} --state all --search "created:>=$WEEK_AGO" --json number --jq 'length')
+          
+          echo "open_issues=$OPEN_ISSUES" >> $GITHUB_OUTPUT
+          echo "closed_issues=$CLOSED_THIS_WEEK" >> $GITHUB_OUTPUT
+          echo "opened_issues=$OPENED_THIS_WEEK" >> $GITHUB_OUTPUT
+          
+          # PR istatistikleri
+          OPEN_PRS=$(gh pr list --repo ${{ github.repository }} --state open --json number --jq 'length')
+          MERGED_THIS_WEEK=$(gh pr list --repo ${{ github.repository }} --state merged --search "merged:>=$WEEK_AGO" --json number --jq 'length')
+          OPENED_PRS_THIS_WEEK=$(gh pr list --repo ${{ github.repository }} --state all --search "created:>=$WEEK_AGO" --json number --jq 'length')
+          
+          echo "open_prs=$OPEN_PRS" >> $GITHUB_OUTPUT
+          echo "merged_prs=$MERGED_THIS_WEEK" >> $GITHUB_OUTPUT
+          echo "opened_prs=$OPENED_PRS_THIS_WEEK" >> $GITHUB_OUTPUT
+          
+          # Öncelik bazlı issue sayıları
+          HIGH_PRIORITY=$(gh issue list --repo ${{ github.repository }} --state open --label "priority: high" --json number --jq 'length')
+          MEDIUM_PRIORITY=$(gh issue list --repo ${{ github.repository }} --state open --label "priority: medium" --json number --jq 'length')
+          LOW_PRIORITY=$(gh issue list --repo ${{ github.repository }} --state open --label "priority: low" --json number --jq 'length')
+          
+          echo "high_priority=$HIGH_PRIORITY" >> $GITHUB_OUTPUT
+          echo "medium_priority=$MEDIUM_PRIORITY" >> $GITHUB_OUTPUT
+          echo "low_priority=$LOW_PRIORITY" >> $GITHUB_OUTPUT
+          
+          # Bug sayısı
+          OPEN_BUGS=$(gh issue list --repo ${{ github.repository }} --state open --label "bug" --json number --jq 'length')
+          echo "open_bugs=$OPEN_BUGS" >> $GITHUB_OUTPUT
+          
+          # Stale items
+          STALE_ISSUES=$(gh issue list --repo ${{ github.repository }} --state open --label "stale" --json number --jq 'length')
+          echo "stale_issues=$STALE_ISSUES" >> $GITHUB_OUTPUT
+          
+          # En aktif katkıda bulunanlar (bu hafta)
+          TOP_CONTRIBUTORS=$(gh pr list --repo ${{ github.repository }} --state all --search "created:>=$WEEK_AGO" --json author --jq '[.[].author.login] | group_by(.) | map({user: .[0], count: length}) | sort_by(.count) | reverse | .[0:3] | map("\(.user): \(.count) PR") | join(", ")')
+          echo "top_contributors=$TOP_CONTRIBUTORS" >> $GITHUB_OUTPUT
+
+      - name: Get recent activity
+        id: activity
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          WEEK_AGO=$(date -u -d "7 days ago" +"%Y-%m-%d")
+          
+          # Son kapatılan issue'lar
+          CLOSED_ISSUES=$(gh issue list \
+            --repo ${{ github.repository }} \
+            --state closed \
+            --search "closed:>=$WEEK_AGO" \
+            --json number,title \
+            --jq '.[0:5] | map("- #\(.number): \(.title)") | join("\n")')
+          
+          if [ -z "$CLOSED_ISSUES" ]; then
+            CLOSED_ISSUES="- Bu hafta kapatılan issue yok"
+          fi
+          
+          # Çok satırlı çıktı için dosyaya yaz
+          echo "$CLOSED_ISSUES" > /tmp/closed_issues.txt
+          
+          # Son merge edilen PR'lar
+          MERGED_PRS=$(gh pr list \
+            --repo ${{ github.repository }} \
+            --state merged \
+            --search "merged:>=$WEEK_AGO" \
+            --json number,title \
+            --jq '.[0:5] | map("- #\(.number): \(.title)") | join("\n")')
+          
+          if [ -z "$MERGED_PRS" ]; then
+            MERGED_PRS="- Bu hafta merge edilen PR yok"
+          fi
+          
+          echo "$MERGED_PRS" > /tmp/merged_prs.txt
+          
+          # Bekleyen yüksek öncelikli issue'lar
+          HIGH_PRIORITY_LIST=$(gh issue list \
+            --repo ${{ github.repository }} \
+            --state open \
+            --label "priority: high" \
+            --json number,title,assignees \
+            --jq '.[0:5] | map("- #\(.number): \(.title) \(if .assignees | length > 0 then "(@" + (.assignees | map(.login) | join(", @")) + ")" else "(atanmamış)" end)") | join("\n")')
+          
+          if [ -z "$HIGH_PRIORITY_LIST" ]; then
+            HIGH_PRIORITY_LIST="- Yüksek öncelikli açık issue yok ✅"
+          fi
+          
+          echo "$HIGH_PRIORITY_LIST" > /tmp/high_priority.txt
+
+      - name: Create report issue
+        if: github.event.inputs.create_issue != 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CLOSED_ISSUES=$(cat /tmp/closed_issues.txt)
+          MERGED_PRS=$(cat /tmp/merged_prs.txt)
+          HIGH_PRIORITY_LIST=$(cat /tmp/high_priority.txt)
+          
+          gh issue create \
+            --title "📊 Haftalık Rapor - ${{ steps.stats.outputs.report_date }}" \
+            --label "report,automated" \
+            --body "# 📊 HaberNexus Haftalık Proje Raporu
+
+          **Rapor Tarihi:** ${{ steps.stats.outputs.report_date }}  
+          **Dönem:** ${{ steps.stats.outputs.week_start }} - ${{ steps.stats.outputs.report_date }}
+
+          ---
+
+          ## 📈 Genel Bakış
+
+          | Metrik | Değer |
+          |--------|-------|
+          | 📋 Açık Issue | ${{ steps.stats.outputs.open_issues }} |
+          | ✅ Bu Hafta Kapatılan | ${{ steps.stats.outputs.closed_issues }} |
+          | 🆕 Bu Hafta Açılan | ${{ steps.stats.outputs.opened_issues }} |
+          | 🔀 Açık PR | ${{ steps.stats.outputs.open_prs }} |
+          | 🎉 Bu Hafta Merge Edilen | ${{ steps.stats.outputs.merged_prs }} |
+          | 📝 Bu Hafta Açılan PR | ${{ steps.stats.outputs.opened_prs }} |
+
+          ---
+
+          ## 🎯 Öncelik Dağılımı
+
+          | Öncelik | Sayı |
+          |---------|------|
+          | 🔴 Yüksek | ${{ steps.stats.outputs.high_priority }} |
+          | 🟡 Orta | ${{ steps.stats.outputs.medium_priority }} |
+          | 🟢 Düşük | ${{ steps.stats.outputs.low_priority }} |
+          | 🐛 Bug | ${{ steps.stats.outputs.open_bugs }} |
+          | ⏰ Stale | ${{ steps.stats.outputs.stale_issues }} |
+
+          ---
+
+          ## 🏆 Bu Haftanın Katkıda Bulunanları
+
+          ${{ steps.stats.outputs.top_contributors || 'Bu hafta katkı yok' }}
+
+          ---
+
+          ## ✅ Bu Hafta Kapatılan Issue'lar
+
+          $CLOSED_ISSUES
+
+          ---
+
+          ## 🎉 Bu Hafta Merge Edilen PR'lar
+
+          $MERGED_PRS
+
+          ---
+
+          ## 🚨 Yüksek Öncelikli Bekleyen Issue'lar
+
+          $HIGH_PRIORITY_LIST
+
+          ---
+
+          ## 📝 Notlar
+
+          - Stale issue sayısı ${{ steps.stats.outputs.stale_issues }} - incelenmesi önerilir
+          - Toplam açık issue: ${{ steps.stats.outputs.open_issues }}
+
+          ---
+
+          > 🤖 Bu rapor otomatik olarak oluşturuldu.
+          > Bir sonraki rapor: $(date -u -d 'next monday' +"%Y-%m-%d")
+          "
+
+      - name: Summary
+        run: |
+          echo "## 📊 Haftalık Rapor Özeti" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metrik | Değer |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Açık Issue | ${{ steps.stats.outputs.open_issues }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bu Hafta Kapatılan | ${{ steps.stats.outputs.closed_issues }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Açık PR | ${{ steps.stats.outputs.open_prs }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bu Hafta Merge | ${{ steps.stats.outputs.merged_prs }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Yüksek Öncelik | ${{ steps.stats.outputs.high_priority }} |" >> $GITHUB_STEP_SUMMARY

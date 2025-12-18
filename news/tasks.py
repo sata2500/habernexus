@@ -133,7 +133,7 @@ def get_thinking_budget() -> int:
 def create_thinking_config():
     """
     ThinkingConfig oluştur.
-    
+
     Google Gen AI SDK Aralık 2025 güncellemesi:
     - Gemini 2.5 serisi: thinkingBudget kullanır (integer)
       - 0: Thinking devre dışı

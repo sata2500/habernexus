@@ -42,7 +42,7 @@ class TestThinkingConfigCreation(TestCase):
 
         from news.tasks import create_thinking_config
 
-        result = create_thinking_config()
+        _ = create_thinking_config()  # noqa: F841
 
         mock_types.ThinkingConfig.assert_called_with(thinking_budget=0)
 
@@ -57,7 +57,7 @@ class TestThinkingConfigCreation(TestCase):
 
         from news.tasks import create_thinking_config
 
-        result = create_thinking_config()
+        _ = create_thinking_config()  # noqa: F841
 
         mock_types.ThinkingConfig.assert_called_with(thinking_budget=-1)
 
@@ -72,7 +72,7 @@ class TestThinkingConfigCreation(TestCase):
 
         from news.tasks import create_thinking_config
 
-        result = create_thinking_config()
+        _ = create_thinking_config()  # noqa: F841
 
         mock_types.ThinkingConfig.assert_called_with(thinking_budget=1024)
 
@@ -87,7 +87,7 @@ class TestThinkingConfigCreation(TestCase):
 
         from news.tasks import create_thinking_config
 
-        result = create_thinking_config()
+        _ = create_thinking_config()  # noqa: F841
 
         mock_types.ThinkingConfig.assert_called_with(thinking_level="low")
 
@@ -102,7 +102,7 @@ class TestThinkingConfigCreation(TestCase):
 
         from news.tasks import create_thinking_config
 
-        result = create_thinking_config()
+        _ = create_thinking_config()  # noqa: F841
 
         mock_types.ThinkingConfig.assert_called_with(thinking_level="high")
 
@@ -117,7 +117,7 @@ class TestThinkingConfigCreation(TestCase):
 
         from news.tasks import create_thinking_config
 
-        result = create_thinking_config()
+        _ = create_thinking_config()  # noqa: F841
 
         # Gemini 3 için varsayılan "high" olmalı
         mock_types.ThinkingConfig.assert_called_with(thinking_level="high")

@@ -1,0 +1,201 @@
+# =============================================================================
+# HaberNexus - Automated Issue Management
+# Automatically manages issues: labels, assignments, and notifications
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
+name: Issue Management
+
+on:
+  issues:
+    types: [opened, edited, labeled, unlabeled, assigned, unassigned]
+  issue_comment:
+    types: [created]
+  schedule:
+    # Her gün saat 09:00 UTC'de çalış (Türkiye saati 12:00)
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+env:
+  OWNER: sata2500
+
+jobs:
+  # ===========================================================================
+  # Auto Label New Issues
+  # ===========================================================================
+  auto-label:
+    name: Auto Label Issues
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Analyze issue and add labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_BODY="${{ github.event.issue.body }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          
+          # Başlık ve içerik analizi ile otomatik etiketleme
+          LABELS=""
+          
+          # Bug tespiti
+          if echo "$ISSUE_TITLE $ISSUE_BODY" | grep -iE "bug|hata|error|crash|fail|broken|fix" > /dev/null; then
+            LABELS="$LABELS,bug"
+          fi
+          
+          # Feature request tespiti
+          if echo "$ISSUE_TITLE $ISSUE_BODY" | grep -iE "feature|özellik|enhancement|improve|add|ekle|yeni" > /dev/null; then
+            LABELS="$LABELS,enhancement"
+          fi
+          
+          # Documentation tespiti
+          if echo "$ISSUE_TITLE $ISSUE_BODY" | grep -iE "doc|documentation|readme|döküman|belge" > /dev/null; then
+            LABELS="$LABELS,documentation"
+          fi
+          
+          # Security tespiti
+          if echo "$ISSUE_TITLE $ISSUE_BODY" | grep -iE "security|güvenlik|vulnerability|exploit|cve" > /dev/null; then
+            LABELS="$LABELS,security,priority: high"
+          fi
+          
+          # Question tespiti
+          if echo "$ISSUE_TITLE $ISSUE_BODY" | grep -iE "question|soru|how|nasıl|\?" > /dev/null; then
+            LABELS="$LABELS,question"
+          fi
+          
+          # Etiketleri ekle
+          if [ -n "$LABELS" ]; then
+            LABELS=$(echo "$LABELS" | sed 's/^,//')
+            gh issue edit $ISSUE_NUMBER --add-label "$LABELS"
+            echo "Added labels: $LABELS"
+          fi
+
+      - name: Add welcome comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          AUTHOR="${{ github.event.issue.user.login }}"
+          
+          gh issue comment $ISSUE_NUMBER --body "👋 Merhaba @$AUTHOR!
+
+          Issue'nuz için teşekkürler. Ekibimiz en kısa sürede inceleyecek.
+
+          ---
+
+          **Yararlı Bağlantılar:**
+          - 📖 [Katkı Rehberi](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md)
+          - 🗺️ [Geliştirme Planı](https://github.com/${{ github.repository }}/blob/main/DEVELOPMENT_ROADMAP.md)
+          - 🐛 [Bilinen Hatalar](https://github.com/${{ github.repository }}/blob/main/KNOWN_ISSUES.md)
+
+          > 🤖 Bu mesaj otomatik olarak gönderildi."
+
+  # ===========================================================================
+  # Auto Assign Based on Labels
+  # ===========================================================================
+  auto-assign:
+    name: Auto Assign Issues
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'labeled'
+
+    steps:
+      - name: Assign based on label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LABEL="${{ github.event.label.name }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          
+          # Öncelik etiketlerine göre otomatik atama
+          case "$LABEL" in
+            "priority: high"|"security"|"critical")
+              gh issue edit $ISSUE_NUMBER --add-assignee "${{ env.OWNER }}"
+              echo "Assigned to ${{ env.OWNER }} due to high priority"
+              ;;
+            "bug")
+              # Bug'lar için proje sahibine bildirim
+              gh issue comment $ISSUE_NUMBER --body "🐛 Bu bug yüksek öncelikli olarak işaretlendi. @${{ env.OWNER }} inceleyecek."
+              ;;
+          esac
+
+  # ===========================================================================
+  # Stale Issue Reminder
+  # ===========================================================================
+  stale-reminder:
+    name: Stale Issue Reminder
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - name: Find and remind stale issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 7 günden eski, açık ve in-progress olmayan issue'ları bul
+          STALE_ISSUES=$(gh issue list \
+            --repo ${{ github.repository }} \
+            --state open \
+            --json number,title,updatedAt,labels,assignees \
+            --jq '[.[] | select(.labels | map(.name) | contains(["in-progress"]) | not) | select((now - (.updatedAt | fromdateiso8601)) > 604800)] | .[0:5]')
+          
+          if [ "$STALE_ISSUES" != "[]" ] && [ -n "$STALE_ISSUES" ]; then
+            echo "Found stale issues: $STALE_ISSUES"
+            
+            # Her stale issue için hatırlatma yorumu ekle
+            echo "$STALE_ISSUES" | jq -r '.[].number' | while read ISSUE_NUM; do
+              if [ -n "$ISSUE_NUM" ]; then
+                gh issue comment $ISSUE_NUM --body "⏰ **Hatırlatma**: Bu issue 7 günden fazla süredir güncellenmedi.
+
+                - Eğer hala üzerinde çalışıyorsanız, lütfen \`in-progress\` etiketi ekleyin
+                - Eğer artık gerekli değilse, lütfen kapatın
+                - Eğer yardıma ihtiyacınız varsa, \`help wanted\` etiketi ekleyin
+
+                > 🤖 Bu mesaj otomatik olarak gönderildi."
+              fi
+            done
+          fi
+
+  # ===========================================================================
+  # Priority Escalation
+  # ===========================================================================
+  priority-escalation:
+    name: Priority Escalation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - name: Escalate old high priority issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 3 günden eski high priority issue'ları bul
+          OLD_HIGH_PRIORITY=$(gh issue list \
+            --repo ${{ github.repository }} \
+            --state open \
+            --label "priority: high" \
+            --json number,title,updatedAt \
+            --jq '[.[] | select((now - (.updatedAt | fromdateiso8601)) > 259200)] | .[0:3]')
+          
+          if [ "$OLD_HIGH_PRIORITY" != "[]" ] && [ -n "$OLD_HIGH_PRIORITY" ]; then
+            echo "$OLD_HIGH_PRIORITY" | jq -r '.[].number' | while read ISSUE_NUM; do
+              if [ -n "$ISSUE_NUM" ]; then
+                gh issue comment $ISSUE_NUM --body "🚨 **Acil Dikkat Gerekiyor!**
+
+                Bu yüksek öncelikli issue 3 günden fazla süredir çözülmedi.
+
+                @${{ env.OWNER }} lütfen durumu kontrol edin.
+
+                > 🤖 Bu mesaj otomatik olarak gönderildi."
+              fi
+            done
+          fi
