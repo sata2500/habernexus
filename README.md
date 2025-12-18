@@ -1,13 +1,14 @@
-# 🚀 HaberNexus v10.4
+# HaberNexus
 
 <div align="center">
 
-![HaberNexus Logo](https://img.shields.io/badge/HaberNexus-v10.4-blue?style=for-the-badge&logo=newspaper)
+![HaberNexus Logo](https://img.shields.io/badge/HaberNexus-v10.7-blue?style=for-the-badge&logo=newspaper)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green?style=for-the-badge&logo=python)](https://python.org)
 [![Django](https://img.shields.io/badge/Django-5.1-green?style=for-the-badge&logo=django)](https://djangoproject.com)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker)](https://docker.com)
 [![CI/CD](https://img.shields.io/github/actions/workflow/status/sata2500/habernexus/ci.yml?style=for-the-badge&label=CI%2FCD)](https://github.com/sata2500/habernexus/actions)
+[![Release](https://img.shields.io/github/v/release/sata2500/habernexus?style=for-the-badge)](https://github.com/sata2500/habernexus/releases)
 
 **Modern, AI-Destekli, Tam Otomatik Haber Agregasyon Platformu**
 
@@ -17,34 +18,23 @@
 
 ---
 
-## ✨ v10.4 Yenilikleri
+## ✨ v10.7 Yenilikleri
+
+### 🔄 Gelişmiş Kurulum Sistemi
+- **Tam Sıfırlama:** `--reset` parametresi ile tüm eski kurulumu temizleme (Docker, Caddy, Cloudflare vs.)
+- **Akıllı Yedekleme:** Sadece veritabanı ve yapılandırma dosyası yedekleniyor
+- **Güvenli Yedek Konumu:** Yedekler `/var/backups/habernexus` dizininde saklanıyor
+- **Kolay Geri Yükleme:** `--restore` parametresi ile tek komutla geri yükleme
+- **Pipe Desteği:** `curl | bash` ile çalıştırıldığında bile interaktif girdi alabilme
 
 ### 🤖 Google Gen AI SDK Güncellemeleri
-- **Gelişmiş ThinkingConfig Desteği:**
-  - **Gemini 2.5 Serisi:** `thinkingBudget` (integer) ile daha hassas kontrol.
-    - `0`: Thinking devre dışı.
-    - `-1`: Dinamik thinking (model karar verir).
-    - `Pozitif değer`: Manuel budget (örn: 1024, 2048).
-  - **Gemini 3 Serisi:** `thinkingLevel` (string) ile basitleştirilmiş kontrol.
-    - `"low"`: Düşük reasoning.
-    - `"high"`: Yüksek reasoning (varsayılan).
-- **Geriye Uyumluluk:** Eski `ThinkingLevel` enum değerleri (`MINIMAL`, `MEDIUM`) otomatik olarak yeni `thinkingLevel` string değerlerine (`low`, `high`) dönüştürülür.
+- **Gelişmiş ThinkingConfig Desteği:** Gemini 2.5 ve 3 serisi için optimize edilmiş
+- **Geriye Uyumluluk:** Eski API'ler otomatik olarak yeni formata dönüştürülüyor
 
 ### 🛡️ Güçlendirilmiş CI/CD Pipeline
-- **Gelişmiş Hata Raporlama:** Başarısız testler ve linting hataları için detaylı özetler ve loglar.
-- **Otomatik Issue Oluşturma:** `main` branch üzerindeki pipeline hatalarında otomatik olarak GitHub issue oluşturulur.
-- **Detaylı Özetler:** Her pipeline çalışması sonunda tüm adımların durumunu gösteren kapsamlı bir özet oluşturulur.
-- **Güvenlik Taraması İyileştirmeleri:** Bandit ve Trivy tarama sonuçları artık GitHub Security tabına SARIF formatında yükleniyor.
-- **Daha Sağlam Test Adımları:** Testlerin `continue-on-error` yerine `set +e` ve `PIPESTATUS` ile daha güvenilir şekilde çalışması sağlandı.
-
-### 📝 API ve Dokümantasyon
-- **API Versiyon Güncellemesi:** `drf-spectacular` ile oluşturulan API dokümantasyonu v10.4 olarak güncellendi.
-- **Geliştirici Bilgileri:** API dokümantasyonuna `CONTACT` ve `LICENSE` bilgileri eklendi.
-
-### 🧪 Kapsamlı Testler
-- **Yeni Test Senaryoları:** `ThinkingConfig` ve `get_thinking_level` fonksiyonları için yeni birim testleri eklendi.
-- **Mock İyileştirmeleri:** `google.genai` modülü, testlerin harici bağımlılık olmadan çalışabilmesi için mocklandı.
-- **Hata Düzeltmeleri:** Mevcut testlerdeki hatalar giderildi ve testler daha kararlı hale getirildi.
+- **Otomatik Release:** Versiyon güncellendiğinde otomatik GitHub Release oluşturma
+- **Otomatik Issue Oluşturma:** Pipeline hatalarında otomatik issue açma
+- **Güvenlik Taraması:** Bandit ve Trivy ile SARIF formatında raporlama
 
 ---
 
@@ -52,21 +42,11 @@
 
 ### ⚡ Tek Komutla Kurulum (Önerilen)
 
-HaberNexus'u tek bir komutla Ubuntu/Debian sunucularınıza kurun:
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | sudo bash
 ```
 
-**Güvenli Kurulum** (önce scripti incelemek isterseniz):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh -o install.sh
-less install.sh  # İnceleyin
-sudo bash install.sh
-```
-
-**Parametrelerle Kurulum:**
+### 🔧 Kurulum Seçenekleri
 
 ```bash
 # Domain ve email ile kurulum
@@ -76,20 +56,23 @@ curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habern
 # Hızlı kurulum (varsayılan değerlerle)
 curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | \
   sudo bash -s -- --quick
+
+# Tam sıfırlama ile yeniden kurulum
+curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | \
+  sudo bash -s -- --reset
 ```
 
-### 🔧 Manuel Kurulum
+### 💾 Yedekleme ve Geri Yükleme
 
 ```bash
-# Repoyu klonlayın
-git clone https://github.com/sata2500/habernexus.git
-cd habernexus
+# Manuel yedek alma
+sudo bash get-habernexus.sh --backup
 
-# Etkileşimli kurulum scripti
-sudo bash get-habernexus.sh
+# Mevcut yedekleri listeleme
+sudo bash get-habernexus.sh --list-backups
 
-# veya eski versiyon
-sudo bash install_v9.sh
+# Yedekten geri yükleme
+sudo bash get-habernexus.sh --restore backup_20251218_013128
 ```
 
 ### 🐳 Docker ile Kurulum
@@ -122,177 +105,34 @@ docker compose logs -f
 ## ✨ Özellikler
 
 ### 🤖 AI-Destekli İçerik
-- **Google Gemini AI:** Otomatik haber özetleme ve içerik üretimi (Gemini 2.5 Flash, Gemini 3 Pro).
-- **ThinkingConfig:** Gelişmiş reasoning için `thinkingLevel` ve `thinkingBudget` desteği.
-- **Akıllı Kategori Sınıflandırma:** İçeriklerin otomatik olarak kategorize edilmesi.
-- **Duygu Analizi:** Haber metinlerinin duygu analizinin yapılması.
-- **Görsel Üretimi:** Google Imagen 4.0 ile AI destekli görsel oluşturma.
+- **Google Gemini AI:** Otomatik haber özetleme ve içerik üretimi
+- **ThinkingConfig:** Gelişmiş reasoning desteği
+- **Akıllı Kategori Sınıflandırma:** Otomatik kategorize
+- **Duygu Analizi:** Haber metinlerinin analizi
+- **Görsel Üretimi:** Google Imagen 4.0 ile AI görsel oluşturma
 
 ### 📰 Haber Agregasyonu
-- **100+ Haber Kaynağı:** Geniş RSS/Atom feed desteği.
-- **Gerçek Zamanlı Güncelleme:** Celery ile periyodik içerik çekme.
-- **İçerik Kalite Kontrolü:** Otomatik kalite değerlendirme ve filtreleme.
-- **Duplicate Detection:** Tekrar eden içeriklerin otomatik tespiti.
+- **100+ Haber Kaynağı:** Geniş RSS/Atom feed desteği
+- **Gerçek Zamanlı Güncelleme:** Celery ile periyodik içerik çekme
+- **İçerik Kalite Kontrolü:** Otomatik kalite değerlendirme
+- **Duplicate Detection:** Tekrar eden içeriklerin tespiti
 
 ### 🚀 REST API
-- **Kapsamlı Endpoints:** Haberler, yazarlar, kategoriler ve daha fazlası için API.
-- **Güvenlik:** Rate limiting, CORS ve JWT yetkilendirme.
-- **Dokümantasyon:** drf-spectacular ile otomatik Swagger/ReDoc.
-- **Pagination:** Cursor-based ve offset pagination desteği.
+- **Kapsamlı Endpoints:** Haberler, yazarlar, kategoriler için API
+- **Güvenlik:** Rate limiting, CORS ve JWT yetkilendirme
+- **Dokümantasyon:** Swagger/ReDoc ile otomatik API docs
+- **Pagination:** Cursor-based ve offset pagination
 
 ### 📧 Newsletter Sistemi
-- **E-posta Aboneliği:** Kullanıcıların bültenlere abone olması.
-- **Otomatik Gönderim:** Celery Beat ile periyodik bülten gönderimi.
-- **Template Desteği:** Özelleştirilebilir e-posta şablonları.
-- **Abonelik Yönetimi:** Kolay abonelik iptal ve tercih yönetimi.
+- **E-posta Aboneliği:** Kullanıcı bülten aboneliği
+- **Otomatik Gönderim:** Celery Beat ile periyodik gönderim
+- **Template Desteği:** Özelleştirilebilir şablonlar
 
 ### 🔒 Güvenlik
-- **Cloudflare Tunnel:** Port açmadan güvenli erişim.
-- **Otomatik SSL:** Let's Encrypt ile otomatik SSL sertifikası.
-- **Rate Limiting:** DDoS koruması için istek sınırlama.
-- **Security Headers:** Modern güvenlik başlıkları.
-- **Sentry Entegrasyonu:** Kapsamlı hata takibi ve raporlama.
-
----
-
-## 🏗️ Mimari
-
-```
-┌──────────────────────────────────────────┐
-│         Cloudflare Tunnel                │
-│  (DDoS Protection, No Port Forwarding)   │
-└────────────────┬─────────────────────────┘
-                 │
-┌────────────────▼─────────────────────────┐
-│    Caddy Reverse Proxy                   │
-│  (Automatic HTTPS, Load Balancing)       │
-└────────────────┬─────────────────────────┘
-                 │
-    ┌────────────┼────────────┐
-    │            │            │
-┌───▼──┐  ┌─────▼────┐  ┌───▼────┐
-│Django│  │ Celery   │  │Flower  │
-│ App  │  │ Workers  │  │Monitor │
-└───┬──┘  └─────┬────┘  └────────┘
-    │           │
-┌───▼───────────▼────┐
-│PostgreSQL + Redis  │
-│(Data & Cache)      │
-└────────────────────┘
-```
-
----
-
-## 🛠️ Teknoloji Stack
-
-| Bileşen | Teknoloji | Versiyon |
-|---------|-----------|----------|
-| Backend | Django | 5.1+ |
-| Veritabanı | PostgreSQL | 16 |
-| Cache | Redis | 7 |
-| Task Queue | Celery | 5.4+ |
-| Reverse Proxy | Caddy | 2.7+ |
-| Tunnel | Cloudflare Tunnel | Latest |
-| Container | Docker | 24+ |
-| AI | Google Gemini | 2.5 Flash / 3 Pro |
-| Image AI | Google Imagen | 4.0 |
-| API Framework | Django REST Framework | 3.15+ |
-| API Docs | drf-spectacular | 0.28+ |
-| Error Tracking | Sentry | 2.19+ |
-
----
-
-## 📊 Yönetim Komutları
-
-```bash
-# Kurulum dizinine git
-cd /opt/habernexus
-
-# Servis durumu
-docker compose ps
-
-# Logları görüntüle
-docker compose logs -f
-
-# Yönetim scripti ile
-bash manage_habernexus_v8.sh help
-
-# Testleri çalıştır
-docker compose exec web pytest -v
-
-# Migration oluştur
-docker compose exec web python manage.py makemigrations
-
-# Migration uygula
-docker compose exec web python manage.py migrate
-```
-
----
-
-## 🎯 Erişim Adresleri
-
-| Servis | URL | Açıklama |
-|--------|-----|----------|
-| Ana Site | https://your-domain.com | Haber portalı |
-| Admin Panel | https://your-domain.com/admin | Yönetim paneli |
-| API | https://your-domain.com/api/v1/ | REST API |
-| API Docs | https://your-domain.com/api/v1/schema/swagger-ui/ | Swagger UI |
-| ReDoc | https://your-domain.com/api/v1/schema/redoc/ | ReDoc |
-| Health Check | https://your-domain.com/core/health/ | Sistem sağlık durumu |
-| Flower | https://your-domain.com/flower | Celery izleme |
-
----
-
-## 📁 Proje Yapısı
-
-```
-habernexus/
-├── 📄 .github/workflows/ci.yml   # Güçlendirilmiş CI/CD Pipeline
-├── 📄 docker-compose.yml         # Docker yapılandırması
-├── 📄 Dockerfile                 # Uygulama imajı
-├── 📄 requirements.txt           # Python bağımlılıkları
-├── 📁 habernexus_config/         # Django ayarları
-│   ├── settings.py               # Ana ayarlar
-│   ├── settings_test.py          # Test ayarları
-│   └── celery.py                 # Celery yapılandırması
-├── 📁 core/                      # Çekirdek uygulama
-│   ├── exceptions.py             # Özel exception sınıfları
-│   ├── error_tracking.py         # Sentry entegrasyonu
-│   ├── middleware.py             # Güvenlik ve logging middleware
-│   ├── logging_config.py         # Yapılandırılmış logging
-│   └── health.py                 # Health check endpoints
-├── 📁 news/                      # Haber modülü
-│   ├── tasks.py                  # AI içerik üretimi (Gemini)
-│   ├── models.py                 # Veri modelleri
-│   └── views.py                  # View'lar
-├── 📁 api/                       # REST API
-│   ├── views.py                  # API view'ları
-│   ├── serializers.py            # Serializer'lar
-│   └── permissions.py            # Yetkilendirme
-├── 📁 templates/                 # HTML şablonları
-├── 📁 static/                    # Statik dosyalar
-├── 📁 docs/                      # Güncel dökümanlar
-└── 📁 archive/                   # Arşivlenmiş dosyalar
-```
-
----
-
-## 🔄 CI/CD Pipeline
-
-GitHub Actions ile otomatik CI/CD:
-
-```yaml
-# Her push'ta çalışan job'lar:
-- Test (Python 3.10, 3.11, 3.12)  # Paralel test matrix
-- Code Quality                     # Black, isort, flake8, Ruff
-- Security Checks                  # Bandit, pip-audit, Trivy
-- CodeQL Analysis                  # Gelişmiş güvenlik taraması
-- Django Configuration Check       # System checks
-- Dependency Review                # PR güvenlik kontrolü
-- Build Docker Image               # Docker build (main branch)
-- Error Notification               # Hata durumunda issue oluşturma
-- Pipeline Status                  # Durum bildirimi
-```
+- **Cloudflare Tunnel:** Port açmadan güvenli erişim
+- **SSL/TLS:** Otomatik sertifika yönetimi
+- **Rate Limiting:** API isteklerini sınırlama
+- **CORS:** Cross-origin güvenliği
 
 ---
 
@@ -300,105 +140,76 @@ GitHub Actions ile otomatik CI/CD:
 
 | Döküman | Açıklama |
 |---------|----------|
-| [INSTALLATION.md](docs/INSTALLATION.md) | Detaylı kurulum kılavuzu |
-| [QUICK_START.md](docs/QUICK_START.md) | Hızlı başlangıç |
-| [API.md](docs/API.md) | API referansı |
-| [CONFIGURATION.md](docs/CONFIGURATION.md) | Yapılandırma seçenekleri |
-| [CICD.md](docs/CICD.md) | CI/CD pipeline detayları |
-| [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Sorun giderme |
-| [CHANGELOG.md](CHANGELOG.md) | Değişiklik günlüğü |
+| [Kurulum Rehberi](docs/INSTALLATION.md) | Detaylı kurulum adımları |
+| [API Dokümantasyonu](docs/API.md) | REST API kullanımı |
+| [Mimari](docs/ARCHITECTURE.md) | Sistem mimarisi |
+| [Geliştirme](docs/DEVELOPMENT.md) | Geliştirici rehberi |
+| [CI/CD](docs/CICD.md) | Pipeline yapılandırması |
+| [Sorun Giderme](docs/TROUBLESHOOTING.md) | Sık karşılaşılan sorunlar |
+| [SSS](docs/FAQ.md) | Sıkça sorulan sorular |
+
+---
+
+## 🛠️ Geliştirme
+
+### Yerel Geliştirme Ortamı
+
+```bash
+# Repoyu klonlayın
+git clone https://github.com/sata2500/habernexus.git
+cd habernexus
+
+# Virtual environment oluşturun
+python -m venv venv
+source venv/bin/activate
+
+# Bağımlılıkları kurun
+pip install -r requirements.txt
+
+# Geliştirme sunucusunu başlatın
+python manage.py runserver
+```
+
+### Test Çalıştırma
+
+```bash
+# Tüm testleri çalıştır
+pytest
+
+# Coverage ile
+pytest --cov=. --cov-report=html
+```
 
 ---
 
 ## 🤝 Katkıda Bulunma
 
-Katkılarınızı bekliyoruz!
+Katkılarınızı bekliyoruz! Lütfen [CONTRIBUTING.md](CONTRIBUTING.md) dosyasını okuyun.
 
-1. Repoyu fork edin
-2. Feature branch oluşturun (`git checkout -b feature/amazing`)
-3. Değişikliklerinizi commit edin (`git commit -m 'Add amazing feature'`)
-4. Branch'i push edin (`git push origin feature/amazing`)
+1. Fork edin
+2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
+3. Commit edin (`git commit -m 'feat: Add amazing feature'`)
+4. Push edin (`git push origin feature/amazing-feature`)
 5. Pull Request açın
-
-### Kod Standartları
-
-```bash
-# Kod formatlama
-black . --line-length=120
-
-# Import sıralama
-isort .
-
-# Linting
-flake8 . --max-line-length=120
-
-# Testler
-pytest -v
-```
-
----
-
-## 📞 Destek
-
-- **GitHub Issues**: [Issues](https://github.com/sata2500/habernexus/issues)
-- **E-posta**: salihtanriseven25@gmail.com
-- **Geliştirici**: Salih TANRISEVEN
-- **Domain**: [habernexus.com](https://habernexus.com)
 
 ---
 
 ## 📄 Lisans
 
-Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır.
+Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
 
 ---
 
-## 📈 Yol Haritası
+## 👨‍💻 Geliştirici
 
-### Tamamlanan
-- [x] REST API Modülü
-- [x] Newsletter Sistemi
-- [x] Gelişmiş Hata Yakalama
-- [x] Güçlendirilmiş CI/CD (v10.4)
-- [x] Google Gen AI SDK Güncellemeleri (v10.4)
-- [x] Rate Limiting Middleware
-- [x] Security Headers
-- [x] Sentry Entegrasyonu
-- [x] CodeQL Analizi
-- [x] Proje Organizasyonu
-
-### Planlanan
-- [ ] Çoklu dil desteği (i18n)
-- [ ] Mobil uygulama (React Native)
-- [ ] Plugin sistemi
-- [ ] Gelişmiş analitik dashboard
-- [ ] GraphQL API desteği
-- [ ] WebSocket real-time updates
-
----
-
-## 📊 Versiyon Geçmişi
-
-| Versiyon | Tarih | Önemli Değişiklikler |
-|----------|-------|---------------------|
-| v10.4 | Aralık 2025 | Gelişmiş ThinkingConfig, Güçlendirilmiş CI/CD, API güncellemeleri |
-| v10.3 | Aralık 2025 | ThinkingLevel enum, CodeQL, Sentry, proje organizasyonu |
-| v10.2 | Aralık 2025 | Google Gen AI SDK güncellemeleri, CI/CD güçlendirme |
-| v10.1 | Aralık 2025 | CI/CD düzeltmeleri, hata yakalama sistemi |
-| v10.0 | Aralık 2025 | REST API, Newsletter, Google Gen AI SDK |
-| v9.0 | Aralık 2025 | Whiptail kurulum sistemi |
-| v8.0 | Aralık 2025 | Ultimate kurulum sistemi |
+**Salih TANRISEVEN**
+- Email: salihtanriseven25@gmail.com
+- GitHub: [@sata2500](https://github.com/sata2500)
 
 ---
 
 <div align="center">
 
-**HaberNexus v10.4** - Modern, Otomatik, Güvenli
-
-**Geliştirici:** Salih TANRISEVEN | Aralık 2025
-
-⭐ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!
-
-[![GitHub stars](https://img.shields.io/github/stars/sata2500/habernexus?style=social)](https://github.com/sata2500/habernexus)
+**⭐ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!**
 
 </div>

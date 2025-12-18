@@ -37,7 +37,7 @@ set -e
 # GLOBAL CONSTANTS
 # =============================================================================
 
-readonly SCRIPT_VERSION="10.6.0"
+readonly SCRIPT_VERSION="10.7.0"
 readonly SCRIPT_NAME="HaberNexus Installer"
 readonly GITHUB_REPO="sata2500/habernexus"
 readonly GITHUB_RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main"
@@ -441,6 +441,7 @@ CLOUDFLARE_TUNNEL_TOKEN=""
 BACKUP_ONLY=false
 RESTORE_BACKUP=""
 LIST_BACKUPS=false
+FULL_RESET=false
 
 collect_configuration_interactive() {
     step "3/7" "Yapılandırma Bilgileri Toplanıyor"
@@ -550,6 +551,104 @@ finalize_configuration() {
 # =============================================================================
 # INSTALLATION
 # =============================================================================
+
+# Tam sıfırlama fonksiyonu - tüm eski kurulumu temizler
+full_system_reset() {
+    step "0/7" "Sistem Sıfırlanıyor"
+    
+    warning "TÜM MEVCUT KURULUM SİLİNECEK!"
+    
+    # Kullanıcıdan onay al
+    if [[ "$UNATTENDED" != true ]] && [[ -e /dev/tty ]]; then
+        echo -n "Devam etmek istiyor musunuz? [e/H]: " > /dev/tty
+        read -r confirm < /dev/tty
+        if [[ ! "$confirm" =~ ^[eEyY]$ ]]; then
+            fatal "Sıfırlama iptal edildi."
+        fi
+    fi
+    
+    info "Docker container'ları durduruluyor..."
+    
+    # HaberNexus ile ilgili tüm container'ları durdur
+    docker ps -a --filter "name=habernexus" -q 2>/dev/null | xargs -r docker stop 2>/dev/null || true
+    docker ps -a --filter "name=habernexus" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
+    
+    # Cloudflared container'ını durdur
+    docker stop cloudflared 2>/dev/null || true
+    docker rm -f cloudflared 2>/dev/null || true
+    
+    # Caddy container'ını durdur
+    docker stop caddy 2>/dev/null || true
+    docker rm -f caddy 2>/dev/null || true
+    
+    # Nginx container'ını durdur
+    docker stop nginx 2>/dev/null || true
+    docker rm -f nginx 2>/dev/null || true
+    
+    # PostgreSQL container'ını durdur
+    docker stop postgres 2>/dev/null || true
+    docker rm -f postgres 2>/dev/null || true
+    
+    # Redis container'ını durdur
+    docker stop redis 2>/dev/null || true
+    docker rm -f redis 2>/dev/null || true
+    
+    success "Container'lar durduruldu"
+    
+    info "Docker volume'ları temizleniyor..."
+    
+    # HaberNexus ile ilgili volume'ları sil
+    docker volume ls -q --filter "name=habernexus" 2>/dev/null | xargs -r docker volume rm 2>/dev/null || true
+    docker volume rm postgres_data 2>/dev/null || true
+    docker volume rm redis_data 2>/dev/null || true
+    docker volume rm static_volume 2>/dev/null || true
+    docker volume rm media_volume 2>/dev/null || true
+    
+    success "Volume'lar temizlendi"
+    
+    info "Docker network'leri temizleniyor..."
+    
+    # HaberNexus network'lerini sil
+    docker network ls -q --filter "name=habernexus" 2>/dev/null | xargs -r docker network rm 2>/dev/null || true
+    
+    success "Network'ler temizlendi"
+    
+    info "Kurulum dizini temizleniyor..."
+    
+    # Kurulum dizinini sil
+    if [[ -d "$INSTALL_DIR" ]]; then
+        rm -rf "$INSTALL_DIR"
+        success "Kurulum dizini silindi: $INSTALL_DIR"
+    fi
+    
+    # Caddy dizinlerini temizle
+    rm -rf /etc/caddy 2>/dev/null || true
+    rm -rf /var/lib/caddy 2>/dev/null || true
+    rm -rf /var/log/caddy 2>/dev/null || true
+    
+    # Cloudflare config'lerini temizle
+    rm -rf /etc/cloudflared 2>/dev/null || true
+    rm -rf ~/.cloudflared 2>/dev/null || true
+    
+    # Sistemd servislerini temizle
+    systemctl stop caddy 2>/dev/null || true
+    systemctl disable caddy 2>/dev/null || true
+    systemctl stop cloudflared 2>/dev/null || true
+    systemctl disable cloudflared 2>/dev/null || true
+    rm -f /etc/systemd/system/caddy.service 2>/dev/null || true
+    rm -f /etc/systemd/system/cloudflared.service 2>/dev/null || true
+    systemctl daemon-reload 2>/dev/null || true
+    
+    success "Eski yapılandırmalar temizlendi"
+    
+    # Kullanılmayan Docker kaynaklarını temizle
+    info "Kullanılmayan Docker kaynakları temizleniyor..."
+    docker system prune -f 2>/dev/null || true
+    
+    echo ""
+    success "✔ Sistem sıfırlama tamamlandı!"
+    echo ""
+}
 
 # Veritabanı yedekleme fonksiyonu
 backup_database() {
@@ -991,6 +1090,7 @@ ${BOLD}Seçenekler:${NC}
   --backup              Sadece veritabanı yedeği al
   --restore BACKUP      Belirtilen yedekten geri yükle
   --list-backups        Mevcut yedekleri listele
+  --reset               Tam sıfırlama (tüm eski kurulumu sil)
   --help, -h            Bu yardım mesajını göster
   --version, -v         Versiyon bilgisini göster
 
@@ -1056,6 +1156,10 @@ parse_arguments() {
                 ;;
             --list-backups)
                 LIST_BACKUPS=true
+                shift
+                ;;
+            --reset|--full-reset)
+                FULL_RESET=true
                 shift
                 ;;
             --help|-h)
@@ -1142,6 +1246,11 @@ main() {
         
         restore_database "$restore_path"
         exit $?
+    fi
+    
+    # Tam sıfırlama modu
+    if [[ "$FULL_RESET" == true ]]; then
+        full_system_reset
     fi
     
     # Dry-run modu bildirimi

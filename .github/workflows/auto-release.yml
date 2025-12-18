@@ -1,0 +1,169 @@
+# =============================================================================
+# HaberNexus - Auto Release Workflow
+# Automatically creates releases when version is updated
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'get-habernexus.sh'
+      - 'VERSION'
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  check-version:
+    name: Check Version Change
+    runs-on: ubuntu-latest
+    outputs:
+      version_changed: ${{ steps.check.outputs.version_changed }}
+      new_version: ${{ steps.check.outputs.new_version }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check for version change
+      id: check
+      run: |
+        # Get version from get-habernexus.sh
+        NEW_VERSION=$(grep -oP 'SCRIPT_VERSION="\K[^"]+' get-habernexus.sh || echo "")
+        
+        if [ -z "$NEW_VERSION" ]; then
+          echo "version_changed=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # Check if tag already exists
+        if git rev-parse "v$NEW_VERSION" >/dev/null 2>&1; then
+          echo "Tag v$NEW_VERSION already exists"
+          echo "version_changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "New version detected: v$NEW_VERSION"
+          echo "version_changed=true" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        fi
+
+  create-release:
+    name: Create Release
+    needs: check-version
+    if: needs.check-version.outputs.version_changed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Create and push tag
+      run: |
+        VERSION="v${{ needs.check-version.outputs.new_version }}"
+        git tag -a "$VERSION" -m "Release $VERSION"
+        git push origin "$VERSION"
+
+    - name: Generate Release Notes
+      id: notes
+      run: |
+        VERSION="v${{ needs.check-version.outputs.new_version }}"
+        
+        # Get previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        
+        # Create release notes
+        NOTES_FILE=$(mktemp)
+        
+        echo "## 🚀 HaberNexus $VERSION" > "$NOTES_FILE"
+        echo "" >> "$NOTES_FILE"
+        echo "### 📦 Kurulum" >> "$NOTES_FILE"
+        echo '```bash' >> "$NOTES_FILE"
+        echo 'curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | sudo bash' >> "$NOTES_FILE"
+        echo '```' >> "$NOTES_FILE"
+        echo "" >> "$NOTES_FILE"
+        echo "### 📝 Değişiklikler" >> "$NOTES_FILE"
+        echo "" >> "$NOTES_FILE"
+        
+        if [ -z "$PREV_TAG" ]; then
+          echo "İlk release" >> "$NOTES_FILE"
+        else
+          git log "$PREV_TAG"..HEAD --pretty=format:'- %s' >> "$NOTES_FILE"
+        fi
+        
+        echo "" >> "$NOTES_FILE"
+        echo "" >> "$NOTES_FILE"
+        echo "### 📚 Dokümantasyon" >> "$NOTES_FILE"
+        echo "- [Kurulum Rehberi](docs/INSTALLATION.md)" >> "$NOTES_FILE"
+        echo "- [API Dokümantasyonu](docs/API.md)" >> "$NOTES_FILE"
+        echo "- [Katkıda Bulunma](CONTRIBUTING.md)" >> "$NOTES_FILE"
+        
+        {
+          echo 'NOTES<<NOTES_EOF'
+          cat "$NOTES_FILE"
+          echo ''
+          echo 'NOTES_EOF'
+        } >> $GITHUB_OUTPUT
+        
+        rm -f "$NOTES_FILE"
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ needs.check-version.outputs.new_version }}
+        name: HaberNexus v${{ needs.check-version.outputs.new_version }}
+        body: ${{ steps.notes.outputs.NOTES }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+
+  update-readme-badge:
+    name: Update README Badge
+    needs: [check-version, create-release]
+    if: needs.check-version.outputs.version_changed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: main
+
+    - name: Update version in README
+      run: |
+        VERSION="${{ needs.check-version.outputs.new_version }}"
+        
+        # Update version badge if exists
+        sed -i "s/version-v[0-9.]*-/version-v${VERSION}-/g" README.md || true
+        
+        # Update v10.x references
+        sed -i "s/v10\.[0-9]*\.[0-9]*/v${VERSION}/g" README.md || true
+
+    - name: Commit changes
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        if git diff --quiet; then
+          echo "No changes to commit"
+        else
+          git add README.md
+          git commit -m "docs: Update version to v${{ needs.check-version.outputs.new_version }}"
+          git push
+        fi

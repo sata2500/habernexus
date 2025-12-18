@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [10.7.0] - 2025-12-18
+
+### 🆕 Added
+- **Full System Reset:** `--reset` parameter for complete cleanup of previous installations (Docker containers, volumes, Caddy, Cloudflare, etc.)
+- **Smart Backup System:** Database-only backup with `.env` configuration file
+- **Secure Backup Location:** Backups now stored in `/var/backups/habernexus` instead of install directory
+- **Easy Restore:** `--restore` parameter for one-command database restoration
+- **Backup Listing:** `--list-backups` parameter to view all available backups
+- **Auto Release Workflow:** Automatic GitHub Release creation when version is updated
+- **Pipe Input Support:** Interactive input works even when running via `curl | bash`
+
+### 🔄 Changed
+- **Installer Version:** Updated to v10.7.0
+- **README.md:** Completely rewritten with new features and professional formatting
+- **Error Handling:** Git clone errors now display meaningful messages instead of silent failure
+- **Docker Cleanup:** Improved container and volume cleanup during reinstallation
+
+### 🐛 Fixed
+- **Silent Failure:** Fixed issue where script would silently exit on git clone failure
+- **TTY Input:** Fixed interactive prompts not working when piped through curl
+- **Backup Preservation:** Backups no longer deleted when install directory is removed
+
+---
+
 ## [10.4.0] - 2025-12-17
 
 ### 🆕 Added
