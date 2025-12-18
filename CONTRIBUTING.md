@@ -1,70 +1,149 @@
-# Contributing to HaberNexus
+_Bu dosya, Manus AI tarafından proje analizine dayalı olarak yeniden düzenlenmiştir._
 
-First off, thanks for taking the time to contribute! 🎉
+# HaberNexus'a Katkıda Bulunma Rehberi
 
-The following is a set of guidelines for contributing to HaberNexus. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
+**Son Güncelleme:** 18 Aralık 2025
 
-## Code of Conduct
+---
 
-This project and everyone participating in it is governed by the [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+Öncelikle, HaberNexus projesine katkıda bulunmak için zaman ayırdığınız için teşekkür ederiz! Bu topluluk, sizin gibi geliştiricilerin desteğiyle büyüyor.
 
-## How Can I Contribute?
+Bu belge, projeye sağlıklı ve verimli katkılar sağlamak için bir dizi kural ve yönerge içerir. Lütfen bu yönergeleri dikkatlice okuyun.
 
-### Reporting Bugs
+## 🤝 Davranış Kuralları (Code of Conduct)
 
-This section guides you through submitting a bug report for HaberNexus. Following these guidelines helps maintainers and the community understand your report, reproduce the behavior, and find related reports.
+Bu projeye katılan herkesin [Davranış Kuralları](CODE_OF_CONDUCT.md) belgesine uyması beklenir. Lütfen tüm katılımcılara karşı saygılı ve yapıcı bir dil kullanın.
 
-- **Use a clear and descriptive title** for the issue to identify the problem.
-- **Describe the exact steps to reproduce the problem** in as much detail as possible.
-- **Provide specific examples** to demonstrate the steps.
-- **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior.
-- **Explain which behavior you expected to see instead and why.**
+---
 
-### Suggesting Enhancements
+## 🚀 Nasıl Katkıda Bulunabilirim?
 
-This section guides you through submitting an enhancement suggestion for HaberNexus, including completely new features and minor improvements to existing functionality.
+Katkıda bulunmanın birçok yolu vardır:
 
-- **Use a clear and descriptive title** for the issue to identify the suggestion.
-- **Provide a step-by-step description of the suggested enhancement** in as much detail as possible.
-- **Explain why this enhancement would be useful** to most HaberNexus users.
+- **Hata Bildirimi:** Karşılaştığınız hataları bildirmek.
+- **Özellik Talebi:** Yeni özellikler önermek.
+- **Kod Katkısı:** Hataları düzeltmek veya yeni özellikler geliştirmek.
+- **Dokümantasyon:** Dokümanları iyileştirmek veya yeni rehberler yazmak.
 
-### Pull Requests
+### 🗺️ Geliştirme Süreci
 
-The process described here has several goals:
+Tüm geliştirme süreci, [Geliştirme Yol Haritası (DEVELOPMENT_ROADMAP.md)](DEVELOPMENT_ROADMAP.md) üzerinden yönetilmektedir. Katkıda bulunmak için lütfen aşağıdaki adımları izleyin:
 
-- Maintain HaberNexus's quality
-- Fix problems that are important to users
-- Engage the community in working toward the best possible HaberNexus
-- Enable a sustainable system for HaberNexus's maintainers to review contributions
+1.  **Bir Görev Seçin:** Yol haritasındaki `[PLANNED]` 🔵 durumundaki görevlerden birini seçin.
+2.  **Görevi Üstlenin:** Seçtiğiniz görevin `Atanan` bölümüne kendi GitHub kullanıcı adınızı eklemek için bir Pull Request (PR) açın. Bu PR sadece `DEVELOPMENT_ROADMAP.md` dosyasını değiştirmelidir.
+3.  **Onay Bekleyin:** Proje yöneticisi, görevi size atadığında PR'ınızı onaylayacak ve birleştirecektir.
+4.  **Geliştirmeye Başlayın:** Görev size atandıktan sonra, geliştirmeye başlayabilirsiniz.
 
-Please follow these steps to have your contribution considered by the maintainers:
+---
 
-1.  Follow all instructions in [the template](PULL_REQUEST_TEMPLATE.md)
-2.  Follow the [styleguides](#styleguides)
-3.  After you submit your pull request, verify that all status checks are passing
+## 💻 Geliştirme Akışı
 
-## Styleguides
+### 1. Projeyi Fork'layın ve Klonlayın
 
-### Python Styleguide
+```bash
+# Projeyi kendi hesabınıza fork'layın
+# Ardından fork'ladığınız repoyu klonlayın
+git clone https://github.com/YOUR_USERNAME/habernexus.git
+cd habernexus
 
-- Use [Black](https://github.com/psf/black) for code formatting.
-- Use [isort](https://github.com/PyCQA/isort) for import sorting.
-- Follow [PEP 8](https://www.python.org/dev/peps/pep-0008/).
-- Write docstrings for all public modules, classes, and methods.
+# Ana repoyu "upstream" olarak ekleyin
+git remote add upstream https://github.com/sata2500/habernexus.git
+```
 
-### Git Commit Messages
+### 2. Geliştirme Dalı (Branch) Oluşturun
 
-- Use the present tense ("Add feature" not "Added feature")
-- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-- Limit the first line to 72 characters or less
-- Reference issues and pull requests liberally after the first line
+Her zaman `main` dalından yeni bir dal oluşturun.
 
-## Setting Up Development Environment
+```bash
+# Ana dalı güncelleyin
+git checkout main
+git pull upstream main
 
-1.  Clone the repository
-2.  Copy `.env.example` to `.env` and configure environment variables
-3.  Run `docker-compose up -d` to start services
-4.  Run migrations: `docker-compose exec web python manage.py migrate`
-5.  Create superuser: `docker-compose exec web python manage.py createsuperuser`
+# Yeni bir dal oluşturun (görev ID'si ile)
+git checkout -b feat/6-advanced-content-analysis
+# veya hata düzeltmesi için
+git checkout -b fix/2-specific-exception-handling
+```
 
-Happy hacking! 🚀
+**Dal İsimlendirme Kuralları:**
+
+- **Özellik:** `feat/<görev-id>-<kısa-açıklama>`
+- **Hata Düzeltme:** `fix/<görev-id>-<kısa-açıklama>`
+- **Dokümantasyon:** `docs/<görev-id>-<kısa-açıklama>`
+- **Refactor:** `refactor/<görev-id>-<kısa-açıklama>`
+
+### 3. Değişiklikleri Yapın ve Test Edin
+
+Kodunuzu yazarken [Kodlama Standartları](#-kodlama-standartları) bölümüne uyun.
+
+```bash
+# Kod kalitesini kontrol edin
+ruff check .
+
+# Kod formatını düzeltin
+ruff format .
+
+# Testleri çalıştırın
+pytest
+```
+
+### 4. Commit ve Push
+
+Commit mesajlarınızın [Commit Mesaj Formatı](#-commit-mesaj-formatı) bölümüne uygun olduğundan emin olun.
+
+```bash
+git add .
+git commit -m "feat(#6): Add advanced content analysis with Gemini 3"
+git push origin feat/6-advanced-content-analysis
+```
+
+### 5. Pull Request (PR) Oluşturun
+
+GitHub üzerinden `main` dalına bir Pull Request açın. PR şablonunu eksiksiz doldurun. PR'ınız, en az bir proje yöneticisi tarafından incelenip onaylandıktan sonra birleştirilecektir.
+
+---
+
+## ✍️ Kodlama Standartları
+
+- **Formatlama:** `ruff format` ile otomatik formatlama.
+- **Linting:** `ruff check` ile kod kalitesi kontrolü.
+- **Stil:** PEP 8 standartlarına uyun.
+- **Type Hinting:** Tüm fonksiyon ve metodlar için type hint ekleyin.
+- **Docstrings:** Tüm public modül, sınıf ve fonksiyonlar için açıklayıcı docstring yazın.
+
+---
+
+## 💬 Commit Mesaj Formatı
+
+Proje, [Conventional Commits](https://www.conventionalcommits.org/) standardını kullanır.
+
+```
+<type>(<scope>): <subject>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+- **Type:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+- **Scope:** Değişikliğin etki ettiği alan (örn: `api`, `news`, `celery`)
+- **Subject:** Değişikliği özetleyen kısa bir başlık.
+
+**Örnek:**
+
+```
+git commit -m "feat(api): Add rate limiting to news endpoints"
+```
+
+---
+
+## 🐞 Hata Bildirimi ve Bilinen Hatalar
+
+- **Hata Bildirimi:** Yeni bir hata bildirmek için lütfen GitHub Issues'daki `Bug Report` şablonunu kullanın.
+- **Bilinen Hatalar:** Geliştirmeye başlamadan önce [Bilinen Hatalar (KNOWN_ISSUES.md)](KNOWN_ISSUES.md) dosyasını kontrol ederek mevcut sorunlar hakkında bilgi edinin.
+
+---
+
+## 📚 Geliştirici Rehberi
+
+Daha detaylı teknik bilgi, mimari ve kurulum adımları için [Geliştirici Rehberi (DEVELOPER_GUIDE.md)](DEVELOPER_GUIDE.md) belgesini inceleyin.

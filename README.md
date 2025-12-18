@@ -136,17 +136,16 @@ docker compose logs -f
 
 ---
 
-## 📚 Dökümanlar
+## 📚 Proje Yönetimi ve Dokümantasyon
 
-| Döküman | Açıklama |
-|---------|----------|
-| [Kurulum Rehberi](docs/INSTALLATION.md) | Detaylı kurulum adımları |
-| [API Dokümantasyonu](docs/API.md) | REST API kullanımı |
-| [Mimari](docs/ARCHITECTURE.md) | Sistem mimarisi |
-| [Geliştirme](docs/DEVELOPMENT.md) | Geliştirici rehberi |
-| [CI/CD](docs/CICD.md) | Pipeline yapılandırması |
-| [Sorun Giderme](docs/TROUBLESHOOTING.md) | Sık karşılaşılan sorunlar |
-| [SSS](docs/FAQ.md) | Sıkça sorulan sorular |
+Bu proje, tüm geliştiricilerin katılımını teşvik eden şeffaf ve merkezi bir yönetim sistemi kullanır. Katkıda bulunmadan önce lütfen aşağıdaki belgeleri inceleyin.
+
+| Belge | Açıklama |
+|---|---|
+| [**Geliştirme Yol Haritası (DEVELOPMENT_ROADMAP.md)**](DEVELOPMENT_ROADMAP.md) | Projenin gelecek hedeflerini, anlık öncelikleri ve görev durumlarını içerir. | 
+| [**Katkıda Bulunma Rehberi (CONTRIBUTING.md)**](CONTRIBUTING.md) | Kodlama standartları, commit formatı ve PR süreci gibi tüm katkı kurallarını tanımlar. |
+| [**Geliştirici Rehberi (DEVELOPER_GUIDE.md)**](DEVELOPER_GUIDE.md) | Projenin teknik mimarisi, kurulumu ve geliştirme ortamı hakkında detaylı bilgi verir. |
+| [**Bilinen Hatalar (KNOWN_ISSUES.md)**](KNOWN_ISSUES.md) | Mevcut hataları, geçici çözümleri ve hata raporlama sürecini açıklar. |
 
 ---
 

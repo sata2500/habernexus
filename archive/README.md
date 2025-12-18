@@ -6,34 +6,23 @@ Bu klasör, projenin geçmiş sürümlerine ait dosyaları ve artık aktif olara
 
 ```
 archive/
-├── changelogs/          # Eski sürüm değişiklik günlükleri
-│   ├── CHANGELOG_v10.md
-│   └── CHANGELOG_v10.2.md
-├── docs/                # Eski dokümantasyon dosyaları
-│   ├── COMPLETION_PLAN.md
-│   ├── DEBUGGING_REPORT_v10.1.md
-│   ├── DEVELOPMENT_PLAN_v10.md
-│   ├── DEVELOPMENT_REPORT_v10.2.md
-│   ├── INSTALLATION_GUIDE_v7.md
-│   ├── INSTALLATION_SCRIPTS_README.md
-│   ├── RESEARCH_NOTES.md
-│   └── research_findings_v10.2.md
-└── scripts/             # Eski kurulum scriptleri
-    ├── install_v4.sh
-    ├── install_v5.sh
-    ├── install_v6.sh
-    ├── install_v7.sh
-    ├── install_v8.sh
-    ├── manage_habernexus.sh
-    └── pre_install_check.sh
+├── changelogs/              # Eski sürüm değişiklik günlükleri
+├── docs/                    # Eski dokümantasyon dosyaları
+├── scripts/                 # Eski kurulum scriptleri
+└── old_docs_20251218/       # 18 Aralık 2025'te arşivlenen docs/ klasörü
 ```
 
 ## ⚠️ Önemli Notlar
 
 1. **Bu dosyalar artık aktif olarak kullanılmamaktadır.**
 2. Referans ve tarihsel kayıt amacıyla saklanmaktadır.
-3. Güncel kurulum için `install_v9.sh` veya `one_click_install.sh` kullanın.
-4. Güncel dokümantasyon için `docs/` klasörüne bakın.
+3. Güncel kurulum için `get-habernexus.sh` kullanın.
+4. Güncel dokümantasyon için projenin ana dizinindeki `.md` dosyalarına bakın:
+   - `README.md`
+   - `DEVELOPMENT_ROADMAP.md`
+   - `CONTRIBUTING.md`
+   - `DEVELOPER_GUIDE.md`
+   - `KNOWN_ISSUES.md`
 
 ## 🗑️ Silme Politikası
 
@@ -42,5 +31,5 @@ archive/
 
 ---
 
-**Son Güncelleme:** Aralık 2025
-**Arşivleyen:** Salih TANRISEVEN
+**Son Güncelleme:** 18 Aralık 2025
+**Arşivleyen:** Salih TANRISEVEN & Manus AI
