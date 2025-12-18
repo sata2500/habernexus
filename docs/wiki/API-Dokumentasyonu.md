@@ -17,7 +17,7 @@ Bu arayüzler üzerinden tüm endpoint'leri test edebilir ve şemaları inceleye
 
 Tüm API istekleri aşağıdaki temel URL üzerinden yapılır:
 
-`/api/v1/`
+`https://habernexus.com/api/v1/`
 
 ### Kimlik Doğrulama (Authentication)
 
@@ -25,23 +25,91 @@ API, herkese açık (public) ve yönetici (admin) yetkisi gerektiren endpoint'le
 
 ---
 
+## Kullanım Örnekleri
+
+Aşağıda, API'nin nasıl kullanılacağına dair `cURL` ve `Python` örnekleri bulunmaktadır.
+
+### Örnek 1: Tüm Haberleri Listeleme
+
+**cURL:**
+```bash
+curl -X GET https://habernexus.com/api/v1/articles/
+```
+
+**Python (`requests` kütüphanesi):**
+```python
+import requests
+
+response = requests.get('https://habernexus.com/api/v1/articles/')
+
+if response.status_code == 200:
+    data = response.json()
+    for article in data['results']:
+        print(article['title'])
+else:
+    print(f"Hata: {response.status_code}")
+```
+
+### Örnek 2: Tek Bir Haberin Detayını Getirme
+
+**cURL:**
+```bash
+curl -X GET https://habernexus.com/api/v1/articles/yapay-zeka-sanati-yeniden-sekillendiriyor/
+```
+
+**Python:**
+```python
+import requests
+
+slug = 'yapay-zeka-sanati-yeniden-sekillendiriyor'
+response = requests.get(f'https://habernexus.com/api/v1/articles/{slug}/')
+
+if response.status_code == 200:
+    article_details = response.json()
+    print(article_details['content'])
+```
+
+### Örnek 3: Haberler İçinde Arama Yapma
+
+**cURL:**
+```bash
+curl -X GET "https://habernexus.com/api/v1/articles/search/?q=teknoloji"
+```
+
+**Python:**
+```python
+import requests
+
+params = {
+    'q': 'teknoloji'
+}
+
+response = requests.get('https://habernexus.com/api/v1/articles/search/', params=params)
+
+if response.status_code == 200:
+    search_results = response.json()
+    print(f"{len(search_results['results'])} sonuç bulundu.")
+```
+
+---
+
 ## Ana Endpoints
 
 ### Haberler (Articles)
 
--   **Endpoint:** `/api/v1/articles/`
+-   **Endpoint:** `/articles/`
 -   **Metotlar:** `GET`
 -   **Açıklama:** Yayınlanmış tüm haberleri listeler. Sayfalama (pagination) destekler.
 
 #### Haber Detayı
 
--   **Endpoint:** `/api/v1/articles/{slug}/`
+-   **Endpoint:** `/articles/{slug}/`
 -   **Metot:** `GET`
 -   **Açıklama:** Belirtilen `slug`'a sahip tek bir haberin detaylarını getirir.
 
 #### Haber Arama
 
--   **Endpoint:** `/api/v1/articles/search/`
+-   **Endpoint:** `/articles/search/`
 -   **Metot:** `GET`
 -   **Parametreler:**
     -   `q` (zorunlu): Aranacak metin (en az 2 karakter).
@@ -49,43 +117,43 @@ API, herkese açık (public) ve yönetici (admin) yetkisi gerektiren endpoint'le
 
 ### Yazarlar (Authors)
 
--   **Endpoint:** `/api/v1/authors/`
+-   **Endpoint:** `/authors/`
 -   **Metotlar:** `GET`
 -   **Açıklama:** Tüm aktif yazarları listeler.
 
 #### Yazar Detayı
 
--   **Endpoint:** `/api/v1/authors/{slug}/`
+-   **Endpoint:** `/authors/{slug}/`
 -   **Metot:** `GET`
 -   **Açıklama:** Belirtilen `slug`'a sahip yazarın bilgilerini getirir.
 
 #### Yazarın Haberleri
 
--   **Endpoint:** `/api/v1/authors/{slug}/articles/`
+-   **Endpoint:** `/authors/{slug}/articles/`
 -   **Metot:** `GET`
 -   **Açıklama:** Belirtilen yazara ait tüm haberleri listeler.
 
 ### Kategoriler (Categories)
 
--   **Endpoint:** `/api/v1/categories/`
+-   **Endpoint:** `/categories/`
 -   **Metot:** `GET`
 -   **Açıklama:** Tüm kategorileri ve her kategorideki haber sayılarını listeler.
 
 ### İstatistikler (Stats)
 
--   **Endpoint:** `/api/v1/stats/`
+-   **Endpoint:** `/stats/`
 -   **Metot:** `GET`
 -   **Açıklama:** Site ile ilgili genel istatistikleri (toplam haber, görüntülenme, yazar sayısı vb.) döndürür.
 
 ### RSS Kaynakları (RSS Sources) - *Admin Yetkisi Gerekir*
 
--   **Endpoint:** `/api/v1/rss-sources/`
+-   **Endpoint:** `/rss-sources/`
 -   **Metotlar:** `GET`, `POST`, `PUT`, `PATCH`, `DELETE`
 -   **Açıklama:** RSS kaynaklarını yönetmek için kullanılır. Sadece yöneticiler erişebilir.
 
 ### Sağlık Kontrolü (Health Check)
 
--   **Endpoint:** `/api/v1/health/`
+-   **Endpoint:** `/health/`
 -   **Metot:** `GET`
 -   **Açıklama:** API'nin ve sistemin sağlıklı çalışıp çalışmadığını kontrol etmek için kullanılır.
 
@@ -134,4 +202,5 @@ API, herkese açık (public) ve yönetici (admin) yetkisi gerektiren endpoint'le
   "avatar": "string (URL)",
   "expertise": "string"
 }
+```
 ```
