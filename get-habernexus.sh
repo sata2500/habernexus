@@ -37,13 +37,13 @@ set -e
 # GLOBAL CONSTANTS
 # =============================================================================
 
-readonly SCRIPT_VERSION="10.5.0"
+readonly SCRIPT_VERSION="10.6.0"
 readonly SCRIPT_NAME="HaberNexus Installer"
 readonly GITHUB_REPO="sata2500/habernexus"
 readonly GITHUB_RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main"
 readonly INSTALL_DIR="/opt/habernexus"
 readonly LOG_DIR="/var/log/habernexus"
-readonly BACKUP_DIR="/opt/habernexus-backups"
+readonly BACKUP_DIR="/var/backups/habernexus"
 readonly MIN_MEMORY_MB=1024
 readonly MIN_DISK_GB=10
 
@@ -438,6 +438,9 @@ DRY_RUN=false
 UNATTENDED=false
 USE_CLOUDFLARE=false
 CLOUDFLARE_TUNNEL_TOKEN=""
+BACKUP_ONLY=false
+RESTORE_BACKUP=""
+LIST_BACKUPS=false
 
 collect_configuration_interactive() {
     step "3/7" "Yapılandırma Bilgileri Toplanıyor"
@@ -548,6 +551,134 @@ finalize_configuration() {
 # INSTALLATION
 # =============================================================================
 
+# Veritabanı yedekleme fonksiyonu
+backup_database() {
+    local backup_path="$1"
+    
+    # PostgreSQL container'ının çalışıp çalışmadığını kontrol et
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'postgres\|habernexus.*db'; then
+        info "Veritabanı yedekleniyor..."
+        
+        # Container adını bul
+        local db_container
+        db_container=$(docker ps --format '{{.Names}}' | grep -E 'postgres|habernexus.*db' | head -1)
+        
+        if [[ -n "$db_container" ]]; then
+            # .env dosyasından veritabanı bilgilerini oku
+            local db_name="habernexus"
+            local db_user="habernexus_user"
+            
+            if [[ -f "$INSTALL_DIR/.env" ]]; then
+                db_name=$(grep -E '^DB_NAME=' "$INSTALL_DIR/.env" | cut -d'=' -f2 || echo "habernexus")
+                db_user=$(grep -E '^DB_USER=' "$INSTALL_DIR/.env" | cut -d'=' -f2 || echo "habernexus_user")
+            fi
+            
+            # pg_dump ile yedek al
+            if docker exec "$db_container" pg_dump -U "$db_user" "$db_name" > "${backup_path}/database.sql" 2>/dev/null; then
+                success "Veritabanı yedeği alındı: ${backup_path}/database.sql"
+                
+                # Yedek boyutunu göster
+                local backup_size
+                backup_size=$(du -h "${backup_path}/database.sql" 2>/dev/null | cut -f1)
+                info "Yedek boyutu: $backup_size"
+            else
+                warning "Veritabanı yedeği alınamadı (container çalışmıyor olabilir)"
+            fi
+        fi
+    else
+        info "Veritabanı container'ı çalışmıyor, yedekleme atlanıyor"
+    fi
+    
+    # .env dosyasını da yedekle (hassas bilgiler içerir)
+    if [[ -f "$INSTALL_DIR/.env" ]]; then
+        cp "$INSTALL_DIR/.env" "${backup_path}/.env.backup"
+        success "Yapılandırma dosyası yedeklendi: ${backup_path}/.env.backup"
+    fi
+}
+
+# Veritabanı geri yükleme fonksiyonu
+restore_database() {
+    local backup_path="$1"
+    
+    if [[ ! -f "${backup_path}/database.sql" ]]; then
+        error "Veritabanı yedeği bulunamadı: ${backup_path}/database.sql"
+        return 1
+    fi
+    
+    # PostgreSQL container'ının çalışıp çalışmadığını kontrol et
+    local db_container
+    db_container=$(docker ps --format '{{.Names}}' | grep -E 'postgres|habernexus.*db' | head -1)
+    
+    if [[ -z "$db_container" ]]; then
+        error "Veritabanı container'ı çalışmıyor!"
+        error "Lütfen önce servisleri başlatın: docker compose up -d"
+        return 1
+    fi
+    
+    local db_name="habernexus"
+    local db_user="habernexus_user"
+    
+    if [[ -f "$INSTALL_DIR/.env" ]]; then
+        db_name=$(grep -E '^DB_NAME=' "$INSTALL_DIR/.env" | cut -d'=' -f2 || echo "habernexus")
+        db_user=$(grep -E '^DB_USER=' "$INSTALL_DIR/.env" | cut -d'=' -f2 || echo "habernexus_user")
+    fi
+    
+    info "Veritabanı geri yükleniyor..."
+    
+    # Veritabanını geri yükle
+    if cat "${backup_path}/database.sql" | docker exec -i "$db_container" psql -U "$db_user" "$db_name" > /dev/null 2>&1; then
+        success "Veritabanı başarıyla geri yüklendi!"
+        return 0
+    else
+        error "Veritabanı geri yüklenemedi!"
+        return 1
+    fi
+}
+
+# Mevcut yedekleri listele
+list_backups() {
+    if [[ ! -d "$BACKUP_DIR" ]]; then
+        info "Henüz hiç yedek alınmamış."
+        return 0
+    fi
+    
+    echo ""
+    echo -e "${BOLD}Mevcut Yedekler:${NC}"
+    echo -e "${DIM}$(printf '%.0s─' {1..60})${NC}"
+    
+    local count=0
+    for backup in "$BACKUP_DIR"/backup_*; do
+        if [[ -d "$backup" ]]; then
+            local backup_name
+            backup_name=$(basename "$backup")
+            local backup_date
+            backup_date=$(echo "$backup_name" | sed 's/backup_//' | sed 's/_/ /')
+            
+            local has_db="Hayır"
+            [[ -f "${backup}/database.sql" ]] && has_db="Evet"
+            
+            local has_env="Hayır"
+            [[ -f "${backup}/.env.backup" ]] && has_env="Evet"
+            
+            echo -e "  ${CYAN}$backup_name${NC}"
+            echo -e "    Tarih: $backup_date"
+            echo -e "    Veritabanı: $has_db"
+            echo -e "    Yapılandırma: $has_env"
+            echo ""
+            ((count++))
+        fi
+    done
+    
+    if [[ $count -eq 0 ]]; then
+        info "Henüz hiç yedek alınmamış."
+    else
+        info "Toplam $count yedek bulundu."
+        echo ""
+        echo -e "${YELLOW}Geri yüklemek için:${NC}"
+        echo "  bash get-habernexus.sh --restore backup_YYYYMMDD_HHMMSS"
+    fi
+}
+
 clone_repository() {
     step "4/7" "Proje Dosyaları İndiriliyor"
     
@@ -560,24 +691,29 @@ clone_repository() {
     if [[ -d "$INSTALL_DIR" ]]; then
         warning "Mevcut kurulum bulundu: $INSTALL_DIR"
         
-        # Backup oluştur
+        # Backup dizinini oluştur
         mkdir -p "$BACKUP_DIR"
         local backup_path="${BACKUP_DIR}/backup_${TIMESTAMP}"
+        mkdir -p "$backup_path"
         
-        info "Mevcut kurulum yedekleniyor: $backup_path"
+        info "Yedekleme dizini: $backup_path"
         
-        # Docker container'ları durdur
+        # Önce veritabanını yedekle (container'lar çalışırken)
+        backup_database "$backup_path"
+        
+        # Docker container'ları durdur (volume'ları silmeden)
         if [[ -f "$INSTALL_DIR/docker-compose.yml" ]] || [[ -f "$INSTALL_DIR/docker-compose.prod.yml" ]]; then
+            info "Docker servisleri durduruluyor..."
             cd "$INSTALL_DIR"
-            docker compose down -v --remove-orphans 2>/dev/null || true
-            docker compose -f docker-compose.prod.yml down -v --remove-orphans 2>/dev/null || true
+            docker compose down --remove-orphans 2>/dev/null || true
+            docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
         fi
         
-        # Yedekle
-        cp -r "$INSTALL_DIR" "$backup_path" 2>/dev/null || true
+        # Eski kurulum dizinini temizle
+        info "Eski kurulum dizini temizleniyor..."
         rm -rf "$INSTALL_DIR"
         
-        success "Yedekleme tamamlandı"
+        success "Yedekleme tamamlandı: $backup_path"
     fi
     
     # Repo'yu klonla
@@ -852,6 +988,9 @@ ${BOLD}Seçenekler:${NC}
   --quick               Varsayılan değerlerle hızlı kurulum
   --dry-run             Simülasyon modu (kurulum yapmaz)
   --unattended          Etkileşimsiz mod (CI/CD için)
+  --backup              Sadece veritabanı yedeği al
+  --restore BACKUP      Belirtilen yedekten geri yükle
+  --list-backups        Mevcut yedekleri listele
   --help, -h            Bu yardım mesajını göster
   --version, -v         Versiyon bilgisini göster
 
@@ -907,6 +1046,18 @@ parse_arguments() {
                 UNATTENDED=true
                 shift
                 ;;
+            --backup)
+                BACKUP_ONLY=true
+                shift
+                ;;
+            --restore)
+                RESTORE_BACKUP="$2"
+                shift 2
+                ;;
+            --list-backups)
+                LIST_BACKUPS=true
+                shift
+                ;;
             --help|-h)
                 show_help
                 exit 0
@@ -941,6 +1092,57 @@ main() {
     # Logging başlat
     init_logging
     log "INFO" "HaberNexus Installer v${SCRIPT_VERSION} başlatıldı"
+    
+    # Yedek listeleme modu
+    if [[ "$LIST_BACKUPS" == true ]]; then
+        list_backups
+        exit 0
+    fi
+    
+    # Sadece yedekleme modu
+    if [[ "$BACKUP_ONLY" == true ]]; then
+        if [[ ! -d "$INSTALL_DIR" ]]; then
+            fatal "Kurulum bulunamadı: $INSTALL_DIR"
+        fi
+        
+        mkdir -p "$BACKUP_DIR"
+        local backup_path="${BACKUP_DIR}/backup_${TIMESTAMP}"
+        mkdir -p "$backup_path"
+        
+        step "1/1" "Veritabanı Yedekleniyor"
+        backup_database "$backup_path"
+        
+        echo ""
+        success "Yedekleme tamamlandı: $backup_path"
+        exit 0
+    fi
+    
+    # Geri yükleme modu
+    if [[ -n "$RESTORE_BACKUP" ]]; then
+        local restore_path="${BACKUP_DIR}/${RESTORE_BACKUP}"
+        
+        if [[ ! -d "$restore_path" ]]; then
+            fatal "Yedek bulunamadı: $restore_path"
+        fi
+        
+        step "1/1" "Veritabanı Geri Yükleniyor"
+        
+        # .env dosyasını geri yükle (eğer varsa ve istenirse)
+        if [[ -f "${restore_path}/.env.backup" ]]; then
+            info ".env yedeği bulundu"
+            if [[ -e /dev/tty ]]; then
+                echo -n ".env dosyasını da geri yüklemek ister misiniz? [e/H]: " > /dev/tty
+                read -r restore_env < /dev/tty
+                if [[ "$restore_env" =~ ^[eEyY]$ ]]; then
+                    cp "${restore_path}/.env.backup" "$INSTALL_DIR/.env"
+                    success ".env dosyası geri yüklendi"
+                fi
+            fi
+        fi
+        
+        restore_database "$restore_path"
+        exit $?
+    fi
     
     # Dry-run modu bildirimi
     if [[ "$DRY_RUN" == true ]]; then
