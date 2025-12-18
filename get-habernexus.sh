@@ -185,6 +185,25 @@ can_use_tui() {
     command_exists whiptail
 }
 
+# /dev/tty üzerinden kullanıcı girdisi al (pipe ile çalıştırıldığında bile çalışır)
+read_input() {
+    local prompt="$1"
+    local default="$2"
+    local input=""
+    
+    # /dev/tty mevcut mu kontrol et
+    if [[ -e /dev/tty ]]; then
+        echo -n "$prompt" > /dev/tty
+        read -r input < /dev/tty
+    else
+        # /dev/tty yoksa varsayılanı kullan
+        input=""
+    fi
+    
+    # Boş ise varsayılanı döndür
+    echo "${input:-$default}"
+}
+
 get_distribution() {
     local lsb_dist=""
     
@@ -488,20 +507,16 @@ collect_config_tui() {
 collect_config_cli() {
     info "Komut satırı yapılandırması kullanılıyor..."
     
-    # Eğer parametreler verilmemişse varsayılanları kullan
+    # Eğer parametreler verilmemişse kullanıcıdan al
     if [[ -z "$DOMAIN" || "$DOMAIN" == "localhost" ]]; then
         if [[ "$UNATTENDED" != true ]]; then
-            echo -n "Domain adı [localhost]: "
-            read -r input
-            DOMAIN="${input:-localhost}"
+            DOMAIN=$(read_input "Domain adı [localhost]: " "localhost")
         fi
     fi
     
     if [[ -z "$ADMIN_EMAIL" ]]; then
         if [[ "$UNATTENDED" != true ]]; then
-            echo -n "Admin e-posta [admin@$DOMAIN]: "
-            read -r input
-            ADMIN_EMAIL="${input:-admin@$DOMAIN}"
+            ADMIN_EMAIL=$(read_input "Admin e-posta [admin@$DOMAIN]: " "admin@$DOMAIN")
         else
             ADMIN_EMAIL="admin@$DOMAIN"
         fi
