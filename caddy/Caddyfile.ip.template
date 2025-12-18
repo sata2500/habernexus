@@ -1,11 +1,11 @@
 # =============================================================================
-# HaberNexus Caddy Configuration
-# This file is auto-generated during installation
+# HaberNexus Caddy Configuration - IP Address Mode
+# Use this when domain is not configured yet
 # =============================================================================
 
 {
-    # Global options
-    email {ADMIN_EMAIL}
+    # Global options - disable automatic HTTPS for IP addresses
+    auto_https off
     
     # Logging
     log {
@@ -15,8 +15,8 @@
     }
 }
 
-# Main domain configuration
-{DOMAIN} {
+# HTTP server for IP address access
+:80 {
     # Encode responses with gzip
     encode gzip
 
@@ -43,7 +43,7 @@
             # Headers
             header_up X-Real-IP {remote_host}
             header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
+            header_up X-Forwarded-Proto http
             header_up X-Forwarded-Host {host}
             
             # Health check
@@ -55,7 +55,6 @@
 
     # Security headers
     header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "SAMEORIGIN"
         X-XSS-Protection "1; mode=block"
@@ -68,9 +67,4 @@
         output stdout
         format console
     }
-}
-
-# WWW subdomain redirect to main domain
-www.{DOMAIN} {
-    redir https://{DOMAIN}{uri} permanent
 }

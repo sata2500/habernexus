@@ -37,7 +37,7 @@ set -e
 # GLOBAL CONSTANTS
 # =============================================================================
 
-readonly SCRIPT_VERSION="10.7.0"
+readonly SCRIPT_VERSION="10.8.0"
 readonly SCRIPT_NAME="HaberNexus Installer"
 readonly GITHUB_REPO="sata2500/habernexus"
 readonly GITHUB_RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main"
@@ -488,7 +488,7 @@ collect_config_tui() {
         USE_CLOUDFLARE=true
         
         whiptail --title "Cloudflare Token Rehberi" --msgbox \
-            "Cloudflare Tunnel Token Nasıl Alınır:\n\n1. https://one.dash.cloudflare.com adresine gidin\n2. Networks > Tunnels bölümüne gidin\n3. 'Create a Tunnel' > 'Cloudflared' seçin\n4. Tunnel'a isim verin (örn: habernexus)\n5. Token'ı kopyalayın (eyJhIjoi... ile başlar)\n6. Public Hostnames'e domain ekleyin:\n   - Service: http://nginx:80" \
+            "Cloudflare Tunnel Token Nasıl Alınır:\n\n1. https://one.dash.cloudflare.com adresine gidin\n2. Networks > Tunnels bölümüne gidin\n3. 'Create a Tunnel' > 'Cloudflared' seçin\n4. Tunnel'a isim verin (örn: habernexus)\n5. Token'ı kopyalayın (eyJhIjoi... ile başlar)\n6. Public Hostnames'e domain ekleyin:\n   - Service: http://caddy:80" \
             18 70
         
         CLOUDFLARE_TUNNEL_TOKEN=$(whiptail --title "Cloudflare Token" --inputbox \
@@ -892,6 +892,55 @@ ENVEOF
     chmod 600 .env
     success ".env dosyası oluşturuldu"
     
+    # Caddyfile oluştur
+    info "Caddy yapılandırması oluşturuluyor..."
+    mkdir -p "$INSTALL_DIR/caddy"
+    
+    # Domain localhost veya IP adresi ise IP template kullan
+    if [[ "$DOMAIN" == "localhost" || "$DOMAIN" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        # IP adresi modu - HTTPS olmadan
+        cp "$INSTALL_DIR/caddy/Caddyfile.ip.template" "$INSTALL_DIR/caddy/Caddyfile"
+        success "Caddy yapılandırması oluşturuldu (IP modu - HTTP)"
+    else
+        # Domain modu - Otomatik HTTPS
+        if [[ -f "$INSTALL_DIR/caddy/Caddyfile.template" ]]; then
+            sed -e "s/{DOMAIN}/$DOMAIN/g" \
+                -e "s/{ADMIN_EMAIL}/$ADMIN_EMAIL/g" \
+                "$INSTALL_DIR/caddy/Caddyfile.template" > "$INSTALL_DIR/caddy/Caddyfile"
+            success "Caddy yapılandırması oluşturuldu (Domain modu - HTTPS)"
+        else
+            # Template yoksa basit Caddyfile oluştur
+            cat > "$INSTALL_DIR/caddy/Caddyfile" << CADDYEOF
+{
+    email $ADMIN_EMAIL
+}
+
+$DOMAIN {
+    encode gzip
+    
+    handle_path /static/* {
+        root * /app/staticfiles
+        file_server
+    }
+    
+    handle_path /media/* {
+        root * /app/media
+        file_server
+    }
+    
+    handle {
+        reverse_proxy web:8000
+    }
+}
+
+www.$DOMAIN {
+    redir https://$DOMAIN{uri} permanent
+}
+CADDYEOF
+            success "Caddy yapılandırması oluşturuldu"
+        fi
+    fi
+    
     # Cloudflare override dosyası
     if [[ "$USE_CLOUDFLARE" == true ]] && [[ -n "$CLOUDFLARE_TUNNEL_TOKEN" ]]; then
         cat > docker-compose.override.yml << 'OVERRIDEEOF'
@@ -906,7 +955,7 @@ services:
     networks:
       - habernexus_network
     depends_on:
-      - nginx
+      - caddy
 OVERRIDEEOF
         success "Cloudflare Tunnel yapılandırması oluşturuldu"
     fi

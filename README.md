@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![HaberNexus Logo](https://img.shields.io/badge/HaberNexus-v10.7-blue?style=for-the-badge&logo=newspaper)
+![HaberNexus Logo](https://img.shields.io/badge/HaberNexus-v10.8-blue?style=for-the-badge&logo=newspaper)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green?style=for-the-badge&logo=python)](https://python.org)
 [![Django](https://img.shields.io/badge/Django-5.1-green?style=for-the-badge&logo=django)](https://djangoproject.com)
@@ -18,14 +18,19 @@
 
 ---
 
-## ✨ v10.7 Yenilikleri
+## ✨ v10.8 Yenilikleri
+
+### 🚀 Caddy Reverse Proxy
+- **Nginx'ten Caddy'ye Geçiş:** Daha basit yapılandırma ve otomatik HTTPS
+- **Otomatik SSL Sertifikası:** Let's Encrypt ile otomatik sertifika yönetimi
+- **IP Modu Desteği:** Domain olmadan IP adresi ile çalışabilme
+- **Gelişmiş Güvenlik:** Modern güvenlik başlıkları ve gzip sıkıştırma
 
 ### 🔄 Gelişmiş Kurulum Sistemi
-- **Tam Sıfırlama:** `--reset` parametresi ile tüm eski kurulumu temizleme (Docker, Caddy, Cloudflare vs.)
+- **Tam Sıfırlama:** `--reset` parametresi ile tüm eski kurulumu temizleme
 - **Akıllı Yedekleme:** Sadece veritabanı ve yapılandırma dosyası yedekleniyor
 - **Güvenli Yedek Konumu:** Yedekler `/var/backups/habernexus` dizininde saklanıyor
 - **Kolay Geri Yükleme:** `--restore` parametresi ile tek komutla geri yükleme
-- **Pipe Desteği:** `curl | bash` ile çalıştırıldığında bile interaktif girdi alabilme
 
 ### 🤖 Google Gen AI SDK Güncellemeleri
 - **Gelişmiş ThinkingConfig Desteği:** Gemini 2.5 ve 3 serisi için optimize edilmiş

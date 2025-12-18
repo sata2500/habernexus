@@ -1,4 +1,12 @@
+# =============================================================================
+# HaberNexus v10.8 - Production Docker Compose Configuration
+# Reverse Proxy: Caddy (Automatic HTTPS)
+# =============================================================================
+
 services:
+  # ============================================================================
+  # DATABASE
+  # ============================================================================
   postgres:
     image: postgres:16-alpine
     container_name: habernexus-postgres
@@ -6,10 +14,9 @@ services:
       POSTGRES_DB: ${DB_NAME:-habernexus}
       POSTGRES_USER: ${DB_USER:-habernexus_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      TZ: Europe/Istanbul
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     restart: unless-stopped
     networks:
       - habernexus-network
@@ -19,11 +26,15 @@ services:
       timeout: 5s
       retries: 30
 
+  # ============================================================================
+  # CACHE & MESSAGE BROKER
+  # ============================================================================
   redis:
     image: redis:7-alpine
     container_name: habernexus-redis
-    ports:
-      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
     restart: unless-stopped
     networks:
       - habernexus-network
@@ -33,6 +44,9 @@ services:
       timeout: 5s
       retries: 30
 
+  # ============================================================================
+  # DJANGO APPLICATION
+  # ============================================================================
   web:
     build:
       context: .
@@ -52,11 +66,12 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
+      TZ: Europe/Istanbul
     volumes:
-      - ./staticfiles:/app/staticfiles
-      - ./media:/app/media
-    ports:
-      - "8000:8000"
+      - static_files:/app/staticfiles
+      - media_files:/app/media
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,7 +80,16 @@ services:
     restart: unless-stopped
     networks:
       - habernexus-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
+  # ============================================================================
+  # CELERY WORKER
+  # ============================================================================
   celery_worker:
     build:
       context: .
@@ -85,6 +109,7 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
+      TZ: Europe/Istanbul
     depends_on:
       - postgres
       - redis
@@ -93,6 +118,9 @@ services:
     networks:
       - habernexus-network
 
+  # ============================================================================
+  # CELERY BEAT (SCHEDULER)
+  # ============================================================================
   celery_beat:
     build:
       context: .
@@ -112,6 +140,7 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
+      TZ: Europe/Istanbul
     depends_on:
       - postgres
       - redis
@@ -120,28 +149,53 @@ services:
     networks:
       - habernexus-network
 
-  nginx:
-    image: nginx:alpine
-    container_name: habernexus-nginx
+  # ============================================================================
+  # CADDY - REVERSE PROXY WITH AUTOMATIC HTTPS
+  # ============================================================================
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: habernexus-caddy
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./staticfiles:/app/staticfiles:ro
-      - ./media:/app/media:ro
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - static_files:/app/staticfiles:ro
+      - media_files:/app/media:ro
     depends_on:
       - web
     restart: unless-stopped
     networks:
       - habernexus-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
+# ============================================================================
+# VOLUMES
+# ============================================================================
 volumes:
   postgres_data:
     driver: local
+  redis_data:
+    driver: local
+  static_files:
+    driver: local
+  media_files:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
 
+# ============================================================================
+# NETWORKS
+# ============================================================================
 networks:
   habernexus-network:
     driver: bridge
