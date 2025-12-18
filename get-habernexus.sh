@@ -582,7 +582,19 @@ clone_repository() {
     
     # Repo'yu klonla
     info "GitHub'dan proje indiriliyor..."
-    git clone --depth 1 "https://github.com/${GITHUB_REPO}.git" "$INSTALL_DIR" > /dev/null 2>&1
+    
+    # Git clone komutunu çalıştır ve hata durumunda yakala
+    if ! git clone --depth 1 "https://github.com/${GITHUB_REPO}.git" "$INSTALL_DIR" 2>&1; then
+        error "GitHub'dan proje indirilemedi!"
+        error "Lütfen internet bağlantınızı ve GitHub erişimini kontrol edin."
+        error "Manuel olarak deneyin: git clone https://github.com/${GITHUB_REPO}.git $INSTALL_DIR"
+        exit 1
+    fi
+    
+    # Klonlama başarılı mı kontrol et
+    if [[ ! -d "$INSTALL_DIR" ]]; then
+        fatal "Proje dizini oluşturulamadı: $INSTALL_DIR"
+    fi
     
     success "Proje dosyaları indirildi: $INSTALL_DIR"
 }
