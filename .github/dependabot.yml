@@ -1,0 +1,82 @@
+# =============================================================================
+# HaberNexus - Dependabot Configuration
+# Automatically checks for dependency updates
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
+version: 2
+updates:
+  # Python dependencies (pip)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "chore(deps)"
+    reviewers:
+      - "sata2500"
+    assignees:
+      - "sata2500"
+    groups:
+      django:
+        patterns:
+          - "django*"
+          - "djangorestframework*"
+      celery:
+        patterns:
+          - "celery*"
+          - "redis*"
+      testing:
+        patterns:
+          - "pytest*"
+          - "coverage*"
+      security:
+        patterns:
+          - "bandit*"
+          - "safety*"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"
+    reviewers:
+      - "sata2500"
+    assignees:
+      - "sata2500"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
+    reviewers:
+      - "sata2500"
+    assignees:
+      - "sata2500"
