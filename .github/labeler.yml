@@ -1,0 +1,133 @@
+# =============================================================================
+# HaberNexus - PR Labeler Configuration
+# Defines rules for automatic PR labeling
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
+# Documentation
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '*.md'
+          - 'README.md'
+          - 'CHANGELOG.md'
+          - 'CONTRIBUTING.md'
+          - 'SECURITY.md'
+
+# Python / Django
+python:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.py'
+          - 'requirements.txt'
+          - 'pyproject.toml'
+          - 'setup.py'
+          - 'setup.cfg'
+
+# API
+api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'api/**'
+          - '**/serializers.py'
+          - '**/views.py'
+          - '**/urls.py'
+
+# News / Core
+news:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'news/**'
+          - 'core/**'
+
+# Docker
+docker:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'Dockerfile'
+          - 'docker-compose*.yml'
+          - '.dockerignore'
+
+# CI/CD
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+          - '.github/actions/**'
+
+# Configuration
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'config/**'
+          - '*.yml'
+          - '*.yaml'
+          - '*.toml'
+          - '*.ini'
+          - '.env*'
+
+# Tests
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'
+          - '**/tests/**'
+          - '**/test_*.py'
+          - '**/*_test.py'
+          - 'conftest.py'
+          - 'pytest.ini'
+
+# Templates / Frontend
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'templates/**'
+          - 'static/**'
+          - '**/*.html'
+          - '**/*.css'
+          - '**/*.js'
+
+# Scripts
+scripts:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'scripts/**'
+          - '*.sh'
+          - 'get-habernexus.sh'
+          - 'install*.sh'
+
+# Security
+security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'SECURITY.md'
+          - '.bandit'
+          - '**/security*.py'
+          - '**/permissions.py'
+
+# Database / Migrations
+database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/migrations/**'
+          - '**/models.py'
+          - '**/models_*.py'
+
+# Nginx / Server
+server:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'nginx/**'
+          - 'caddy/**'
+          - 'cloudflared/**'
+
+# Dependencies
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'requirements.txt'
+          - 'pyproject.toml'
+          - 'package.json'
+          - 'package-lock.json'

@@ -1,0 +1,188 @@
+# =============================================================================
+# HaberNexus - Version Sync & Documentation Workflow
+# Automatically syncs version across all files and archives old docs
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
+name: Version Sync & Docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'get-habernexus.sh'
+      - 'pyproject.toml'
+      - 'VERSION'
+  workflow_dispatch:
+    inputs:
+      force_sync:
+        description: 'Force version sync across all files'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  version-sync:
+    name: Sync Version Across Files
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      changed: ${{ steps.check-changes.outputs.changed }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get current version
+        id: get-version
+        run: |
+          # Try to get version from multiple sources
+          VERSION=""
+          
+          # From get-habernexus.sh
+          if [ -f "get-habernexus.sh" ]; then
+            VERSION=$(grep -oP 'SCRIPT_VERSION="\K[^"]+' get-habernexus.sh || echo "")
+          fi
+          
+          # From pyproject.toml if not found
+          if [ -z "$VERSION" ] && [ -f "pyproject.toml" ]; then
+            VERSION=$(grep -oP '^version = "\K[^"]+' pyproject.toml || echo "")
+          fi
+          
+          # From VERSION file if not found
+          if [ -z "$VERSION" ] && [ -f "VERSION" ]; then
+            VERSION=$(cat VERSION | tr -d '[:space:]')
+          fi
+          
+          if [ -z "$VERSION" ]; then
+            echo "No version found"
+            exit 1
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+
+      - name: Sync version in README.md
+        run: |
+          VERSION="${{ steps.get-version.outputs.version }}"
+          
+          # Update version badge in README
+          if [ -f "README.md" ]; then
+            sed -i "s/HaberNexus-v[0-9.]*-blue/HaberNexus-v${VERSION}-blue/g" README.md
+            sed -i "s/## ✨ v[0-9.]* Yenilikleri/## ✨ v${VERSION} Yenilikleri/g" README.md
+          fi
+
+      - name: Sync version in pyproject.toml
+        run: |
+          VERSION="${{ steps.get-version.outputs.version }}"
+          
+          if [ -f "pyproject.toml" ]; then
+            sed -i "s/^version = \"[^\"]*\"/version = \"${VERSION}\"/" pyproject.toml
+          fi
+
+      - name: Update CHANGELOG date
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          
+          if [ -f "CHANGELOG.md" ]; then
+            # Update unreleased section date if exists
+            sed -i "s/## \[Unreleased\]/## [Unreleased] - ${TODAY}/g" CHANGELOG.md
+          fi
+
+      - name: Check for changes
+        id: check-changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit version sync
+        if: steps.check-changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add -A
+          git commit -m "chore: sync version to v${{ steps.get-version.outputs.version }}
+
+          Automated version sync across:
+          - README.md badge
+          - pyproject.toml
+          - CHANGELOG.md date
+          
+          [skip ci]"
+          
+          git push
+
+  archive-old-docs:
+    name: Archive Old Documentation
+    runs-on: ubuntu-latest
+    needs: version-sync
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Archive old installation docs
+        run: |
+          # Create archive directory if not exists
+          mkdir -p docs/archive/installation
+          mkdir -p docs/archive/changelogs
+          
+          # Move old versioned installation docs to archive
+          for file in docs/INSTALLATION_v*.md docs/INSTALLATION_GUIDE_v*.md; do
+            if [ -f "$file" ]; then
+              # Keep only the latest 2 versions
+              BASENAME=$(basename "$file")
+              VERSION_NUM=$(echo "$BASENAME" | grep -oP 'v\K[0-9]+' || echo "0")
+              
+              # Archive if version is more than 2 behind current
+              CURRENT_MAJOR=$(echo "${{ needs.version-sync.outputs.version }}" | cut -d. -f1)
+              if [ "$VERSION_NUM" -lt "$((CURRENT_MAJOR - 1))" ]; then
+                mv "$file" "docs/archive/installation/"
+                echo "Archived: $file"
+              fi
+            fi
+          done
+
+      - name: Check for archive changes
+        id: check-archive
+        run: |
+          if [ -n "$(git status --porcelain docs/archive)" ]; then
+            echo "archived=true" >> $GITHUB_OUTPUT
+          else
+            echo "archived=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit archived docs
+        if: steps.check-archive.outputs.archived == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add docs/archive/
+          git commit -m "chore: archive old documentation
+
+          Moved outdated documentation to archive folder.
+          
+          [skip ci]"
+          
+          git push

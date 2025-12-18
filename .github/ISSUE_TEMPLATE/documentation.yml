@@ -1,0 +1,71 @@
+name: 📚 Documentation
+description: Dokümantasyon iyileştirmesi önerin / Suggest documentation improvement
+title: "[DOCS]: "
+labels: ["documentation"]
+assignees:
+  - sata2500
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Dokümantasyon geri bildirimi için teşekkürler!
+        Thanks for your documentation feedback!
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Tür / Type
+      description: Ne tür bir dokümantasyon değişikliği?
+      options:
+        - 📝 Yeni Dokümantasyon / New Documentation
+        - ✏️ Mevcut Dokümanı Güncelle / Update Existing
+        - 🐛 Hata Düzeltme / Fix Error
+        - 🌐 Çeviri / Translation
+    validations:
+      required: true
+
+  - type: dropdown
+    id: document
+    attributes:
+      label: İlgili Döküman / Related Document
+      description: Hangi dökümanla ilgili?
+      options:
+        - README.md
+        - docs/INSTALLATION.md
+        - docs/API.md
+        - docs/ARCHITECTURE.md
+        - docs/DEVELOPMENT.md
+        - docs/DEPLOYMENT.md
+        - docs/TROUBLESHOOTING.md
+        - docs/FAQ.md
+        - Wiki
+        - Diğer / Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Açıklama / Description
+      description: Değişikliği detaylı açıklayın
+      placeholder: |
+        Hangi bölümde ne değişmeli?
+        What should change in which section?
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Önerilen İçerik / Suggested Content
+      description: Varsa önerilen içeriği yazın
+      placeholder: Önerilen metin veya kod örneği...
+      render: markdown
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Katkı / Contribution
+      description: Bu değişikliği yapmak ister misiniz?
+      options:
+        - label: Bu değişiklik için PR açmak istiyorum

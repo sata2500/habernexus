@@ -1,0 +1,145 @@
+# =============================================================================
+# HaberNexus - Auto Issue on CI Failure
+# Automatically creates issues when CI/CD pipeline fails
+# Author: Salih TANRISEVEN
+# Updated: December 2025
+# =============================================================================
+
+name: Auto Issue on Failure
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline", "CI"]
+    types:
+      - completed
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  create-issue:
+    name: Create Issue on Failure
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get workflow run details
+        id: run-details
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "workflow_name=${{ github.event.workflow_run.name }}" >> $GITHUB_OUTPUT
+          echo "run_id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+          echo "run_url=${{ github.event.workflow_run.html_url }}" >> $GITHUB_OUTPUT
+          echo "head_sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          echo "head_branch=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+
+      - name: Check for existing issue
+        id: check-issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Search for existing open issue with same workflow
+          EXISTING=$(gh issue list \
+            --label "ci-failure" \
+            --state open \
+            --search "${{ github.event.workflow_run.name }} failed" \
+            --json number \
+            --jq '.[0].number // empty')
+          
+          if [ -n "$EXISTING" ]; then
+            echo "existing_issue=$EXISTING" >> $GITHUB_OUTPUT
+            echo "Found existing issue: #$EXISTING"
+          else
+            echo "existing_issue=" >> $GITHUB_OUTPUT
+            echo "No existing issue found"
+          fi
+
+      - name: Create new issue
+        if: steps.check-issue.outputs.existing_issue == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "🔴 CI Failure: ${{ github.event.workflow_run.name }}" \
+            --label "bug,ci-failure,automated" \
+            --assignee "sata2500" \
+            --body "## CI/CD Pipeline Hatası / CI/CD Pipeline Failure
+
+          ### Detaylar / Details
+
+          | Alan / Field | Değer / Value |
+          |--------------|---------------|
+          | **Workflow** | ${{ github.event.workflow_run.name }} |
+          | **Branch** | \`${{ github.event.workflow_run.head_branch }}\` |
+          | **Commit** | \`${{ github.event.workflow_run.head_sha }}\` |
+          | **Run ID** | ${{ github.event.workflow_run.id }} |
+          | **Tarih / Date** | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |
+
+          ### Bağlantılar / Links
+
+          - 🔗 [Workflow Run](${{ github.event.workflow_run.html_url }})
+          - 📝 [Commit](https://github.com/${{ github.repository }}/commit/${{ github.event.workflow_run.head_sha }})
+
+          ### Yapılacaklar / Action Items
+
+          - [ ] Hata loglarını incele / Review error logs
+          - [ ] Sorunu tespit et / Identify the issue
+          - [ ] Düzeltme yap / Apply fix
+          - [ ] CI'ı tekrar çalıştır / Re-run CI
+
+          ---
+          
+          > 🤖 Bu issue otomatik olarak oluşturuldu / This issue was automatically created
+          "
+
+      - name: Update existing issue
+        if: steps.check-issue.outputs.existing_issue != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment ${{ steps.check-issue.outputs.existing_issue }} \
+            --body "## 🔄 Yeni Hata / New Failure
+
+          CI/CD tekrar başarısız oldu / CI/CD failed again.
+
+          | Alan / Field | Değer / Value |
+          |--------------|---------------|
+          | **Run ID** | ${{ github.event.workflow_run.id }} |
+          | **Commit** | \`${{ github.event.workflow_run.head_sha }}\` |
+          | **Tarih / Date** | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |
+
+          🔗 [Workflow Run](${{ github.event.workflow_run.html_url }})
+          "
+
+  close-issue-on-success:
+    name: Close Issue on Success
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Close related issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Find and close CI failure issues for this workflow
+          ISSUES=$(gh issue list \
+            --repo ${{ github.repository }} \
+            --label "ci-failure" \
+            --state open \
+            --search "${{ github.event.workflow_run.name }}" \
+            --json number \
+            --jq '.[].number')
+          
+          for ISSUE in $ISSUES; do
+            gh issue close $ISSUE \
+              --repo ${{ github.repository }} \
+              --comment "✅ CI/CD başarılı oldu, issue kapatılıyor / CI/CD succeeded, closing issue.
+              
+              🔗 [Successful Run](${{ github.event.workflow_run.html_url }})"
+            echo "Closed issue #$ISSUE"
+          done

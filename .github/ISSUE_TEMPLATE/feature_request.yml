@@ -1,0 +1,99 @@
+name: ✨ Feature Request
+description: Yeni bir özellik önerin / Suggest a new feature
+title: "[FEATURE]: "
+labels: ["enhancement", "triage"]
+assignees:
+  - sata2500
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Özellik öneriniz için teşekkürler! Lütfen aşağıdaki formu doldurun.
+        Thanks for your feature suggestion! Please fill out the form below.
+
+  - type: checkboxes
+    id: existing-issue
+    attributes:
+      label: Mevcut Issue Kontrolü / Existing Issue Check
+      description: Bu özellik için mevcut bir issue olmadığını kontrol ettiniz mi?
+      options:
+        - label: Bu özellik için mevcut bir issue olmadığını doğruladım
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Problem Statement
+      description: Bu özellik hangi problemi çözecek?
+      placeholder: |
+        Şu anda ... yapmak istediğimde ... problemi yaşıyorum.
+        Currently when I try to ... I face the problem of ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Önerilen Çözüm / Proposed Solution
+      description: İstediğiniz çözümü açıklayın
+      placeholder: |
+        ... özelliğinin eklenmesini istiyorum.
+        I would like the ... feature to be added.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatifler / Alternatives Considered
+      description: Düşündüğünüz alternatif çözümler var mı?
+      placeholder: Alternatif çözümleri açıklayın
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Kategori / Category
+      description: Bu özellik hangi kategoriye giriyor?
+      options:
+        - 🤖 AI / Yapay Zeka
+        - 📰 Haber Agregasyonu / News Aggregation
+        - 🔌 API
+        - 📧 Newsletter / Bülten
+        - 🔒 Güvenlik / Security
+        - 🎨 UI/UX
+        - 📊 Monitoring / İzleme
+        - 🐳 Docker / Deployment
+        - 📚 Dokümantasyon / Documentation
+        - ⚡ Performans / Performance
+        - 🔧 Diğer / Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Öncelik / Priority
+      description: Bu özelliğin önceliği sizce ne olmalı?
+      options:
+        - 🔴 Yüksek / High - Kritik özellik
+        - 🟡 Orta / Medium - Faydalı olur
+        - 🟢 Düşük / Low - Olsa iyi olur
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Katkı / Contribution
+      description: Bu özelliği geliştirmeye katkıda bulunmak ister misiniz?
+      options:
+        - label: Bu özelliği geliştirmek için PR açmak istiyorum
+        - label: Tasarım/dokümantasyon konusunda yardımcı olabilirim
+        - label: Test etmeye yardımcı olabilirim
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Ek Bilgiler / Additional Context
+      description: Başka eklemek istediğiniz bilgi, mockup veya örnek var mı?
+      placeholder: Ek bilgiler, ekran görüntüleri, mockup'lar...

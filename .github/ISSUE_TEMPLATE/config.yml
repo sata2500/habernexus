@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/sata2500/habernexus/discussions
+    about: Sorularınız için Discussions kullanın / Use Discussions for questions
+  - name: 📖 Documentation
+    url: https://github.com/sata2500/habernexus/wiki
+    about: Dokümantasyon için Wiki'yi ziyaret edin / Visit Wiki for documentation
+  - name: 🔒 Security Vulnerability
+    url: https://github.com/sata2500/habernexus/security/policy
+    about: Güvenlik açıkları için SECURITY.md dosyasını inceleyin / Check SECURITY.md for vulnerabilities

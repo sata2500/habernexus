@@ -1,0 +1,136 @@
+name: 🐛 Bug Report
+description: Bir hata bildirin / Report a bug
+title: "[BUG]: "
+labels: ["bug", "triage"]
+assignees:
+  - sata2500
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hata bildirdiğiniz için teşekkürler! Lütfen aşağıdaki formu doldurun.
+        Thanks for reporting a bug! Please fill out the form below.
+
+  - type: checkboxes
+    id: existing-issue
+    attributes:
+      label: Mevcut Issue Kontrolü / Existing Issue Check
+      description: Bu hatayı bildirmeden önce mevcut issue'ları kontrol ettiniz mi?
+      options:
+        - label: Bu hata için mevcut bir issue olmadığını doğruladım
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Hata Açıklaması / Bug Description
+      description: Hatayı açık ve net bir şekilde tanımlayın
+      placeholder: Hata ne zaman ve nasıl oluşuyor?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Yeniden Üretme Adımları / Steps to Reproduce
+      description: Hatayı yeniden üretmek için adımları listeleyin
+      placeholder: |
+        1. '...' sayfasına gidin
+        2. '...' butonuna tıklayın
+        3. Aşağı kaydırın
+        4. Hatayı görün
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Beklenen Davranış / Expected Behavior
+      description: Ne olmasını bekliyordunuz?
+      placeholder: Beklenen davranışı açıklayın
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Gerçekleşen Davranış / Actual Behavior
+      description: Gerçekte ne oldu?
+      placeholder: Gerçekleşen davranışı açıklayın
+    validations:
+      required: true
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: HaberNexus Sürümü / Version
+      description: Hangi sürümü kullanıyorsunuz?
+      options:
+        - v10.7.x
+        - v10.6.x
+        - v10.5.x
+        - v10.4.x
+        - v10.3.x
+        - v10.2.x
+        - v10.1.x
+        - v10.0.x
+        - v9.x
+        - Diğer / Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Kurulum Türü / Deployment Type
+      description: Nasıl kurulum yaptınız?
+      options:
+        - Docker Compose
+        - Manuel Kurulum
+        - get-habernexus.sh Script
+        - Diğer / Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: İşletim Sistemi / Operating System
+      description: Hangi işletim sistemini kullanıyorsunuz?
+      options:
+        - Ubuntu 24.04
+        - Ubuntu 22.04
+        - Ubuntu 20.04
+        - Debian 12
+        - Debian 11
+        - CentOS / RHEL
+        - Diğer Linux
+        - macOS
+        - Windows (WSL)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log Çıktıları / Logs
+      description: İlgili log çıktılarını yapıştırın
+      placeholder: |
+        docker compose logs app
+        veya
+        journalctl -u habernexus
+      render: shell
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Ekran Görüntüleri / Screenshots
+      description: Varsa ekran görüntüleri ekleyin
+      placeholder: Görüntüleri buraya sürükleyin veya yapıştırın
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Ek Bilgiler / Additional Context
+      description: Başka eklemek istediğiniz bilgi var mı?
+      placeholder: Ek bilgiler...
