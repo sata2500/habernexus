@@ -1,222 +1,144 @@
-# HaberNexus
+# HaberNexus: Akıllı Haber Agregasyon Platformu
 
 <div align="center">
 
-![HaberNexus Logo](https://img.shields.io/badge/HaberNexus-v10.8.0-blue?style=for-the-badge&logo=newspaper)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-green?style=for-the-badge&logo=python)](https://python.org)
+[![Versiyon](https://img.shields.io/badge/versiyon-11.0.0-blue.svg?style=for-the-badge)](https://github.com/sata2500/habernexus)
+[![Lisans](https://img.shields.io/badge/lisans-MIT-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Geliştirici](https://img.shields.io/badge/geliştirici-Salih%20TANRISEVEN-orange.svg?style=for-the-badge)](https://github.com/sata2500)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-green?style=for-the-badge&logo=python)](https://python.org)
 [![Django](https://img.shields.io/badge/Django-5.1-green?style=for-the-badge&logo=django)](https://djangoproject.com)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker)](https://docker.com)
-[![CI/CD](https://img.shields.io/github/actions/workflow/status/sata2500/habernexus/ci.yml?style=for-the-badge&label=CI%2FCD)](https://github.com/sata2500/habernexus/actions)
-[![Release](https://img.shields.io/github/v/release/sata2500/habernexus?style=for-the-badge)](https://github.com/sata2500/habernexus/releases)
 
 **Modern, AI-Destekli, Tam Otomatik Haber Agregasyon Platformu**
 
-[Hızlı Kurulum](#-hızlı-kurulum) • [Özellikler](#-özellikler) • [API](#-rest-api) • [Dökümanlar](#-dökümanlar) • [Destek](#-destek)
+[Hızlı Kurulum](#-hızlı-başlangıç-tek-komutla-kurulum) • [Özellikler](#-temel-özellikler) • [Yönetim](#️-gelişmiş-kurulum-ve-yönetim) • [Dökümanlar](https://github.com/sata2500/habernexus/wiki)
 
 </div>
 
 ---
 
-## ✨ v10.8.0 Yenilikleri
+**HaberNexus**, modern teknolojilerle geliştirilmiş, Django tabanlı, Docker ile güçlendirilmiş ve yapay zeka entegrasyonuna sahip bir haber agregasyon platformudur. Bu proje, haberleri otomatik olarak toplayan, kategorize eden ve kullanıcılara sunan akıllı bir sistemdir.
 
-### 🚀 Caddy Reverse Proxy
-- **Nginx'ten Caddy'ye Geçiş:** Daha basit yapılandırma ve otomatik HTTPS
-- **Otomatik SSL Sertifikası:** Let's Encrypt ile otomatik sertifika yönetimi
-- **IP Modu Desteği:** Domain olmadan IP adresi ile çalışabilme
-- **Gelişmiş Güvenlik:** Modern güvenlik başlıkları ve gzip sıkıştırma
+## ✨ Temel Özellikler
 
-### 🔄 Gelişmiş Kurulum Sistemi
-- **Tam Sıfırlama:** `--reset` parametresi ile tüm eski kurulumu temizleme
-- **Akıllı Yedekleme:** Sadece veritabanı ve yapılandırma dosyası yedekleniyor
-- **Güvenli Yedek Konumu:** Yedekler `/var/backups/habernexus` dizininde saklanıyor
-- **Kolay Geri Yükleme:** `--restore` parametresi ile tek komutla geri yükleme
+- **Otomatik Kurulum**: Tek bir komutla tüm sistemi dakikalar içinde kurun.
+- **Docker Entegrasyonu**: Tüm servisler (web, veritabanı, cache) Docker container'ları olarak çalışır.
+- **Profesyonel Yedekleme**: Veritabanı, medya dosyaları ve yapılandırmalar için gelişmiş yedekleme ve geri yükleme sistemi.
+- **Caddy Web Sunucusu**: Otomatik HTTPS, HTTP/2, ve reverse proxy desteği.
+- **Cloudflare Tunnel**: Sunucunuzu güvenli bir şekilde internete açmak için opsiyonel Cloudflare Tunnel entegrasyonu.
+- **Yapay Zeka**: Google Gemini AI ile haber özetleme ve analiz yetenekleri.
+- **Celery & Redis**: Asenkron görevler ve periyodik işlemler için güçlü altyapı.
 
-### 🤖 Google Gen AI SDK Güncellemeleri
-- **Gelişmiş ThinkingConfig Desteği:** Gemini 2.5 ve 3 serisi için optimize edilmiş
-- **Geriye Uyumluluk:** Eski API'ler otomatik olarak yeni formata dönüştürülüyor
+## 🚀 Hızlı Başlangıç: Tek Komutla Kurulum
 
-### 🛡️ Güçlendirilmiş CI/CD Pipeline
-- **Otomatik Release:** Versiyon güncellendiğinde otomatik GitHub Release oluşturma
-- **Otomatik Issue Oluşturma:** Pipeline hatalarında otomatik issue açma
-- **Güvenlik Taraması:** Bandit ve Trivy ile SARIF formatında raporlama
-
----
-
-## 🚀 Hızlı Kurulum
-
-### ⚡ Tek Komutla Kurulum (Önerilen)
+HaberNexus'u kurmanın en hızlı yolu aşağıdaki komutu çalıştırmaktır. Bu komut, `setup.sh` script'ini indirir ve otomatik kurulumu başlatır.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/setup.sh | sudo bash
 ```
 
-### 🔧 Kurulum Seçenekleri
+Kurulum sırasında sizden domain adı, admin bilgileri gibi temel bilgiler istenecektir. Dilerseniz varsayılan değerlerle hızlıca devam edebilirsiniz.
+
+## 🛠️ Gelişmiş Kurulum ve Yönetim
+
+Projenin ana kurulum ve yönetim aracı `setup.sh` script'idir. Bu script, kurulumdan yedeklemeye, temizlikten geri yüklemeye kadar tüm işlemleri yönetmenizi sağlar.
+
+### Kurulum Seçenekleri
+
+- **Otomatik Kurulum (Etkileşimli)**:
+  ```bash
+  sudo bash setup.sh
+  ```
+
+- **Hızlı Kurulum (Varsayılan Değerlerle)**:
+  ```bash
+  sudo bash setup.sh --quick
+  ```
+
+- **Geliştirici Kurulumu**:
+  ```bash
+  sudo bash setup.sh --dev
+  ```
+
+- **Manuel Kurulum (Adım Adım)**:
+  ```bash
+  sudo bash setup.sh --manual
+  ```
+
+### Yedekleme ve Geri Yükleme
+
+Detaylı yedekleme ve geri yükleme işlemleri için `scripts/backup.sh` script'i kullanılır. `setup.sh` üzerinden de temel komutlara erişebilirsiniz.
+
+- **Tam Yedek Al**:
+  ```bash
+  sudo bash setup.sh --backup
+  ```
+
+- **Yedekleri Listele**:
+  ```bash
+  sudo bash setup.sh --list-backups
+  ```
+
+- **Yedekten Geri Yükle**:
+  ```bash
+  sudo bash setup.sh --restore <yedek_ismi>
+  ```
+
+### Temizlik ve Kaldırma
+
+- **Kurulumu Sıfırla (Yeniden Kurulum İçin)**:
+  ```bash
+  sudo bash setup.sh --reset
+  ```
+
+- **HaberNexus'u Tamamen Kaldır**:
+  ```bash
+  sudo bash setup.sh --uninstall
+  ```
+
+### Tüm Komutlar
+
+Tüm komutları ve seçenekleri görmek için `--help` parametresini kullanın:
 
 ```bash
-# Domain ve email ile kurulum
-curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | \
-  sudo bash -s -- --domain example.com --email admin@example.com
-
-# Hızlı kurulum (varsayılan değerlerle)
-curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | \
-  sudo bash -s -- --quick
-
-# Tam sıfırlama ile yeniden kurulum
-curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/get-habernexus.sh | \
-  sudo bash -s -- --reset
+bash setup.sh --help
 ```
 
-### 💾 Yedekleme ve Geri Yükleme
+## 📂 Proje Yapısı
+
+```
+.
+├── caddy/                # Caddy web sunucusu yapılandırması
+├── habernexus/           # Django proje dosyaları
+├── scripts/              # Yönetim script'leri (yedekleme, temizlik vb.)
+├── staticfiles/          # Toplanan statik dosyalar
+├── mediafiles/           # Yüklenen medya dosyaları
+├── .env.example          # Örnek ortam değişkenleri dosyası
+├── docker-compose.prod.yml # Üretim ortamı için Docker Compose dosyası
+├── Dockerfile            # Django uygulaması için Dockerfile
+├── setup.sh              # Ana kurulum ve yönetim script'i
+└── README.md             # Bu dosya
+```
+
+## 🔧 Manuel Kurulum Rehberi
+
+Eğer sistemi adım adım kendiniz kurmak isterseniz, `scripts/manual-setup.sh` script'ini kullanabilirsiniz. Bu script, her adımda ne yapıldığını açıklar ve sizden onay alarak ilerler.
 
 ```bash
-# Manuel yedek alma
-sudo bash get-habernexus.sh --backup
-
-# Mevcut yedekleri listeleme
-sudo bash get-habernexus.sh --list-backups
-
-# Yedekten geri yükleme
-sudo bash get-habernexus.sh --restore backup_20251218_013128
+sudo bash scripts/manual-setup.sh
 ```
 
-### 🐳 Docker ile Kurulum
+## 📚 Dokümantasyon
 
-```bash
-# Production ortamı
-docker compose -f docker-compose.prod.yml up -d
-
-# Development ortamı
-docker compose up -d
-
-# Logları izleme
-docker compose logs -f
-```
-
----
-
-## 💻 Sistem Gereksinimleri
-
-| Bileşen | Minimum | Önerilen |
-|---------|---------|----------|
-| CPU | 2 çekirdek | 4+ çekirdek |
-| RAM | 2 GB | 4+ GB |
-| Disk | 15 GB | 50+ GB SSD |
-| OS | Ubuntu 20.04 | Ubuntu 22.04/24.04 |
-| Python | 3.10+ | 3.11+ |
-
----
-
-## ✨ Özellikler
-
-### 🤖 AI-Destekli İçerik
-- **Google Gemini AI:** Otomatik haber özetleme ve içerik üretimi
-- **ThinkingConfig:** Gelişmiş reasoning desteği
-- **Akıllı Kategori Sınıflandırma:** Otomatik kategorize
-- **Duygu Analizi:** Haber metinlerinin analizi
-- **Görsel Üretimi:** Google Imagen 4.0 ile AI görsel oluşturma
-
-### 📰 Haber Agregasyonu
-- **100+ Haber Kaynağı:** Geniş RSS/Atom feed desteği
-- **Gerçek Zamanlı Güncelleme:** Celery ile periyodik içerik çekme
-- **İçerik Kalite Kontrolü:** Otomatik kalite değerlendirme
-- **Duplicate Detection:** Tekrar eden içeriklerin tespiti
-
-### 🚀 REST API
-- **Kapsamlı Endpoints:** Haberler, yazarlar, kategoriler için API
-- **Güvenlik:** Rate limiting, CORS ve JWT yetkilendirme
-- **Dokümantasyon:** Swagger/ReDoc ile otomatik API docs
-- **Pagination:** Cursor-based ve offset pagination
-
-### 📧 Newsletter Sistemi
-- **E-posta Aboneliği:** Kullanıcı bülten aboneliği
-- **Otomatik Gönderim:** Celery Beat ile periyodik gönderim
-- **Template Desteği:** Özelleştirilebilir şablonlar
-
-### 🔒 Güvenlik
-- **Cloudflare Tunnel:** Port açmadan güvenli erişim
-- **SSL/TLS:** Otomatik sertifika yönetimi
-- **Rate Limiting:** API isteklerini sınırlama
-- **CORS:** Cross-origin güvenliği
-
----
-
-## 📚 Proje Yönetimi ve Dokümantasyon
-
-Bu proje, tüm geliştiricilerin katılımını teşvik eden şeffaf ve merkezi bir yönetim sistemi kullanır. Kapsamlı dokümantasyon için **[📖 GitHub Wiki](https://github.com/sata2500/habernexus/wiki)** sayfamızı ziyaret edin.
-
-### Wiki Sayfaları
-
-| Sayfa | Açıklama |
-|---|---|
-| [**Ana Sayfa**](https://github.com/sata2500/habernexus/wiki) | Projeye genel bakış ve hızlı başlangıç. |
-| [**Kurulum Rehberi**](https://github.com/sata2500/habernexus/wiki/Kurulum-Rehberi) | Detaylı kurulum adımları (Docker, yerel geliştirme). |
-| [**API Dokümantasyonu**](https://github.com/sata2500/habernexus/wiki/API-Dokumentasyonu) | REST API endpoint'leri ve kullanım örnekleri. |
-| [**Mimari ve Yapı**](https://github.com/sata2500/habernexus/wiki/Mimari-ve-Yapi) | Proje mimarisi ve klasör yapısı. |
-| [**Geliştirici Rehberi**](https://github.com/sata2500/habernexus/wiki/Gelistirici-Rehberi) | Katkıda bulunma kuralları ve kodlama standartları. |
-| [**Yapılandırma**](https://github.com/sata2500/habernexus/wiki/Yapilandirma) | `.env` dosyası ve yapılandırma seçenekleri. |
-| [**Sorun Giderme**](https://github.com/sata2500/habernexus/wiki/Sorun-Giderme) | Yaygın sorunlar ve çözümleri. |
-
-### Proje Belgeleri
-
-| Belge | Açıklama |
-|---|---|
-| [**Geliştirme Yol Haritası (DEVELOPMENT_ROADMAP.md)**](DEVELOPMENT_ROADMAP.md) | Projenin gelecek hedeflerini, anlık öncelikleri ve görev durumlarını içerir. | 
-| [**Katkıda Bulunma Rehberi (CONTRIBUTING.md)**](CONTRIBUTING.md) | Kodlama standartları, commit formatı ve PR süreci gibi tüm katkı kurallarını tanımlar. |
-| [**Geliştirici Rehberi (DEVELOPER_GUIDE.md)**](DEVELOPER_GUIDE.md) | Projenin teknik mimarisi, kurulumu ve geliştirme ortamı hakkında detaylı bilgi verir. |
-| [**Bilinen Hatalar (KNOWN_ISSUES.md)**](KNOWN_ISSUES.md) | Mevcut hataları, geçici çözümleri ve hata raporlama sürecini açıklar. |
-
----
-
-## 🛠️ Geliştirme
-
-### Yerel Geliştirme Ortamı
-
-```bash
-# Repoyu klonlayın
-git clone https://github.com/sata2500/habernexus.git
-cd habernexus
-
-# Virtual environment oluşturun
-python -m venv venv
-source venv/bin/activate
-
-# Bağımlılıkları kurun
-pip install -r requirements.txt
-
-# Geliştirme sunucusunu başlatın
-python manage.py runserver
-```
-
-### Test Çalıştırma
-
-```bash
-# Tüm testleri çalıştır
-pytest
-
-# Coverage ile
-pytest --cov=. --cov-report=html
-```
-
----
+Proje hakkında daha detaylı bilgi, mimari ve geliştirici rehberleri için **[📖 GitHub Wiki](https://github.com/sata2500/habernexus/wiki)** sayfamızı ziyaret edin.
 
 ## 🤝 Katkıda Bulunma
 
-Katkılarınızı bekliyoruz! Lütfen [CONTRIBUTING.md](CONTRIBUTING.md) dosyasını okuyun.
+Katkılarınız için teşekkürler! Lütfen pull request açmadan önce projenin kodlama standartlarına ve yapısına uygun hareket ettiğinizden emin olun.
 
-1. Fork edin
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit edin (`git commit -m 'feat: Add amazing feature'`)
-4. Push edin (`git push origin feature/amazing-feature`)
-5. Pull Request açın
+## 📜 Lisans
 
----
-
-## 📄 Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
-
----
+Bu proje MIT Lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakınız.
 
 ## 👨‍💻 Geliştirici
 
