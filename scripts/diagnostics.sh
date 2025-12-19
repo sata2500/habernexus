@@ -261,37 +261,88 @@ check_containers() {
 analyze_container_error() {
     local container="$1"
     local logs
-    logs=$(get_container_logs "$container" 30)
+    logs=$(get_container_logs "$container" 50)
+    
+    local found_error=false
     
     # Yaygın hata kalıpları
     if echo "$logs" | grep -qi "permission denied"; then
         error "  └─ İzin hatası tespit edildi"
         fix_suggestion "Dosya izinlerini düzeltin: sudo chown -R 1000:1000 $INSTALL_DIR"
+        found_error=true
     fi
     
-    if echo "$logs" | grep -qi "connection refused\|could not connect"; then
+    if echo "$logs" | grep -qi "connection refused\|could not connect\|connection reset"; then
         error "  └─ Bağlantı hatası tespit edildi"
-        fix_suggestion "Bağımlı servislerin çalıştığından emin olun"
+        fix_suggestion "Bağımlı servislerin çalıştığından emin olun: docker compose -f docker-compose.prod.yml ps"
+        found_error=true
     fi
     
-    if echo "$logs" | grep -qi "out of memory\|oom"; then
+    if echo "$logs" | grep -qi "out of memory\|oom\|memory error\|cannot allocate"; then
         error "  └─ Bellek yetersizliği tespit edildi"
-        fix_suggestion "Sistem belleğini artırın veya swap ekleyin"
+        fix_suggestion "Sistem belleğini artırın veya swap ekleyin: sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile"
+        found_error=true
     fi
     
-    if echo "$logs" | grep -qi "database.*does not exist\|relation.*does not exist"; then
+    if echo "$logs" | grep -qi "database.*does not exist\|relation.*does not exist\|no such table"; then
         error "  └─ Veritabanı hatası tespit edildi"
-        fix_suggestion "Migration'ları çalıştırın: docker exec habernexus-web python manage.py migrate"
+        fix_suggestion "Migration'ları çalıştırın: cd $INSTALL_DIR && docker compose -f docker-compose.prod.yml exec web python manage.py migrate"
+        found_error=true
     fi
     
-    if echo "$logs" | grep -qi "secret_key\|secretkey"; then
-        error "  └─ Secret key hatası tespit edildi"
-        fix_suggestion ".env dosyasında DJANGO_SECRET_KEY değerini kontrol edin"
+    if echo "$logs" | grep -qi "secret_key\|secretkey\|improperly configured"; then
+        error "  └─ Django yapılandırma hatası tespit edildi"
+        fix_suggestion ".env dosyasını kontrol edin: cat $INSTALL_DIR/.env"
+        found_error=true
     fi
     
-    if echo "$logs" | grep -qi "module.*not found\|no module named"; then
+    if echo "$logs" | grep -qi "module.*not found\|no module named\|importerror\|modulenotfounderror"; then
         error "  └─ Python modül hatası tespit edildi"
-        fix_suggestion "Container'ı yeniden build edin: docker compose -f docker-compose.prod.yml build --no-cache"
+        fix_suggestion "Container'ı yeniden build edin: cd $INSTALL_DIR && docker compose -f docker-compose.prod.yml build --no-cache web"
+        found_error=true
+    fi
+    
+    if echo "$logs" | grep -qi "address already in use\|port.*in use"; then
+        error "  └─ Port çakışması tespit edildi"
+        fix_suggestion "Portları kullanan servisleri kontrol edin: sudo netstat -tlnp | grep -E '80|443|8000'"
+        found_error=true
+    fi
+    
+    if echo "$logs" | grep -qi "disk.*full\|no space left\|enospc"; then
+        error "  └─ Disk alanı yetersiz"
+        fix_suggestion "Disk alanı açın: docker system prune -a && sudo apt-get clean"
+        found_error=true
+    fi
+    
+    if echo "$logs" | grep -qi "timeout\|timed out\|deadline exceeded"; then
+        error "  └─ Zaman aşımı hatası tespit edildi"
+        fix_suggestion "Servis bağlantılarını ve ağ yapılandırmasını kontrol edin"
+        found_error=true
+    fi
+    
+    if echo "$logs" | grep -qi "ssl\|certificate\|cert.*error"; then
+        error "  └─ SSL/Sertifika hatası tespit edildi"
+        fix_suggestion "SSL sertifikalarını yenileyin: docker exec habernexus-caddy caddy reload --config /etc/caddy/Caddyfile"
+        found_error=true
+    fi
+    
+    if echo "$logs" | grep -qi "gunicorn.*worker.*boot\|worker failed to boot"; then
+        error "  └─ Gunicorn worker başlatma hatası"
+        fix_suggestion "Uygulama kodunu kontrol edin veya container'ı yeniden başlatın: docker restart habernexus-web"
+        found_error=true
+    fi
+    
+    if echo "$logs" | grep -qi "staticfiles\|static.*not found\|whitenoise"; then
+        error "  └─ Static dosya hatası tespit edildi"
+        fix_suggestion "Static dosyaları toplayın: docker exec habernexus-web python manage.py collectstatic --noinput"
+        found_error=true
+    fi
+    
+    # Eğer hiçbir bilinen hata bulunamadıysa, son logları göster
+    if [[ "$found_error" == false ]]; then
+        warning "  └─ Bilinen hata kalıbı bulunamadı. Son log satırları:"
+        echo "$logs" | tail -10 | sed 's/^/      /'
+        fix_suggestion "Detaylı loglar için: docker logs --tail 100 $container"
     fi
 }
 
@@ -630,24 +681,35 @@ check_memory() {
 check_logs_for_errors() {
     print_section "Log Analizi"
     
-    local containers=("habernexus-web" "habernexus-postgres" "habernexus-celery")
+    local containers=("habernexus-web" "habernexus-postgres" "habernexus-celery-worker")
     
     for container in "${containers[@]}"; do
-        if [[ "$(get_container_status $container)" == "running" ]]; then
+        local status
+        status=$(get_container_status "$container")
+        
+        if [[ "$status" == "running" ]]; then
             local error_count
-            error_count=$(docker logs --since 1h "$container" 2>&1 | grep -ci "error\|exception\|critical" || echo "0")
+            # grep -c satır sayısı döndürür, hata yoksa 1 exit code verir
+            error_count=$(docker logs --since 1h "$container" 2>&1 | grep -ci "error\|exception\|critical" 2>/dev/null) || error_count=0
+            # Sayısal değere çevir
+            error_count=$((error_count + 0))
             
-            if [[ "$error_count" -gt 10 ]]; then
+            if [[ $error_count -gt 10 ]]; then
                 warning "$container: Son 1 saatte $error_count hata"
                 
                 # En son hataları göster
                 info "  Son hatalar:"
                 docker logs --since 1h "$container" 2>&1 | grep -i "error\|exception" | tail -3 | sed 's/^/    /'
-            elif [[ "$error_count" -gt 0 ]]; then
+            elif [[ $error_count -gt 0 ]]; then
                 info "$container: Son 1 saatte $error_count hata (normal seviye)"
             else
                 success "$container: Hata yok"
             fi
+        elif [[ "$status" == "restarting" ]]; then
+            warning "$container: Restart döngüsünde - log analizi yapılamıyor"
+            # Son logları göster
+            info "  Son log satırları:"
+            docker logs --tail 10 "$container" 2>&1 | tail -5 | sed 's/^/    /'
         fi
     done
 }
@@ -660,16 +722,70 @@ auto_fix() {
     print_section "${WRENCH} Otomatik Düzeltme"
     
     local fixed=0
+    local restart_loop_containers=()
     
-    # Container'ları yeniden başlat
-    for container in habernexus-web habernexus-postgres habernexus-redis habernexus-caddy habernexus-celery; do
+    # Önce restart döngüsündeki container'ları tespit et
+    for container in habernexus-web habernexus-postgres habernexus-redis habernexus-caddy habernexus-celery-worker habernexus-celery-beat; do
+        local status
+        status=$(get_container_status "$container")
+        local restart_count
+        restart_count=$(docker inspect --format='{{.RestartCount}}' "$container" 2>/dev/null || echo "0")
+        
+        if [[ "$status" == "restarting" ]] && [[ "$restart_count" -gt 5 ]]; then
+            restart_loop_containers+=("$container")
+        fi
+    done
+    
+    # Restart döngüsündeki container'lar için özel işlem
+    if [[ ${#restart_loop_containers[@]} -gt 0 ]]; then
+        warning "Restart döngüsünde ${#restart_loop_containers[@]} container tespit edildi"
+        
+        for container in "${restart_loop_containers[@]}"; do
+            info "$container için düzeltme deneniyor..."
+            
+            # Önce durdur
+            docker stop "$container" > /dev/null 2>&1 || true
+            sleep 2
+            
+            # Log'ları analiz et
+            local logs
+            logs=$(docker logs --tail 50 "$container" 2>&1)
+            
+            # Yaygın sorunlar için çözüm dene
+            if echo "$logs" | grep -qi "database.*does not exist\|relation.*does not exist"; then
+                info "  Veritabanı sorunu tespit edildi, migration çalıştırılıyor..."
+                # Önce postgres'in hazır olduğundan emin ol
+                sleep 5
+                docker start "$container" > /dev/null 2>&1 || true
+                sleep 3
+                docker exec "$container" python manage.py migrate --noinput > /dev/null 2>&1 || true
+                ((fixed++))
+            elif echo "$logs" | grep -qi "staticfiles\|static.*not found"; then
+                info "  Static dosya sorunu tespit edildi..."
+                docker start "$container" > /dev/null 2>&1 || true
+                sleep 3
+                docker exec "$container" python manage.py collectstatic --noinput > /dev/null 2>&1 || true
+                ((fixed++))
+            else
+                # Genel yeniden başlatma
+                info "  Container yeniden başlatılıyor..."
+                docker start "$container" > /dev/null 2>&1 || true
+            fi
+        done
+        
+        # Birkaç saniye bekle ve durumu kontrol et
+        sleep 10
+    fi
+    
+    # Normal durmuş container'ları yeniden başlat
+    for container in habernexus-web habernexus-postgres habernexus-redis habernexus-caddy habernexus-celery-worker habernexus-celery-beat; do
         local status
         status=$(get_container_status "$container")
         
-        if [[ "$status" == "exited" ]] || [[ "$status" == "restarting" ]]; then
+        if [[ "$status" == "exited" ]]; then
             info "Yeniden başlatılıyor: $container"
-            if docker restart "$container" > /dev/null 2>&1; then
-                success "  $container yeniden başlatıldı"
+            if docker start "$container" > /dev/null 2>&1; then
+                success "  $container başlatıldı"
                 ((fixed++))
             fi
         fi
@@ -687,29 +803,40 @@ auto_fix() {
         fi
     fi
     
-    # Migration kontrolü
-    if docker exec habernexus-web python manage.py showmigrations 2>&1 | grep -q "\[ \]"; then
-        info "Bekleyen migration'lar uygulanıyor..."
-        if docker exec habernexus-web python manage.py migrate --noinput > /dev/null 2>&1; then
-            success "Migration'lar uygulandı"
-            ((fixed++))
+    # Web container çalışıyorsa migration ve static kontrolü yap
+    if [[ "$(get_container_status habernexus-web)" == "running" ]]; then
+        # Migration kontrolü
+        if docker exec habernexus-web python manage.py showmigrations 2>&1 | grep -q "\[ \]"; then
+            info "Bekleyen migration'lar uygulanıyor..."
+            if docker exec habernexus-web python manage.py migrate --noinput > /dev/null 2>&1; then
+                success "Migration'lar uygulandı"
+                ((fixed++))
+            fi
         fi
-    fi
-    
-    # Static files
-    if [[ ! -d "$INSTALL_DIR/staticfiles" ]] || [[ -z "$(ls -A $INSTALL_DIR/staticfiles 2>/dev/null)" ]]; then
-        info "Static dosyalar toplanıyor..."
-        if docker exec habernexus-web python manage.py collectstatic --noinput > /dev/null 2>&1; then
-            success "Static dosyalar toplandı"
-            ((fixed++))
+        
+        # Static files
+        if [[ ! -d "$INSTALL_DIR/staticfiles" ]] || [[ -z "$(ls -A $INSTALL_DIR/staticfiles 2>/dev/null)" ]]; then
+            info "Static dosyalar toplanıyor..."
+            if docker exec habernexus-web python manage.py collectstatic --noinput > /dev/null 2>&1; then
+                success "Static dosyalar toplandı"
+                ((fixed++))
+            fi
         fi
     fi
     
     echo ""
     if [[ $fixed -gt 0 ]]; then
         success "$fixed düzeltme uygulandı"
+        echo ""
+        info "Değişikliklerin etkili olması için birkaç saniye bekleyin..."
+        info "Durumu tekrar kontrol etmek için: sudo bash scripts/diagnostics.sh --quick"
     else
-        info "Otomatik düzeltme gerekmiyor"
+        info "Otomatik düzeltme gerekmiyor veya uygulanamadı"
+        echo ""
+        warning "Eğer sorun devam ediyorsa:"
+        echo "  1. Logları kontrol edin: docker logs habernexus-web --tail 100"
+        echo "  2. Container'ı yeniden build edin: cd $INSTALL_DIR && docker compose -f docker-compose.prod.yml build --no-cache"
+        echo "  3. Tüm servisleri yeniden başlatın: cd $INSTALL_DIR && docker compose -f docker-compose.prod.yml down && docker compose -f docker-compose.prod.yml up -d"
     fi
 }
 
