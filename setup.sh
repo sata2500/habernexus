@@ -42,7 +42,21 @@
 # LİSANS: MIT
 # =============================================================================
 
-set -e
+# Hata yönetimi - set -e kullanmıyoruz çünkü pipe'tan çalışırken sorun yaratıyor
+# Bunun yerine kritik komutlarda manuel kontrol yapıyoruz
+set +e
+
+# Trap ile beklenmeyen hatalar için cleanup
+trap 'handle_error $? $LINENO' ERR
+
+handle_error() {
+    local exit_code=$1
+    local line_number=$2
+    if [[ $exit_code -ne 0 ]]; then
+        echo -e "\033[0;31m✗ Hata oluştu (kod: $exit_code, satır: $line_number)\033[0m" >&2
+        echo "Log dosyasını kontrol edin: $LOG_FILE" >&2
+    fi
+}
 
 # =============================================================================
 # GLOBAL CONSTANTS
@@ -340,14 +354,9 @@ validate_email() {
 check_system_requirements() {
     step "1/8" "Sistem Gereksinimleri Kontrol Ediliyor"
     
-    # Root kontrolü
+    # Root kontrolü - pipe'tan çalıştırıldığında $0 geçerli olmayabilir
     if ! is_root; then
-        if command_exists sudo; then
-            warning "Root yetkisi gerekiyor. Script sudo ile yeniden başlatılıyor..."
-            exec sudo bash "$0" "$@"
-        else
-            fatal "Bu script root yetkisi gerektirir. 'sudo bash $0' ile çalıştırın."
-        fi
+        fatal "Bu script root yetkisi gerektirir.\n\nLütfen şu şekilde çalıştırın:\n  curl -fsSL https://raw.githubusercontent.com/sata2500/habernexus/main/setup.sh | sudo bash"
     fi
     success "Root yetkisi: OK"
     
@@ -768,7 +777,9 @@ install_dependencies() {
     fi
     
     info "Paket listesi güncelleniyor..."
-    apt-get update -qq > /dev/null 2>&1 || true
+    if ! apt-get update -qq 2>&1; then
+        warning "Paket listesi güncellenemedi, devam ediliyor..."
+    fi
     
     # Temel paketler
     local packages=(
@@ -786,14 +797,35 @@ install_dependencies() {
     )
     
     info "Temel paketler kuruluyor..."
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${packages[@]}" > /dev/null 2>&1
-    success "Temel paketler kuruldu"
+    # Her paketi tek tek kur, hata olursa devam et
+    local failed_packages=()
+    for pkg in "${packages[@]}"; do
+        if ! DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$pkg" > /dev/null 2>&1; then
+            failed_packages+=("$pkg")
+        fi
+    done
+    
+    if [[ ${#failed_packages[@]} -gt 0 ]]; then
+        warning "Bazı paketler kurulamadı: ${failed_packages[*]}"
+    else
+        success "Temel paketler kuruldu"
+    fi
     
     # Docker kurulumu
     if ! command_exists docker; then
         info "Docker kuruluyor..."
-        curl -fsSL https://get.docker.com | sh > /dev/null 2>&1
-        success "Docker kuruldu"
+        if curl -fsSL https://get.docker.com | sh > /dev/null 2>&1; then
+            success "Docker kuruldu"
+        else
+            # Alternatif yöntem
+            info "Alternatif Docker kurulum yöntemi deneniyor..."
+            apt-get install -y -qq docker.io docker-compose-plugin > /dev/null 2>&1 || true
+            if command_exists docker; then
+                success "Docker kuruldu (apt ile)"
+            else
+                fatal "Docker kurulamadı. Lütfen manuel olarak kurun."
+            fi
+        fi
     else
         success "Docker zaten kurulu: $(docker --version 2>/dev/null | head -1)"
     fi
@@ -803,12 +835,22 @@ install_dependencies() {
         info "Docker Compose plugin kuruluyor..."
         apt-get install -y -qq docker-compose-plugin > /dev/null 2>&1 || true
     fi
-    success "Docker Compose: $(docker compose version 2>/dev/null | head -1)"
+    
+    if docker compose version > /dev/null 2>&1; then
+        success "Docker Compose: $(docker compose version 2>/dev/null | head -1)"
+    else
+        warning "Docker Compose kurulamadı, ancak devam ediliyor..."
+    fi
     
     # Docker servisini başlat
     if has_systemd; then
         systemctl enable docker > /dev/null 2>&1 || true
         systemctl start docker > /dev/null 2>&1 || true
+    fi
+    
+    # Docker'in çalıştığını doğrula
+    if ! docker info > /dev/null 2>&1; then
+        warning "Docker servisi başlatılamadı. Manuel olarak başlatmanız gerekebilir."
     fi
 }
 
