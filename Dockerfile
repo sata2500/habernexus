@@ -16,9 +16,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p /app/staticfiles /app/media && \
-    chmod -R 777 /app/staticfiles /app/media
+# Create necessary directories with proper permissions
+# Bu dizinler volume mount edilmeden önce oluşturulmalı
+RUN mkdir -p /app/staticfiles /app/media /app/logs && \
+    chmod -R 755 /app/staticfiles /app/media /app/logs
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -28,5 +29,9 @@ ENV PYTHONUNBUFFERED=1 \
 # Expose port
 EXPOSE 8000
 
-# Run migrations and start gunicorn
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 habernexus_config.wsgi:application"]
+# Copy and set entrypoint script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120", "habernexus_config.wsgi:application"]
