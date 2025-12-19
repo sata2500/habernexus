@@ -138,6 +138,8 @@ LIST_BACKUPS=false
 UNINSTALL=false
 USE_CLOUDFLARE=false
 CONFIG_FILE=""
+DIAGNOSE_MODE=false
+DIAGNOSE_FIX=false
 
 # =============================================================================
 # LOGGING FUNCTIONS
@@ -1386,7 +1388,12 @@ verify_installation() {
     if [[ "$all_ok" == true ]]; then
         success "Tüm servisler başarıyla çalışıyor!"
     else
-        warning "Bazı servisler beklendiği gibi çalışmıyor. Logları kontrol edin."
+        warning "Bazı servisler beklendiği gibi çalışmıyor."
+        echo ""
+        echo -e "${YELLOW}${BOLD}Sorun giderme için:${NC}"
+        echo -e "  ${CYAN}Hızlı tanılama:${NC}  sudo bash ${INSTALL_DIR}/scripts/diagnostics.sh --quick"
+        echo -e "  ${CYAN}Tam tanılama:${NC}   sudo bash ${INSTALL_DIR}/scripts/diagnostics.sh"
+        echo -e "  ${CYAN}Otomatik düzelt:${NC} sudo bash ${INSTALL_DIR}/scripts/diagnostics.sh --fix"
     fi
 }
 
@@ -1472,6 +1479,8 @@ CREDEOF
     echo -e "  ${CYAN}Servisleri durdur:${NC}    docker compose -f docker-compose.prod.yml down"
     echo -e "  ${CYAN}Yedek al:${NC}             sudo bash setup.sh --backup"
     echo -e "  ${CYAN}Yedekleri listele:${NC}    sudo bash setup.sh --list-backups"
+    echo -e "  ${CYAN}Sistem tanılama:${NC}      sudo bash scripts/diagnostics.sh"
+    echo -e "  ${CYAN}Otomatik düzeltme:${NC}    sudo bash scripts/diagnostics.sh --fix"
     echo ""
     
     # Log dosyası
@@ -1612,6 +1621,41 @@ uninstall_habernexus() {
 }
 
 # =============================================================================
+# DIAGNOSTICS
+# =============================================================================
+
+run_diagnostics() {
+    echo ""
+    echo -e "${CYAN}${BOLD}Sistem Tanılaması Başlatılıyor...${NC}"
+    echo ""
+    
+    local diag_script="${INSTALL_DIR}/scripts/diagnostics.sh"
+    
+    # Script'in varlığını kontrol et
+    if [[ ! -f "$diag_script" ]]; then
+        # GitHub'dan indir
+        info "Diagnostics script indiriliyor..."
+        mkdir -p "${INSTALL_DIR}/scripts"
+        if curl -fsSL "${GITHUB_RAW_URL}/scripts/diagnostics.sh" -o "$diag_script" 2>/dev/null; then
+            chmod +x "$diag_script"
+            success "Diagnostics script indirildi"
+        else
+            error "Diagnostics script indirilemedi"
+            return 1
+        fi
+    fi
+    
+    # Script'i çalıştır
+    local diag_args=""
+    if [[ "$DIAGNOSE_FIX" == true ]]; then
+        diag_args="--fix"
+    fi
+    
+    bash "$diag_script" $diag_args
+    return $?
+}
+
+# =============================================================================
 # HELP & VERSION
 # =============================================================================
 
@@ -1643,6 +1687,10 @@ ${BOLD}YEDEKLEME:${NC}
 ${BOLD}TEMİZLİK:${NC}
   --reset             Mevcut kurulumu sıfırla ve yeniden kur
   --uninstall         Tamamen kaldır
+
+${BOLD}TANI & SORUN GİDERME:${NC}
+  --diagnose          Sistem tanılaması yap
+  --diagnose-fix      Tanılama yap ve otomatik düzelt
 
 ${BOLD}DİĞER:${NC}
   --dry-run           Simülasyon modu (değişiklik yapmaz)
@@ -1743,6 +1791,15 @@ parse_arguments() {
                 NO_TUI=true
                 shift
                 ;;
+            --diagnose)
+                DIAGNOSE_MODE=true
+                shift
+                ;;
+            --diagnose-fix)
+                DIAGNOSE_MODE=true
+                DIAGNOSE_FIX=true
+                shift
+                ;;
             --config|-c)
                 CONFIG_FILE="$2"
                 shift 2
@@ -1803,6 +1860,12 @@ main() {
     if [[ "$UNINSTALL" == true ]]; then
         uninstall_habernexus
         exit 0
+    fi
+    
+    # Diagnose modu
+    if [[ "$DIAGNOSE_MODE" == true ]]; then
+        run_diagnostics
+        exit $?
     fi
     
     # Dry-run bilgisi
