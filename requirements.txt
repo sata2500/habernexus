@@ -104,8 +104,8 @@ mypy==1.13.0
 django-stubs==5.1.1
 
 # Security Scanning
-bandit==1.8.0
-safety==3.2.11
+bandit==1.9.2
+safety==3.7.0
 pip-audit==2.7.3
 
 # Documentation
