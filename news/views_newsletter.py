@@ -73,7 +73,7 @@ class NewsletterSubscribeView(View):
             )
 
         except Exception as e:
-            logger.error(f"Newsletter abonelik hatası: {str(e)}")
+            logger.error(f"Newsletter abonelik hatası: {e!s}")
             return JsonResponse({"success": False, "message": "Bir hata oluştu. Lütfen tekrar deneyin."}, status=500)
 
     def send_verification_email(self, subscriber):
@@ -97,7 +97,7 @@ class NewsletterSubscribeView(View):
                 fail_silently=False,
             )
         except Exception as e:
-            logger.error(f"Doğrulama e-postası gönderim hatası: {str(e)}")
+            logger.error(f"Doğrulama e-postası gönderim hatası: {e!s}")
 
 
 class NewsletterVerifyView(View):
@@ -125,7 +125,7 @@ class NewsletterVerifyView(View):
             )
 
         except Exception as e:
-            logger.error(f"E-posta doğrulama hatası: {str(e)}")
+            logger.error(f"E-posta doğrulama hatası: {e!s}")
             return render(request, "newsletter/error.html", {"message": "Doğrulama başarısız."})
 
 
@@ -145,7 +145,7 @@ class NewsletterUnsubscribeView(View):
             )
 
         except Exception as e:
-            logger.error(f"Abonelik iptal hatası: {str(e)}")
+            logger.error(f"Abonelik iptal hatası: {e!s}")
             return render(request, "newsletter/error.html", {"message": "Abonelik bulunamadı."})
 
     def post(self, request, token):
@@ -160,7 +160,7 @@ class NewsletterUnsubscribeView(View):
             )
 
         except Exception as e:
-            logger.error(f"Abonelik iptal hatası: {str(e)}")
+            logger.error(f"Abonelik iptal hatası: {e!s}")
             return render(request, "newsletter/error.html", {"message": "Abonelik iptal edilemedi."})
 
 
@@ -180,7 +180,7 @@ class NewsletterPreferencesView(View):
             )
 
         except Exception as e:
-            logger.error(f"Tercih görüntüleme hatası: {str(e)}")
+            logger.error(f"Tercih görüntüleme hatası: {e!s}")
             return render(request, "newsletter/error.html", {"message": "Abonelik bulunamadı."})
 
     def post(self, request, token):
@@ -201,5 +201,5 @@ class NewsletterPreferencesView(View):
             )
 
         except Exception as e:
-            logger.error(f"Tercih güncelleme hatası: {str(e)}")
+            logger.error(f"Tercih güncelleme hatası: {e!s}")
             return render(request, "newsletter/error.html", {"message": "Tercihler güncellenemedi."})

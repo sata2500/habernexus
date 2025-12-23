@@ -1,0 +1,110 @@
+# =============================================================================
+# HaberNexus Docker Ignore File
+# Prevents unnecessary files from being included in Docker build context
+# =============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+.eggs/
+*.egg-info/
+*.egg
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# Logs
+logs/
+*.log
+
+# Media and static (will be mounted as volumes)
+media/
+staticfiles/
+
+# Documentation
+docs/
+*.md
+!README.md
+!CHANGELOG.md
+
+# Archive and backup
+archive/
+.backups/
+*.bak
+
+# Testing
+tests/
+test_*/
+*_test.py
+conftest.py
+pytest.ini
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+
+# Docker
+docker-compose*.yml
+!docker-compose.prod.yml
+Dockerfile*
+!Dockerfile
+
+# Node.js (if any)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Security
+*.pem
+*.key
+*.crt
+ssl/
+secrets/
+
+# Reports
+*-report.json
+*-results.sarif
+coverage.xml
+
+# Development files
+DEVELOPMENT_*.md
+research_notes.md

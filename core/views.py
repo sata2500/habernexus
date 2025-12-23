@@ -19,7 +19,7 @@ def health_check(request):
 
         return JsonResponse({"status": "healthy", "message": "Application is running", "version": "1.0.0"}, status=200)
     except Exception as e:
-        return JsonResponse({"status": "unhealthy", "message": f"Health check failed: {str(e)}"}, status=503)
+        return JsonResponse({"status": "unhealthy", "message": f"Health check failed: {e!s}"}, status=503)
 
 
 @staff_member_required

@@ -28,7 +28,7 @@ def cleanup_old_logs():
         SystemLog.objects.create(
             level="ERROR",
             task_name="cleanup_old_logs",
-            message=f"Hata: {str(e)}",
+            message=f"Hata: {e!s}",
             traceback=str(e),
         )
         raise

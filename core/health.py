@@ -5,7 +5,7 @@ Sistem sağlık kontrolü endpoint'leri.
 
 import logging
 import time
-from typing import Any, Dict
+from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
@@ -95,7 +95,7 @@ class DetailedHealthCheckView(View):
 
         return JsonResponse(response_data, status=status_code)
 
-    def _check_database(self) -> Dict[str, Any]:
+    def _check_database(self) -> dict[str, Any]:
         """Veritabanı bağlantısını kontrol et."""
         try:
             start = time.time()
@@ -113,7 +113,7 @@ class DetailedHealthCheckView(View):
                 "error": str(e),
             }
 
-    def _check_cache(self) -> Dict[str, Any]:
+    def _check_cache(self) -> dict[str, Any]:
         """Cache bağlantısını kontrol et."""
         try:
             start = time.time()
@@ -138,7 +138,7 @@ class DetailedHealthCheckView(View):
                 "error": str(e),
             }
 
-    def _check_celery(self) -> Dict[str, Any]:
+    def _check_celery(self) -> dict[str, Any]:
         """Celery bağlantısını kontrol et."""
         try:
             from habernexus_config.celery import app
@@ -167,7 +167,7 @@ class DetailedHealthCheckView(View):
                 "error": str(e),
             }
 
-    def _check_elasticsearch(self) -> Dict[str, Any]:
+    def _check_elasticsearch(self) -> dict[str, Any]:
         """Elasticsearch bağlantısını kontrol et."""
         try:
             from elasticsearch import Elasticsearch
@@ -204,7 +204,7 @@ class DetailedHealthCheckView(View):
                 "error": str(e),
             }
 
-    def _check_disk_space(self) -> Dict[str, Any]:
+    def _check_disk_space(self) -> dict[str, Any]:
         """Disk alanını kontrol et."""
         try:
             import shutil

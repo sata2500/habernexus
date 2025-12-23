@@ -6,7 +6,6 @@ Metrikleri, alertleri, performans izleme
 import logging
 from datetime import timedelta
 from statistics import mean, stdev
-from typing import Dict, List
 
 from django.core.mail import send_mail
 from django.db.models import Avg, Count, Q
@@ -78,7 +77,7 @@ class QualityMetrics:
         return min(100, score)
 
     @staticmethod
-    def calculate_pipeline_efficiency() -> Dict:
+    def calculate_pipeline_efficiency() -> dict:
         """
         Pipeline verimliliğini hesapla
         """
@@ -108,7 +107,7 @@ class QualityMetrics:
         }
 
     @staticmethod
-    def calculate_media_processing_stats() -> Dict:
+    def calculate_media_processing_stats() -> dict:
         """
         Medya işleme istatistikleri hesapla
         """
@@ -147,7 +146,7 @@ class QualityMetrics:
         }
 
     @staticmethod
-    def get_category_performance() -> Dict:
+    def get_category_performance() -> dict:
         """
         Kategoriye göre performans metrikleri
         """
@@ -192,7 +191,7 @@ class AlertManager:
     }
 
     @staticmethod
-    def check_pipeline_health() -> List[Dict]:
+    def check_pipeline_health() -> list[dict]:
         """
         Pipeline sağlığını kontrol et ve alert'ler oluştur
         """
@@ -234,7 +233,7 @@ class AlertManager:
                         {
                             "type": f"{media_type}_processing_failure",
                             "severity": "warning",
-                            "message": f"{media_type.capitalize()} işleme başarısızlığı: {failure_rate*100:.1f}%",
+                            "message": f"{media_type.capitalize()} işleme başarısızlığı: {failure_rate * 100:.1f}%",
                             "value": failure_rate * 100,
                             "threshold": AlertManager.ALERT_THRESHOLDS["media_processing_failure"] * 100,
                         }
@@ -243,7 +242,7 @@ class AlertManager:
         return alerts
 
     @staticmethod
-    def check_content_quality() -> List[Dict]:
+    def check_content_quality() -> list[dict]:
         """
         İçerik kalitesini kontrol et
         """
@@ -269,19 +268,19 @@ class AlertManager:
         return alerts
 
     @staticmethod
-    def send_alert_email(alert: Dict, recipients: List[str]):
+    def send_alert_email(alert: dict, recipients: list[str]):
         """
         Alert e-postası gönder
         """
         subject = f"[{alert['severity'].upper()}] HaberNexus Alert: {alert['type']}"
 
         message = f"""
-Alert Tipi: {alert['type']}
-Şiddet: {alert['severity']}
-Mesaj: {alert['message']}
+Alert Tipi: {alert["type"]}
+Şiddet: {alert["severity"]}
+Mesaj: {alert["message"]}
 
-Değer: {alert['value']}
-Eşik: {alert['threshold']}
+Değer: {alert["value"]}
+Eşik: {alert["threshold"]}
 
 Lütfen sistemi kontrol edin.
         """.strip()
@@ -290,7 +289,7 @@ Lütfen sistemi kontrol edin.
             send_mail(subject, message, "noreply@habernexus.com", recipients, fail_silently=False)
             logger.info(f"Alert email sent: {subject}")
         except Exception as e:
-            logger.error(f"Failed to send alert email: {str(e)}")
+            logger.error(f"Failed to send alert email: {e!s}")
 
 
 # ============================================================================
@@ -304,7 +303,7 @@ class DashboardData:
     """
 
     @staticmethod
-    def get_overview_metrics() -> Dict:
+    def get_overview_metrics() -> dict:
         """
         Genel metrikleri al
         """
@@ -343,7 +342,7 @@ class DashboardData:
         }
 
     @staticmethod
-    def get_pipeline_status() -> Dict:
+    def get_pipeline_status() -> dict:
         """
         Pipeline durumunu al
         """
@@ -359,21 +358,21 @@ class DashboardData:
         }
 
     @staticmethod
-    def get_category_stats() -> Dict:
+    def get_category_stats() -> dict:
         """
         Kategori istatistikleri al
         """
         return QualityMetrics.get_category_performance()
 
     @staticmethod
-    def get_media_stats() -> Dict:
+    def get_media_stats() -> dict:
         """
         Medya işleme istatistikleri al
         """
         return QualityMetrics.calculate_media_processing_stats()
 
     @staticmethod
-    def get_top_articles(limit: int = 10) -> List[Dict]:
+    def get_top_articles(limit: int = 10) -> list[dict]:
         """
         En iyi makaleleri al
         """
@@ -394,7 +393,7 @@ class DashboardData:
         ]
 
     @staticmethod
-    def get_recent_alerts(limit: int = 10) -> List[Dict]:
+    def get_recent_alerts(limit: int = 10) -> list[dict]:
         """
         Son alert'leri al
         """
@@ -421,7 +420,7 @@ class PerformanceAnalyzer:
     """
 
     @staticmethod
-    def analyze_step_performance(step: str, days: int = 7) -> Dict:
+    def analyze_step_performance(step: str, days: int = 7) -> dict:
         """
         Belirli bir aşamanın performansını analiz et
         """
@@ -446,7 +445,7 @@ class PerformanceAnalyzer:
         }
 
     @staticmethod
-    def get_bottlenecks(days: int = 7) -> List[Dict]:
+    def get_bottlenecks(days: int = 7) -> list[dict]:
         """
         Sistem darboğazlarını tespit et
         """
@@ -474,7 +473,7 @@ class PerformanceAnalyzer:
         return sorted(bottlenecks, key=lambda x: x["avg_duration"], reverse=True)
 
     @staticmethod
-    def get_optimization_recommendations() -> List[str]:
+    def get_optimization_recommendations() -> list[str]:
         """
         Optimizasyon önerileri sun
         """

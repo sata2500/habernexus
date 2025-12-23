@@ -8,7 +8,6 @@ import os
 import subprocess
 from datetime import datetime
 from io import BytesIO
-from typing import Dict, List, Tuple
 
 import cv2
 import requests
@@ -42,7 +41,7 @@ class ImageProcessor:
 
     def download_and_optimize(
         self, image_url: str, article_id: str, quality: str = "high", max_retries: int = 3
-    ) -> Dict:
+    ) -> dict:
         """
         Görseli indir ve optimize et
         """
@@ -62,7 +61,7 @@ class ImageProcessor:
             return metadata
 
         except Exception as e:
-            logger.error(f"Image processing failed: {str(e)}")
+            logger.error(f"Image processing failed: {e!s}")
             raise
 
     def _download_image(self, url: str, max_retries: int = 3) -> Image.Image:
@@ -88,10 +87,10 @@ class ImageProcessor:
             except Exception as e:
                 if attempt == max_retries - 1:
                     raise
-                logger.warning(f"Retry {attempt + 1}/{max_retries}: {str(e)}")
+                logger.warning(f"Retry {attempt + 1}/{max_retries}: {e!s}")
                 continue
 
-    def _resize_image(self, image: Image.Image, size: Tuple[int, int]) -> Image.Image:
+    def _resize_image(self, image: Image.Image, size: tuple[int, int]) -> Image.Image:
         """
         Görseli belirtilen boyuta yeniden boyutlandır
         """
@@ -104,7 +103,7 @@ class ImageProcessor:
 
         return new_image
 
-    def _optimize_image(self, image: Image.Image, article_id: str, quality: str = "high") -> Dict[str, str]:
+    def _optimize_image(self, image: Image.Image, article_id: str, quality: str = "high") -> dict[str, str]:
         """
         Görseli AVIF, WebP ve JPEG formatlarında kaydet
         """
@@ -121,7 +120,7 @@ class ImageProcessor:
             paths["avif"] = avif_path
             logger.info(f"AVIF saved: {avif_path}")
         except Exception as e:
-            logger.warning(f"AVIF encoding failed: {str(e)}")
+            logger.warning(f"AVIF encoding failed: {e!s}")
 
         # WebP formatı (fallback)
         try:
@@ -130,7 +129,7 @@ class ImageProcessor:
             paths["webp"] = webp_path
             logger.info(f"WebP saved: {webp_path}")
         except Exception as e:
-            logger.warning(f"WebP encoding failed: {str(e)}")
+            logger.warning(f"WebP encoding failed: {e!s}")
 
         # JPEG formatı (legacy)
         try:
@@ -139,11 +138,11 @@ class ImageProcessor:
             paths["jpeg"] = jpeg_path
             logger.info(f"JPEG saved: {jpeg_path}")
         except Exception as e:
-            logger.warning(f"JPEG encoding failed: {str(e)}")
+            logger.warning(f"JPEG encoding failed: {e!s}")
 
         return paths
 
-    def _create_metadata(self, image: Image.Image, source_url: str, optimized_paths: Dict, quality: str) -> Dict:
+    def _create_metadata(self, image: Image.Image, source_url: str, optimized_paths: dict, quality: str) -> dict:
         """
         Görsel metadata'sı oluştur
         """
@@ -163,7 +162,7 @@ class ImageProcessor:
             "created_at": datetime.now().isoformat(),
         }
 
-    def create_responsive_images(self, image_path: str, article_id: str, sizes: List[Tuple[int, int]] = None) -> Dict:
+    def create_responsive_images(self, image_path: str, article_id: str, sizes: list[tuple[int, int]] = None) -> dict:
         """
         Responsive görseller oluştur (mobil, tablet, desktop)
         """
@@ -242,8 +241,8 @@ class VideoProcessor:
         self.session = requests.Session()
 
     def download_and_encode(
-        self, video_url: str, article_id: str, profiles: List[str] = None, max_retries: int = 3
-    ) -> Dict:
+        self, video_url: str, article_id: str, profiles: list[str] = None, max_retries: int = 3
+    ) -> dict:
         """
         Videoyu indir ve encode et
         """
@@ -266,7 +265,7 @@ class VideoProcessor:
             return metadata
 
         except Exception as e:
-            logger.error(f"Video processing failed: {str(e)}")
+            logger.error(f"Video processing failed: {e!s}")
             raise
 
     def _download_video(self, url: str, article_id: str, max_retries: int = 3) -> str:
@@ -294,10 +293,10 @@ class VideoProcessor:
             except Exception as e:
                 if attempt == max_retries - 1:
                     raise
-                logger.warning(f"Retry {attempt + 1}/{max_retries}: {str(e)}")
+                logger.warning(f"Retry {attempt + 1}/{max_retries}: {e!s}")
                 continue
 
-    def _encode_video(self, video_path: str, article_id: str, profiles: List[str]) -> Dict[str, str]:
+    def _encode_video(self, video_path: str, article_id: str, profiles: list[str]) -> dict[str, str]:
         """
         Videoyu farklı çözünürlüklerde encode et
         """
@@ -319,12 +318,12 @@ class VideoProcessor:
                 logger.info(f"Video encoded: {profile} -> {output_path}")
 
             except Exception as e:
-                logger.error(f"Encoding failed for {profile}: {str(e)}")
+                logger.error(f"Encoding failed for {profile}: {e!s}")
                 continue
 
         return encoded_videos
 
-    def _run_ffmpeg_encoding(self, input_path: str, output_path: str, settings: Dict):
+    def _run_ffmpeg_encoding(self, input_path: str, output_path: str, settings: dict):
         """
         FFmpeg ile video encode et
         """
@@ -351,7 +350,7 @@ class VideoProcessor:
         ]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)  # 1 saat timeout
+            result = subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=3600)  # 1 saat timeout
 
             if result.returncode != 0:
                 raise Exception(f"FFmpeg error: {result.stderr}")
@@ -359,7 +358,7 @@ class VideoProcessor:
         except subprocess.TimeoutExpired:
             raise Exception(f"FFmpeg timeout for {output_path}")
 
-    def _create_hls_manifest(self, encoded_videos: Dict, article_id: str) -> str:
+    def _create_hls_manifest(self, encoded_videos: dict, article_id: str) -> str:
         """
         HLS master manifest oluştur
         """
@@ -377,7 +376,7 @@ class VideoProcessor:
                 resolution = self.ENCODING_PROFILES[profile]["resolution"]
 
                 manifest_content += (
-                    f"#EXT-X-STREAM-INF:BANDWIDTH={bitrate},RESOLUTION={resolution}\n" f"{profile}/playlist.m3u8\n"
+                    f"#EXT-X-STREAM-INF:BANDWIDTH={bitrate},RESOLUTION={resolution}\n{profile}/playlist.m3u8\n"
                 )
 
         with open(manifest_path, "w") as f:
@@ -386,7 +385,7 @@ class VideoProcessor:
         logger.info(f"HLS manifest created: {manifest_path}")
         return manifest_path
 
-    def _create_video_metadata(self, original_path: str, encoded_videos: Dict, hls_manifest: str) -> Dict:
+    def _create_video_metadata(self, original_path: str, encoded_videos: dict, hls_manifest: str) -> dict:
         """
         Video metadata'sı oluştur
         """
@@ -400,7 +399,7 @@ class VideoProcessor:
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             cap.release()
         except Exception as e:
-            logger.warning(f"Failed to get video metadata: {str(e)}")
+            logger.warning(f"Failed to get video metadata: {e!s}")
             duration = 0
             width = 0
             height = 0
@@ -431,8 +430,8 @@ class MediaManager:
         self.video_processor = VideoProcessor(output_dir)
 
     def process_article_media(
-        self, article_id: str, image_urls: List[str] = None, video_urls: List[str] = None
-    ) -> Dict:
+        self, article_id: str, image_urls: list[str] = None, video_urls: list[str] = None
+    ) -> dict:
         """
         Makale için tüm medyayı işle
         """
@@ -447,8 +446,8 @@ class MediaManager:
                     )
                     result["images"].append(image_metadata)
                 except Exception as e:
-                    logger.error(f"Image processing failed: {str(e)}")
-                    result["errors"].append(f"Image {idx}: {str(e)}")
+                    logger.error(f"Image processing failed: {e!s}")
+                    result["errors"].append(f"Image {idx}: {e!s}")
 
         # Videoları işle
         if video_urls:
@@ -457,12 +456,12 @@ class MediaManager:
                     video_metadata = self.video_processor.download_and_encode(video_url, article_id)
                     result["videos"].append(video_metadata)
                 except Exception as e:
-                    logger.error(f"Video processing failed: {str(e)}")
-                    result["errors"].append(f"Video: {str(e)}")
+                    logger.error(f"Video processing failed: {e!s}")
+                    result["errors"].append(f"Video: {e!s}")
 
         return result
 
-    def create_media_html(self, article_id: str, image_metadata: Dict = None, video_metadata: Dict = None) -> str:
+    def create_media_html(self, article_id: str, image_metadata: dict = None, video_metadata: dict = None) -> str:
         """
         Medya için HTML kodu oluştur
         """

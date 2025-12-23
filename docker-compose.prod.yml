@@ -1,6 +1,7 @@
 # =============================================================================
-# HaberNexus v10.8 - Production Docker Compose Configuration
+# HaberNexus v10.9 - Production Docker Compose Configuration
 # Reverse Proxy: Caddy (Automatic HTTPS)
+# Updated: December 2025 - Modern Docker best practices applied
 # =============================================================================
 
 services:
@@ -14,6 +15,7 @@ services:
       POSTGRES_DB: ${DB_NAME:-habernexus}
       POSTGRES_USER: ${DB_USER:-habernexus_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      PGDATA: /var/lib/postgresql/data/pgdata
       TZ: Europe/Istanbul
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -21,10 +23,19 @@ services:
     networks:
       - habernexus-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-habernexus_user}"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-habernexus_user} -d ${DB_NAME:-habernexus}"]
+      interval: 10s
       timeout: 5s
-      retries: 30
+      retries: 5
+      start_period: 30s
+    labels:
+      com.habernexus.service: "postgres"
+      com.habernexus.environment: "production"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   # ============================================================================
   # CACHE & MESSAGE BROKER
@@ -32,17 +43,32 @@ services:
   redis:
     image: redis:7-alpine
     container_name: habernexus-redis
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --tcp-keepalive 60
+      --timeout 0
     volumes:
       - redis_data:/data
     restart: unless-stopped
     networks:
       - habernexus-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
       timeout: 5s
-      retries: 30
+      retries: 5
+      start_period: 10s
+    labels:
+      com.habernexus.service: "redis"
+      com.habernexus.environment: "production"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   # ============================================================================
   # DJANGO APPLICATION
@@ -51,7 +77,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     container_name: habernexus-web
+    user: "1000:1000"
     environment:
       DEBUG: ${DEBUG:-False}
       DJANGO_SETTINGS_MODULE: habernexus_config.settings
@@ -67,6 +96,8 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
       TZ: Europe/Istanbul
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
     volumes:
       - static_files:/app/staticfiles
       - media_files:/app/media
@@ -81,11 +112,19 @@ services:
     networks:
       - habernexus-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
+    labels:
+      com.habernexus.service: "web"
+      com.habernexus.environment: "production"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   # ============================================================================
   # CELERY WORKER
@@ -95,7 +134,13 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: habernexus-celery-worker
-    command: celery -A habernexus_config worker -l info --concurrency=2
+    user: "1000:1000"
+    command: >
+      celery -A habernexus_config worker
+      --loglevel=info
+      --concurrency=2
+      --max-tasks-per-child=1000
+      --prefetch-multiplier=1
     environment:
       DEBUG: ${DEBUG:-False}
       DJANGO_SETTINGS_MODULE: habernexus_config.settings
@@ -110,13 +155,32 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
       TZ: Europe/Istanbul
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
     depends_on:
-      - postgres
-      - redis
-      - web
+      web:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - habernexus-network
+    healthcheck:
+      test: ["CMD", "celery", "-A", "habernexus_config", "inspect", "ping", "-d", "celery@$$HOSTNAME"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    labels:
+      com.habernexus.service: "celery_worker"
+      com.habernexus.environment: "production"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   # ============================================================================
   # CELERY BEAT (SCHEDULER)
@@ -126,7 +190,11 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: habernexus-celery-beat
-    command: celery -A habernexus_config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    user: "1000:1000"
+    command: >
+      celery -A habernexus_config beat
+      --loglevel=info
+      --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
       DEBUG: ${DEBUG:-False}
       DJANGO_SETTINGS_MODULE: habernexus_config.settings
@@ -141,13 +209,26 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
       TZ: Europe/Istanbul
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
     depends_on:
-      - postgres
-      - redis
-      - web
+      web:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - habernexus-network
+    labels:
+      com.habernexus.service: "celery_beat"
+      com.habernexus.environment: "production"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   # ============================================================================
   # CADDY - REVERSE PROXY WITH AUTOMATIC HTTPS
@@ -165,16 +246,25 @@ services:
       - static_files:/app/staticfiles:ro
       - media_files:/app/media:ro
     depends_on:
-      - web
+      web:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - habernexus-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    labels:
+      com.habernexus.service: "caddy"
+      com.habernexus.environment: "production"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
 # ============================================================================
 # VOLUMES

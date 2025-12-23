@@ -12,7 +12,6 @@ Updated: December 2025
 import logging
 import time
 from io import BytesIO
-from typing import Optional
 
 from django.db import transaction
 from django.utils import timezone
@@ -90,7 +89,7 @@ def get_image_model_name() -> str:
         return "imagen-4.0-generate-001"
 
 
-def get_thinking_level() -> Optional[str]:
+def get_thinking_level() -> str | None:
     """
     Thinking level değerini ayarlardan al.
     Gemini 3 modelleri için: "low" veya "high" değerleri desteklenir.
@@ -110,7 +109,7 @@ def get_thinking_level() -> Optional[str]:
             "minimal": "low",
             "medium": "high",
         }
-        return legacy_map.get(level, None)
+        return legacy_map.get(level)
     except Setting.DoesNotExist:
         return None  # Varsayılan: model kendi varsayılanını kullanır
 
@@ -202,11 +201,11 @@ def retry_with_backoff(func, max_retries: int = 3, initial_delay: float = 1.0, m
         except Exception as e:
             last_exception = e
             if attempt < max_retries - 1:
-                logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying in {delay}s...")
+                logger.warning(f"Attempt {attempt + 1} failed: {e!s}. Retrying in {delay}s...")
                 time.sleep(delay)
                 delay = min(delay * 2, max_delay)
             else:
-                logger.error(f"All {max_retries} attempts failed. Last error: {str(e)}")
+                logger.error(f"All {max_retries} attempts failed. Last error: {e!s}")
 
     raise last_exception
 
@@ -257,7 +256,7 @@ def fetch_rss_feeds(self):
         return result_msg
 
     except Exception as e:
-        log_error("fetch_rss_feeds", f"RSS tarama görevinde kritik hata: {str(e)}", traceback=str(e))
+        log_error("fetch_rss_feeds", f"RSS tarama görevinde kritik hata: {e!s}", traceback=str(e))
         raise
 
 
@@ -315,7 +314,7 @@ def fetch_single_rss(source: RssSource) -> int:
                 try:
                     download_article_image(article, entry.media_content[0]["url"])
                 except Exception as e:
-                    logger.warning(f"Görsel indirme hatası: {str(e)}")
+                    logger.warning(f"Görsel indirme hatası: {e!s}")
 
             fetched_count += 1
 
@@ -329,7 +328,7 @@ def fetch_single_rss(source: RssSource) -> int:
         return fetched_count
 
     except Exception as e:
-        raise Exception(f"RSS tarama hatası ({source.name}): {str(e)}")
+        raise Exception(f"RSS tarama hatası ({source.name}): {e!s}")
 
 
 def download_article_image(article: Article, image_url: str) -> None:
@@ -370,10 +369,10 @@ def download_article_image(article: Article, image_url: str) -> None:
         article.save()
 
     except requests.RequestException as e:
-        logger.error(f"Görsel indirme hatası: {str(e)}")
+        logger.error(f"Görsel indirme hatası: {e!s}")
         raise
     except Exception as e:
-        logger.error(f"Görsel işleme hatası: {str(e)}")
+        logger.error(f"Görsel işleme hatası: {e!s}")
         raise
 
 
@@ -530,7 +529,7 @@ Kategori: {article.category}
         except ImportError as e:
             log_error(
                 "generate_ai_content",
-                f"Google Gen AI SDK import hatası: {str(e)}",
+                f"Google Gen AI SDK import hatası: {e!s}",
                 traceback=str(e),
                 related_id=article_id,
             )
@@ -538,7 +537,7 @@ Kategori: {article.category}
         except Exception as e:
             log_error(
                 "generate_ai_content",
-                f"Google AI API hatası: {str(e)}",
+                f"Google AI API hatası: {e!s}",
                 traceback=str(e),
                 related_id=article_id,
             )
@@ -548,7 +547,7 @@ Kategori: {article.category}
         log_error("generate_ai_content", f"Makale bulunamadı (ID: {article_id})", related_id=article_id)
         return f"Hata: Makale bulunamadı (ID: {article_id})"
     except Exception as e:
-        log_error("generate_ai_content", f"Kritik hata: {str(e)}", traceback=str(e), related_id=article_id)
+        log_error("generate_ai_content", f"Kritik hata: {e!s}", traceback=str(e), related_id=article_id)
         raise
 
 
@@ -584,8 +583,8 @@ def process_video_content(article_id: int, video_url: str) -> str:
         log_error("process_video_content", f"Makale bulunamadı (ID: {article_id})", related_id=article_id)
         return f"Hata: Makale bulunamadı (ID: {article_id})"
     except Exception as e:
-        log_error("process_video_content", f"Video işleme hatası: {str(e)}", traceback=str(e), related_id=article_id)
-        return f"Hata: {str(e)}"
+        log_error("process_video_content", f"Video işleme hatası: {e!s}", traceback=str(e), related_id=article_id)
+        return f"Hata: {e!s}"
 
 
 # =============================================================================
@@ -688,7 +687,7 @@ Requirements:
         except ImportError as e:
             log_error(
                 "generate_article_image",
-                f"Google Gen AI SDK import hatası: {str(e)}",
+                f"Google Gen AI SDK import hatası: {e!s}",
                 traceback=str(e),
                 related_id=article_id,
             )
@@ -696,7 +695,7 @@ Requirements:
         except Exception as e:
             log_error(
                 "generate_article_image",
-                f"Imagen API hatası: {str(e)}",
+                f"Imagen API hatası: {e!s}",
                 traceback=str(e),
                 related_id=article_id,
             )
@@ -707,8 +706,8 @@ Requirements:
         log_error("generate_article_image", f"Makale bulunamadı (ID: {article_id})", related_id=article_id)
         return f"Hata: Makale bulunamadı (ID: {article_id})"
     except Exception as e:
-        log_error("generate_article_image", f"Kritik hata: {str(e)}", traceback=str(e), related_id=article_id)
-        return f"Hata: {str(e)}"
+        log_error("generate_article_image", f"Kritik hata: {e!s}", traceback=str(e), related_id=article_id)
+        return f"Hata: {e!s}"
 
 
 # =============================================================================
@@ -739,7 +738,7 @@ def batch_regenerate_content(self, article_ids: list) -> str:
             failed_count += 1
             log_error(
                 "batch_regenerate_content",
-                f"Makale için görev oluşturulamadı (ID: {article_id}): {str(e)}",
+                f"Makale için görev oluşturulamadı (ID: {article_id}): {e!s}",
                 related_id=article_id,
             )
 

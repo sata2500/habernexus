@@ -60,7 +60,7 @@ def fetch_rss_feeds_v2():
         return f"Başarılı: {total_headlines} başlık işlendi"
 
     except Exception as e:
-        log_error("fetch_rss_feeds_v2", f"RSS tarama görevinde kritik hata: {str(e)}", traceback=str(e))
+        log_error("fetch_rss_feeds_v2", f"RSS tarama görevinde kritik hata: {e!s}", traceback=str(e))
         raise
 
 
@@ -101,7 +101,7 @@ def fetch_single_rss_v2(source):
         return fetched_count
 
     except Exception as e:
-        raise Exception(f"RSS tarama hatası ({source.name}): {str(e)}")
+        raise Exception(f"RSS tarama hatası ({source.name}): {e!s}")
 
 
 # ============================================================================
@@ -128,7 +128,7 @@ def score_headlines():
             try:
                 score_single_headline(headline)
             except Exception as e:
-                logger.error(f"Başlık puanlaması hatası: {str(e)}")
+                logger.error(f"Başlık puanlaması hatası: {e!s}")
 
         # En iyi 10 başlığı seç ve sınıflandırmaya gönder
         top_headlines = HeadlineScore.objects.filter(is_processed=False).order_by("-overall_score")[:10]
@@ -143,7 +143,7 @@ def score_headlines():
         return f"Başarılı: {unscored_headlines.count()} başlık puanlandı"
 
     except Exception as e:
-        log_error("score_headlines", f"Başlık puanlaması görevinde hata: {str(e)}", traceback=str(e))
+        log_error("score_headlines", f"Başlık puanlaması görevinde hata: {e!s}", traceback=str(e))
         raise
 
 
@@ -350,7 +350,7 @@ def classify_headlines(headline_ids):
         return f"Başarılı: {len(headline_ids)} başlık sınıflandırıldı"
 
     except Exception as e:
-        log_error("classify_headlines", f"Sınıflandırma görevinde hata: {str(e)}", traceback=str(e))
+        log_error("classify_headlines", f"Sınıflandırma görevinde hata: {e!s}", traceback=str(e))
         raise
 
 
@@ -404,7 +404,7 @@ def classify_and_create_article(headline_id):
         return f"Makale oluşturuldu: {article.title}"
 
     except Exception as e:
-        log_error("classify_and_create_article", f"Makale oluşturma hatası: {str(e)}", traceback=str(e))
+        log_error("classify_and_create_article", f"Makale oluşturma hatası: {e!s}", traceback=str(e))
         raise
 
 
@@ -462,7 +462,7 @@ Sadece JSON'u döndür, başka hiçbir şey ekleme.
                 return get_default_classification()
 
     except Exception as e:
-        logger.error(f"AI sınıflandırma hatası: {str(e)}")
+        logger.error(f"AI sınıflandırma hatası: {e!s}")
 
     return get_default_classification()
 
@@ -556,7 +556,7 @@ def generate_ai_content_v2(self, article_id):
     except Article.DoesNotExist:
         log_error("generate_ai_content_v2", f"Makale bulunamadı (ID: {article_id})", related_id=article_id)
     except Exception as e:
-        log_error("generate_ai_content_v2", f"İçerik üretim hatası: {str(e)}", traceback=str(e), related_id=article_id)
+        log_error("generate_ai_content_v2", f"İçerik üretim hatası: {e!s}", traceback=str(e), related_id=article_id)
         raise
 
 
@@ -723,7 +723,7 @@ def generate_content_with_gemini(article, prompt, ai_model):
             return response.text
 
     except Exception as e:
-        logger.error(f"Gemini API hatası: {str(e)}")
+        logger.error(f"Gemini API hatası: {e!s}")
 
     return None
 
@@ -784,7 +784,7 @@ def calculate_quality_metrics(article):
         logger.info(f"Kalite metrikleri hesaplandı: {article.title} - Puan: {overall_score:.1f}")
 
     except Exception as e:
-        logger.error(f"Kalite metrikleri hesaplama hatası: {str(e)}")
+        logger.error(f"Kalite metrikleri hesaplama hatası: {e!s}")
 
 
 def calculate_overall_quality_score(metrics):
@@ -901,7 +901,7 @@ Style: Editorial, 16:9 aspect ratio, high quality, photorealistic
 
         except Exception as e:
             log_error(
-                "generate_article_image_v2", f"Görsel üretim hatası: {str(e)}", traceback=str(e), related_id=article_id
+                "generate_article_image_v2", f"Görsel üretim hatası: {e!s}", traceback=str(e), related_id=article_id
             )
 
     except Article.DoesNotExist:

@@ -6,7 +6,6 @@ Sınıflandırma, yazı stili seçimi, prompt üretimi, kalite kontrol
 import logging
 from datetime import timedelta
 from difflib import SequenceMatcher
-from typing import Dict, List, Tuple
 
 from django.utils import timezone
 
@@ -41,7 +40,7 @@ class DuplicateDetector:
         return ratio > threshold
 
     @classmethod
-    def find_similar_articles(cls, title: str, category: str, days: int = 7, threshold: float = 0.85) -> List:
+    def find_similar_articles(cls, title: str, category: str, days: int = 7, threshold: float = 0.85) -> list:
         """
         Benzer makaleleri bul
         """
@@ -181,7 +180,7 @@ class ArticleClassifier:
     }
 
     @classmethod
-    def classify_article(cls, title: str, summary: str) -> Dict:
+    def classify_article(cls, title: str, summary: str) -> dict:
         """
         Makaleyi kategori ve alt kategoriye sınıflandır
         """
@@ -208,7 +207,7 @@ class ArticleClassifier:
         }
 
     @classmethod
-    def _determine_category(cls, text: str) -> Tuple[str, float]:
+    def _determine_category(cls, text: str) -> tuple[str, float]:
         """
         Kategoriyi belirle
         """
@@ -287,7 +286,7 @@ class AuthorStyleSelector:
     """
 
     @staticmethod
-    def select_author_and_style(category: str, importance_level: int) -> Tuple:
+    def select_author_and_style(category: str, importance_level: int) -> tuple:
         """
         Kategori ve önem seviyesine göre yazar seç
         """
@@ -313,7 +312,7 @@ class AuthorStyleSelector:
         return author, style
 
     @staticmethod
-    def _select_style(importance_level: int, mapping=None) -> Dict:
+    def _select_style(importance_level: int, mapping=None) -> dict:
         """
         Yazı stilini seç
         """
@@ -353,7 +352,7 @@ class PromptGenerator:
     """
 
     @staticmethod
-    def generate_content_prompt(article_data: Dict, author, style: Dict) -> str:
+    def generate_content_prompt(article_data: dict, author, style: dict) -> str:
         """
         İçerik üretimi için dinamik prompt oluştur
         """
@@ -382,26 +381,26 @@ class PromptGenerator:
         return prompt
 
     @staticmethod
-    def _get_default_prompt(article_data: Dict, author, style: Dict) -> str:
+    def _get_default_prompt(article_data: dict, author, style: dict) -> str:
         """
         Varsayılan prompt template'i
         """
         min_words, max_words = style["word_count"]
 
         return f"""
-Sen {author.name} isimli deneyimli bir {article_data['category']} gazetecisisin.
+Sen {author.name} isimli deneyimli bir {article_data["category"]} gazetecisisin.
 
 HABER BİLGİLERİ:
-Başlık: {article_data['title']}
-Kategori: {article_data['category']}
-Özet: {article_data['summary']}
-Kaynak: {article_data.get('link', '')}
+Başlık: {article_data["title"]}
+Kategori: {article_data["category"]}
+Özet: {article_data["summary"]}
+Kaynak: {article_data.get("link", "")}
 
 YAZIM TALIMATLAR:
-1. Ton: {style['tone']}
+1. Ton: {style["tone"]}
 2. Uzunluk: {min_words}-{max_words} kelime
-3. Karmaşıklık: {style['complexity']}
-4. Ses: {style['voice']}
+3. Karmaşıklık: {style["complexity"]}
+4. Ses: {style["voice"]}
 
 YAPISI:
 1. Giriş (100-150 kelime)
@@ -502,7 +501,7 @@ class RSSMediaExtractor:
     """
 
     @staticmethod
-    def extract_media_from_rss(feed_url: str, article_url: str) -> Dict:
+    def extract_media_from_rss(feed_url: str, article_url: str) -> dict:
         """
         RSS feed'den makaleye ait medya çıkar
         """
@@ -538,12 +537,12 @@ class RSSMediaExtractor:
                     break
 
         except Exception as e:
-            logger.error(f"Error extracting media from RSS: {str(e)}")
+            logger.error(f"Error extracting media from RSS: {e!s}")
 
         return media
 
     @staticmethod
-    def _extract_images_from_html(html_content: str) -> List[Dict]:
+    def _extract_images_from_html(html_content: str) -> list[dict]:
         """
         HTML'den görsel URL'lerini çıkar
         """
@@ -556,7 +555,7 @@ class RSSMediaExtractor:
                 images.append({"url": img.get("src", ""), "alt": img.get("alt", ""), "title": img.get("title", "")})
 
         except Exception as e:
-            logger.error(f"Error extracting images from HTML: {str(e)}")
+            logger.error(f"Error extracting images from HTML: {e!s}")
 
         return images
 
@@ -623,7 +622,7 @@ class ReadabilityMetrics:
             return "Çok Zor"
 
     @staticmethod
-    def calculate_content_metrics(content: str) -> Dict:
+    def calculate_content_metrics(content: str) -> dict:
         """
         İçerik metrikleri hesapla
         """

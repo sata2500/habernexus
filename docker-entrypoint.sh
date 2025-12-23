@@ -2,13 +2,16 @@
 set -e
 
 echo "=========================================="
-echo "HaberNexus Docker Entrypoint"
+echo "HaberNexus Docker Entrypoint v10.9"
 echo "=========================================="
 
-# Dizinlerin varlığını kontrol et ve oluştur
+# Dizinlerin varlığını kontrol et (non-root user için mkdir yerine sadece kontrol)
 echo "→ Dizinler kontrol ediliyor..."
-mkdir -p /app/staticfiles /app/media /app/logs
-chmod -R 755 /app/staticfiles /app/media /app/logs 2>/dev/null || true
+for dir in /app/staticfiles /app/media /app/logs; do
+    if [ ! -d "$dir" ]; then
+        echo "⚠ Dizin bulunamadı: $dir (Dockerfile'da oluşturulmalı)"
+    fi
+done
 
 # Veritabanı bağlantısını bekle
 echo "→ Veritabanı bağlantısı bekleniyor..."
@@ -18,19 +21,21 @@ RETRY_COUNT=0
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if python -c "
 import os
-import psycopg2
+import sys
 try:
+    import psycopg2
     conn = psycopg2.connect(
         host=os.environ.get('DB_HOST', 'postgres'),
         port=os.environ.get('DB_PORT', '5432'),
         dbname=os.environ.get('DB_NAME', 'habernexus'),
         user=os.environ.get('DB_USER', 'habernexus_user'),
-        password=os.environ.get('DB_PASSWORD', 'changeme')
+        password=os.environ.get('DB_PASSWORD', 'changeme'),
+        connect_timeout=5
     )
     conn.close()
-    exit(0)
-except:
-    exit(1)
+    sys.exit(0)
+except Exception as e:
+    sys.exit(1)
 " 2>/dev/null; then
         echo "✓ Veritabanı bağlantısı başarılı"
         break
@@ -67,16 +72,21 @@ if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; t
     python manage.py shell -c "
 from django.contrib.auth import get_user_model
 User = get_user_model()
-if not User.objects.filter(username='$DJANGO_SUPERUSER_USERNAME').exists():
-    User.objects.create_superuser(
-        username='$DJANGO_SUPERUSER_USERNAME',
-        email='$DJANGO_SUPERUSER_EMAIL',
-        password='$DJANGO_SUPERUSER_PASSWORD'
-    )
+username = '$DJANGO_SUPERUSER_USERNAME'
+email = '$DJANGO_SUPERUSER_EMAIL'
+password = '$DJANGO_SUPERUSER_PASSWORD'
+if not User.objects.filter(username=username).exists():
+    User.objects.create_superuser(username=username, email=email, password=password)
     print('✓ Superuser oluşturuldu')
 else:
     print('✓ Superuser zaten mevcut')
 " 2>/dev/null || echo "⚠ Superuser kontrolü atlandı"
+fi
+
+# Django deployment check (optional, for debugging)
+if [ "${DEBUG:-False}" = "False" ]; then
+    echo "→ Django deployment kontrolü yapılıyor..."
+    python manage.py check --deploy 2>/dev/null || echo "⚠ Deployment check uyarıları var (devam ediliyor)"
 fi
 
 echo "=========================================="

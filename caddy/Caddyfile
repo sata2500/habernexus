@@ -1,0 +1,70 @@
+# =============================================================================
+# HaberNexus Caddy Configuration - Default
+# This is the default configuration for initial setup
+# For production with domain, use Caddyfile.template
+# =============================================================================
+{
+    # Global options - disable automatic HTTPS for IP addresses
+    auto_https off
+    
+    # Logging
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}
+
+# HTTP server for IP address access
+:80 {
+    # Encode responses with gzip
+    encode gzip
+    
+    # Static files - served directly by Caddy
+    handle_path /static/* {
+        root * /app/staticfiles
+        file_server
+    }
+    
+    # Media files - served directly by Caddy
+    handle_path /media/* {
+        root * /app/media
+        file_server
+    }
+    
+    # Health check endpoint for Caddy itself
+    handle /health {
+        respond "OK" 200
+    }
+    
+    # Reverse proxy to Django app
+    handle {
+        reverse_proxy web:8000 {
+            # IMPORTANT: Pass the original Host header to Django
+            header_up Host {http.request.host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            
+            # Health check for upstream
+            health_uri /health/
+            health_interval 30s
+            health_timeout 10s
+        }
+    }
+    
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+    
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}

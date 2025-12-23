@@ -140,7 +140,7 @@ class TestCreateThinkingConfig(TestCase):
             mock_config = MagicMock()
             mock_types.ThinkingConfig.return_value = mock_config
 
-            _ = create_thinking_config()  # noqa: F841
+            _ = create_thinking_config()
 
             mock_types.ThinkingConfig.assert_called_with(thinking_budget=0)
 
@@ -157,7 +157,7 @@ class TestCreateThinkingConfig(TestCase):
             mock_config = MagicMock()
             mock_types.ThinkingConfig.return_value = mock_config
 
-            _ = create_thinking_config()  # noqa: F841
+            _ = create_thinking_config()
 
             mock_types.ThinkingConfig.assert_called_with(thinking_level="high")
 
@@ -174,7 +174,7 @@ class TestCreateThinkingConfig(TestCase):
             mock_config = MagicMock()
             mock_types.ThinkingConfig.return_value = mock_config
 
-            _ = create_thinking_config()  # noqa: F841
+            _ = create_thinking_config()
 
             mock_types.ThinkingConfig.assert_called_with(thinking_budget=2048)
 

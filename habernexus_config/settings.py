@@ -152,6 +152,8 @@ else:
             "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
             "HOST": os.getenv("DB_HOST", "localhost"),
             "PORT": os.getenv("DB_PORT", "5432"),
+            "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "60")),  # Persistent connections
+            "CONN_HEALTH_CHECKS": True,  # Connection health checks
             # NOT: Connection pooling psycopg2 ile çalışmıyor, psycopg3 gerekiyor
             # Gelecekte psycopg3'e geçildiğinde aşağıdaki yapılandırma aktif edilebilir:
             # "OPTIONS": {
@@ -226,7 +228,12 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     "visibility_timeout": 3600,  # 1 saat (saniye cinsinden)
     "fanout_prefix": True,
     "fanout_patterns": True,
+    "retry_on_timeout": True,
 }
+
+# Celery Broker Connection Settings
+CELERY_BROKER_POOL_LIMIT = int(os.getenv("CELERY_BROKER_POOL_LIMIT", "1"))
+CELERY_BROKER_CONNECTION_TIMEOUT = float(os.getenv("CELERY_BROKER_CONNECTION_TIMEOUT", "30.0"))
 
 # Celery Result Backend Options
 CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {"retry_policy": {"timeout": 5.0}}
@@ -234,9 +241,17 @@ CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {"retry_policy": {"timeout": 5.0}}
 # Task sonuçlarının ne kadar süre saklanacağı
 CELERY_RESULT_EXPIRES = 3600  # 1 saat
 
-# Task acknowledgement ayarları
-CELERY_TASK_ACKS_LATE = True  # Task tamamlandıktan sonra acknowledge et
-CELERY_WORKER_PREFETCH_MULTIPLIER = 4  # Her worker 4 task önceden alacak
+# Task acknowledgement ayarları - Production best practices
+# CELERY_TASK_ACKS_LATE ensures tasks are automatically re-queued
+# in the event of an abrupt shutdown of the worker
+CELERY_TASK_ACKS_LATE = True  # Task tamamlandiktan sonra acknowledge et
+CELERY_TASK_ACKS_ON_FAILURE_OR_TIMEOUT = True  # Hata durumunda da acknowledge et (retry icin)
+CELERY_TASK_REJECT_ON_WORKER_LOST = False  # Worker kaybolursa taski reddetme
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Reliability icin dusuk prefetch (best practice)
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000  # Memory leaklere karsi koruma
+CELERY_WORKER_SEND_TASK_EVENTS = True  # Flower monitoring icin gerekli
+CELERY_EVENT_QUEUE_EXPIRES = 60.0  # Event queue expire suresi
+CELERY_EVENT_QUEUE_TTL = 5.0  # Event queue TTL
 
 # Celery Kuyrukları (Queues)
 if Queue and Exchange:

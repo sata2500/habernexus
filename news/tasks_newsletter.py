@@ -84,7 +84,7 @@ def send_daily_newsletter():
                 sent_count += 1
 
             except Exception as e:
-                logger.error(f"E-posta gönderim hatası ({subscriber.email}): {str(e)}")
+                logger.error(f"E-posta gönderim hatası ({subscriber.email}): {e!s}")
 
         # Newsletter kaydını güncelle
         newsletter_email.status = "sent"
@@ -95,7 +95,7 @@ def send_daily_newsletter():
         return f"Başarılı: {sent_count} e-posta gönderildi"
 
     except Exception as e:
-        log_error("send_daily_newsletter", f"Günlük bülten hatası: {str(e)}", traceback=str(e))
+        log_error("send_daily_newsletter", f"Günlük bülten hatası: {e!s}", traceback=str(e))
         raise
 
 
@@ -159,7 +159,7 @@ def send_weekly_newsletter():
                 sent_count += 1
 
             except Exception as e:
-                logger.error(f"E-posta gönderim hatası ({subscriber.email}): {str(e)}")
+                logger.error(f"E-posta gönderim hatası ({subscriber.email}): {e!s}")
 
         # Newsletter kaydını güncelle
         newsletter_email.status = "sent"
@@ -170,7 +170,7 @@ def send_weekly_newsletter():
         return f"Başarılı: {sent_count} e-posta gönderildi"
 
     except Exception as e:
-        log_error("send_weekly_newsletter", f"Haftalık bülten hatası: {str(e)}", traceback=str(e))
+        log_error("send_weekly_newsletter", f"Haftalık bülten hatası: {e!s}", traceback=str(e))
         raise
 
 
@@ -190,5 +190,5 @@ def cleanup_unverified_subscribers():
         return f"Başarılı: {deleted_count} abone silindi"
 
     except Exception as e:
-        log_error("cleanup_unverified_subscribers", f"Temizleme hatası: {str(e)}", traceback=str(e))
+        log_error("cleanup_unverified_subscribers", f"Temizleme hatası: {e!s}", traceback=str(e))
         raise

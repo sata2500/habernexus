@@ -74,7 +74,7 @@ def process_article_pipeline(article_data: dict) -> dict:
         return {"status": "processing", "task_id": result.id}
 
     except Exception as e:
-        logger.error(f"Pipeline failed: {str(e)}")
+        logger.error(f"Pipeline failed: {e!s}")
         raise
 
 
@@ -111,7 +111,7 @@ def check_duplicate_task(self, article_data: dict) -> dict:
         return article_data
 
     except Exception as exc:
-        logger.error(f"Duplicate check failed: {str(exc)}")
+        logger.error(f"Duplicate check failed: {exc!s}")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -151,7 +151,7 @@ def filter_quality_task(self, article_data: dict) -> dict:
         return article_data
 
     except Exception as exc:
-        logger.error(f"Quality filtering failed: {str(exc)}")
+        logger.error(f"Quality filtering failed: {exc!s}")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -185,7 +185,7 @@ def classify_article_task(self, article_data: dict) -> dict:
         return article_data
 
     except Exception as exc:
-        logger.error(f"Classification failed: {str(exc)}")
+        logger.error(f"Classification failed: {exc!s}")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -221,7 +221,7 @@ def select_author_style_task(self, article_data: dict) -> dict:
         return article_data
 
     except Exception as exc:
-        logger.error(f"Author selection failed: {str(exc)}")
+        logger.error(f"Author selection failed: {exc!s}")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -284,7 +284,7 @@ def generate_content_task(self, article_data: dict) -> dict:
         return article_data
 
     except Exception as exc:
-        logger.error(f"Content generation failed: {str(exc)}")
+        logger.error(f"Content generation failed: {exc!s}")
         raise self.retry(exc=exc, countdown=120)
 
 
@@ -318,7 +318,7 @@ def process_media_task(self, article_data: dict) -> dict:
         return article_data
 
     except Exception as exc:
-        logger.error(f"Media processing failed: {str(exc)}")
+        logger.error(f"Media processing failed: {exc!s}")
         # Medya işleme başarısız olsa da devam et
         article_data["rss_media"] = {"images": [], "videos": [], "audio": []}
         return article_data
@@ -367,7 +367,7 @@ def generate_featured_image_task(self, article_data: dict) -> dict:
         return article_data
 
     except Exception as exc:
-        logger.error(f"Image generation failed: {str(exc)}")
+        logger.error(f"Image generation failed: {exc!s}")
         # Görsel üretimi başarısız olsa da devam et
         article_data["featured_image_generated"] = False
         return article_data
@@ -421,7 +421,7 @@ def optimize_seo_task(self, article_data: dict) -> dict:
         return article_data
 
     except Exception as exc:
-        logger.error(f"SEO optimization failed: {str(exc)}")
+        logger.error(f"SEO optimization failed: {exc!s}")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -479,7 +479,7 @@ def quality_assurance_task(self, article_data: dict) -> dict:
         return article_data
 
     except Exception as exc:
-        logger.error(f"Quality assurance failed: {str(exc)}")
+        logger.error(f"Quality assurance failed: {exc!s}")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -543,7 +543,7 @@ def publish_article_task(self, article_data: dict) -> dict:
         return article_data
 
     except Exception as exc:
-        logger.error(f"Publishing failed: {str(exc)}")
+        logger.error(f"Publishing failed: {exc!s}")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -568,4 +568,4 @@ def log_generation_step(step: str, article_data: dict, duration: float, status: 
                 model_used=article_data.get("model_used", ""),
             )
     except Exception as e:
-        logger.error(f"Failed to log generation step: {str(e)}")
+        logger.error(f"Failed to log generation step: {e!s}")

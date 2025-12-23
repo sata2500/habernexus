@@ -1,0 +1,50 @@
+# =============================================================================
+# HaberNexus Cloudflare Tunnel Configuration - Default
+# Replace placeholders with actual values before use
+# =============================================================================
+
+# Tunnel configuration
+# Replace YOUR_TUNNEL_ID with your actual tunnel ID
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /root/.cloudflared/credentials.json
+logLevel: info
+
+# Ingress rules
+ingress:
+  # Main domain - replace YOUR_DOMAIN with actual domain (e.g., habernexus.com)
+  - hostname: YOUR_DOMAIN
+    service: http://caddy:80
+    originRequest:
+      connectTimeout: 30s
+      tlsTimeout: 30s
+      tcpKeepAlive: 30s
+      noHappyEyeballs: false
+      
+  # Wildcard subdomains
+  - hostname: "*.YOUR_DOMAIN"
+    service: http://caddy:80
+    originRequest:
+      connectTimeout: 30s
+      tlsTimeout: 30s
+      tcpKeepAlive: 30s
+      noHappyEyeballs: false
+      
+  # Default catch-all (404)
+  - service: http_status:404
+
+# Tunnel settings
+warp-routing:
+  enabled: false
+
+# Metrics endpoint
+metrics: localhost:7622
+
+# Keep-alive settings
+keepaliveInterval: 30s
+keepaliveTimeout: 40s
+
+# Retries
+retries: 5
+
+# Grace period
+gracePeriod: 30s

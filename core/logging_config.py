@@ -10,7 +10,7 @@ import traceback
 from datetime import datetime
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class JSONFormatter(logging.Formatter):
@@ -109,7 +109,7 @@ def get_client_ip(request) -> str:
 
 def setup_logging(
     log_level: str = "INFO",
-    log_dir: Optional[Path] = None,
+    log_dir: Path | None = None,
     json_format: bool = False,
     console_output: bool = True,
 ) -> None:
@@ -229,7 +229,7 @@ def log_request(request, response=None, duration=None) -> None:
         logger.info("Request completed", extra=log_data)
 
 
-def log_task(task_name: str, status: str, duration: Optional[float] = None, details: Optional[Dict] = None) -> None:
+def log_task(task_name: str, status: str, duration: float | None = None, details: dict | None = None) -> None:
     """
     Celery task'ı logla.
 
@@ -258,7 +258,7 @@ def log_task(task_name: str, status: str, duration: Optional[float] = None, deta
         logger.info(f"Task {status}: {task_name}", extra=log_data)
 
 
-def log_security_event(event_type: str, details: Dict[str, Any], severity: str = "warning") -> None:
+def log_security_event(event_type: str, details: dict[str, Any], severity: str = "warning") -> None:
     """
     Güvenlik olayını logla.
 
@@ -283,9 +283,9 @@ def log_ai_operation(
     operation: str,
     model: str,
     status: str,
-    duration: Optional[float] = None,
-    tokens_used: Optional[int] = None,
-    details: Optional[Dict] = None,
+    duration: float | None = None,
+    tokens_used: int | None = None,
+    details: dict | None = None,
 ) -> None:
     """
     AI operasyonunu logla.
@@ -326,7 +326,7 @@ def log_ai_operation(
 # =============================================================================
 
 
-def get_logging_config(debug: bool = False, log_dir: Optional[str] = None) -> Dict:
+def get_logging_config(debug: bool = False, log_dir: str | None = None) -> dict:
     """
     Django LOGGING ayarları için yapılandırma döndür.
 

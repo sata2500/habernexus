@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 import uuid
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__)
 _thread_locals = threading.local()
 
 
-def get_current_request() -> Optional[HttpRequest]:
+def get_current_request() -> HttpRequest | None:
     """Mevcut thread'deki request nesnesini döndür."""
     return getattr(_thread_locals, "request", None)
 
 
-def set_current_request(request: Optional[HttpRequest]) -> None:
+def set_current_request(request: HttpRequest | None) -> None:
     """Mevcut thread'e request nesnesini ata."""
     _thread_locals.request = request
 
@@ -164,7 +164,7 @@ class ErrorHandlingMiddleware(MiddlewareMixin):
     Beklenmeyen hataları yakalayan ve uygun yanıt döndüren middleware.
     """
 
-    def process_exception(self, request: HttpRequest, exception: Exception) -> Optional[HttpResponse]:
+    def process_exception(self, request: HttpRequest, exception: Exception) -> HttpResponse | None:
         from core.exceptions import HaberNexusException
 
         # HaberNexus özel hatalarını işle
@@ -252,7 +252,7 @@ class MaintenanceModeMiddleware(MiddlewareMixin):
     Bakım modu için middleware.
     """
 
-    def process_request(self, request: HttpRequest) -> Optional[HttpResponse]:
+    def process_request(self, request: HttpRequest) -> HttpResponse | None:
         # Bakım modu aktif mi kontrol et
         maintenance_mode = getattr(settings, "MAINTENANCE_MODE", False)
 
@@ -374,14 +374,13 @@ class CORSMiddleware(MiddlewareMixin):
             response["Access-Control-Allow-Credentials"] = "true"
             response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
             response["Access-Control-Allow-Headers"] = (
-                "Accept, Accept-Language, Content-Language, Content-Type, "
-                "Authorization, X-Requested-With, X-CSRFToken"
+                "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, X-CSRFToken"
             )
             response["Access-Control-Max-Age"] = "86400"  # 24 saat
 
         return response
 
-    def process_request(self, request: HttpRequest) -> Optional[HttpResponse]:
+    def process_request(self, request: HttpRequest) -> HttpResponse | None:
         # OPTIONS preflight isteklerini işle
         if request.method == "OPTIONS":
             response = HttpResponse()

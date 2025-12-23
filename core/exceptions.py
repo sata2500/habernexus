@@ -5,8 +5,9 @@ HaberNexus Custom Exceptions
 
 import logging
 import traceback
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -35,7 +36,7 @@ class HaberNexusException(Exception):
     default_code = "error"
     http_status = status.HTTP_500_INTERNAL_SERVER_ERROR
 
-    def __init__(self, message: Optional[str] = None, code: Optional[str] = None, details: Optional[dict] = None):
+    def __init__(self, message: str | None = None, code: str | None = None, details: dict | None = None):
         self.message = message or self.default_message
         self.code = code or self.default_code
         self.details = details or {}
@@ -164,7 +165,7 @@ class APIServiceUnavailableError(APIException):
 # =============================================================================
 
 
-def custom_exception_handler(exc: Exception, context: dict) -> Optional[Response]:
+def custom_exception_handler(exc: Exception, context: dict) -> Response | None:
     """
     REST Framework için özel exception handler.
     Tüm hataları tutarlı bir formatta döndürür.
@@ -350,7 +351,7 @@ def error_response(
     message: str,
     code: str = "error",
     status_code: int = 400,
-    details: Optional[dict] = None,
+    details: dict | None = None,
 ) -> JsonResponse:
     """
     Standart hata yanıtı oluştur.

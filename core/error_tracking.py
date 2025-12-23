@@ -10,9 +10,10 @@ import functools
 import logging
 import sys
 import traceback
+from collections.abc import Callable
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from django.conf import settings
 from django.db import connection
@@ -33,9 +34,9 @@ class ErrorContext:
     """
 
     def __init__(self):
-        self._context: Dict[str, Any] = {}
-        self._tags: Dict[str, str] = {}
-        self._breadcrumbs: List[Dict[str, Any]] = []
+        self._context: dict[str, Any] = {}
+        self._tags: dict[str, str] = {}
+        self._breadcrumbs: list[dict[str, Any]] = []
 
     def set_context(self, key: str, value: Any) -> None:
         """Bağlam bilgisi ekle."""
@@ -50,7 +51,7 @@ class ErrorContext:
         message: str,
         category: str = "default",
         level: str = "info",
-        data: Optional[Dict] = None,
+        data: dict | None = None,
     ) -> None:
         """Breadcrumb ekle (işlem geçmişi)."""
         self._breadcrumbs.append(
@@ -66,7 +67,7 @@ class ErrorContext:
         if len(self._breadcrumbs) > 50:
             self._breadcrumbs = self._breadcrumbs[-50:]
 
-    def get_context(self) -> Dict[str, Any]:
+    def get_context(self) -> dict[str, Any]:
         """Tüm bağlam bilgisini döndür."""
         return {
             "context": self._context,
@@ -158,7 +159,7 @@ def init_sentry() -> bool:
         return False
 
 
-def _before_send_filter(event: Dict, hint: Dict) -> Optional[Dict]:
+def _before_send_filter(event: dict, hint: dict) -> dict | None:
     """
     Sentry'ye gönderilmeden önce event'leri filtrele.
 
@@ -198,9 +199,9 @@ def _before_send_filter(event: Dict, hint: Dict) -> Optional[Dict]:
 
 def capture_exception(
     exception: Exception,
-    extra: Optional[Dict] = None,
-    tags: Optional[Dict] = None,
-) -> Optional[str]:
+    extra: dict | None = None,
+    tags: dict | None = None,
+) -> str | None:
     """
     Exception'ı Sentry'ye gönder.
 
@@ -253,9 +254,9 @@ def capture_exception(
 def capture_message(
     message: str,
     level: str = "info",
-    extra: Optional[Dict] = None,
-    tags: Optional[Dict] = None,
-) -> Optional[str]:
+    extra: dict | None = None,
+    tags: dict | None = None,
+) -> str | None:
     """
     Mesajı Sentry'ye gönder.
 
@@ -340,7 +341,7 @@ def track_errors(
 
             except Exception as e:
                 error_ctx.add_breadcrumb(
-                    message=f"Error in {operation_name}: {str(e)}",
+                    message=f"Error in {operation_name}: {e!s}",
                     category="function",
                     level="error",
                 )
@@ -376,7 +377,7 @@ def track_errors(
 @contextmanager
 def error_tracking_context(
     operation_name: str,
-    extra: Optional[Dict] = None,
+    extra: dict | None = None,
 ):
     """
     Hata takibi için context manager.
@@ -408,7 +409,7 @@ def error_tracking_context(
         )
     except Exception as e:
         error_ctx.add_breadcrumb(
-            message=f"Error in context {operation_name}: {str(e)}",
+            message=f"Error in context {operation_name}: {e!s}",
             category="context",
             level="error",
         )
@@ -426,12 +427,12 @@ class ErrorReport:
     Hata raporu oluşturma sınıfı.
     """
 
-    def __init__(self, exception: Exception, request: Optional[HttpRequest] = None):
+    def __init__(self, exception: Exception, request: HttpRequest | None = None):
         self.exception = exception
         self.request = request
         self.timestamp = datetime.utcnow()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Hata raporunu dictionary olarak döndür."""
         report = {
             "timestamp": self.timestamp.isoformat(),
@@ -464,7 +465,7 @@ class ErrorReport:
 
         return report
 
-    def _get_client_ip(self) -> Optional[str]:
+    def _get_client_ip(self) -> str | None:
         """Client IP adresini al."""
         if not self.request:
             return None
@@ -477,8 +478,8 @@ class ErrorReport:
 
 def create_error_report(
     exception: Exception,
-    request: Optional[HttpRequest] = None,
-) -> Dict[str, Any]:
+    request: HttpRequest | None = None,
+) -> dict[str, Any]:
     """
     Hata raporu oluştur.
 
@@ -498,7 +499,7 @@ def create_error_report(
 # =============================================================================
 
 
-def check_error_tracking_health() -> Dict[str, Any]:
+def check_error_tracking_health() -> dict[str, Any]:
     """
     Hata takip sisteminin sağlık durumunu kontrol et.
 

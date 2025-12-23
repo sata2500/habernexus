@@ -5,12 +5,14 @@ Test ortamı için Django ayarları.
 
 from pathlib import Path
 
-from .settings import *  # noqa: F401, F403
+from .settings import *  # noqa: F403
 
 # Test ortamı için gereksiz uygulamaları kaldır
 INSTALLED_APPS = [
-    app for app in INSTALLED_APPS  # noqa: F405
-    if app not in (
+    app
+    for app in INSTALLED_APPS  # noqa: F405
+    if app
+    not in (
         "tailwind",
         "django_elasticsearch_dsl",
     )
