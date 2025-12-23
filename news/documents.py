@@ -42,9 +42,4 @@ class ArticleDocument(Document):
 
     def get_queryset(self):
         """Only index published articles"""
-        return (
-            super(ArticleDocument, self)
-            .get_queryset()
-            .select_related("author", "rss_source")
-            .filter(status="published")
-        )
+        return super().get_queryset().select_related("author", "rss_source").filter(status="published")

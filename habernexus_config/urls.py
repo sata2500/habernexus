@@ -32,7 +32,7 @@ urlpatterns = [
     # Core and Admin
     path("", include("core.urls")),
     path("admin/", admin.site.urls),
-    # News (Frontend)
+    # News Frontend
     path("", include("news.urls")),
     # Monitoring
     path("", include("django_prometheus.urls")),

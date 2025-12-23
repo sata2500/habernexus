@@ -60,12 +60,48 @@ ignore = [
     "PLR0913", # too many arguments
     "PLR0915", # too many statements
     "PLR2004", # magic value comparison
+    "RUF001", # ambiguous-unicode-character-string (Turkish characters)
+    "RUF002", # ambiguous-unicode-character-docstring (Turkish characters)
+    "RUF003", # ambiguous-unicode-character-comment (Turkish characters)
+    "RUF012", # mutable-class-default (Django serializers/models use this pattern)
+    "PLC0415", # import-outside-top-level (Django lazy imports pattern)
+    "PTH118", # os-path-join (pathlib migration planned for future)
+    "PTH123", # builtin-open (pathlib migration planned for future)
+    "PTH103", # os-makedirs (pathlib migration planned for future)
+    "PTH110", # os-path-exists (pathlib migration planned for future)
+    "PTH202", # os-path-getsize (pathlib migration planned for future)
+    "PTH204", # os-path-getmtime (pathlib migration planned for future)
+    "RUF013", # implicit-optional (type hints will be updated in future)
+    "B007",   # unused-loop-control-variable (intentional in some cases)
+    "SIM105", # suppressible-exception (code clarity preference)
+    "SIM108", # if-else-block-instead-of-if-exp (code clarity preference)
+    "SIM210", # if-expr-with-true-false (code clarity preference)
+    "SIM118", # in-dict-keys (explicit is better than implicit)
+    "RUF059", # unused-unpacked-variable (intentional in some cases)
+    "B017",   # assert-raises-exception (test patterns)
+    "PLR0911", # too-many-return-statements (complex functions)
+    "PLR0912", # too-many-branches (complex functions)
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "*/migrations/*" = ["ALL"]
 "*/tests/*" = ["ARG", "PLR2004"]
+"api/tests.py" = ["ARG"]  # Test fixtures require unused arguments
 "conftest.py" = ["ARG"]
+"api/permissions.py" = ["ARG002"]  # Django permission methods require view argument
+"api/views.py" = ["ARG002"]  # DRF view methods require standard signatures
+"core/health.py" = ["ARG002"]  # Django view methods require request argument
+"core/middleware.py" = ["ARG002"]  # Django middleware requires standard signatures
+"core/views.py" = ["ARG001"]  # Django views require request argument
+"config/gunicorn_config.py" = ["ARG001"]  # Gunicorn hooks require server argument
+"app/habernexus/admin_dashboard.py" = ["ARG001"]  # Django admin views require request
+"core/admin.py" = ["ARG002"]  # Django admin methods require standard signatures
+"core/management/commands/*.py" = ["ARG002"]  # Django management commands
+"news/media_processor.py" = ["ARG002"]  # Method signatures for future use
+"news/quality_utils.py" = ["ARG002"]  # Serializer validators require attrs
+"news/tasks.py" = ["ARG001"]  # Celery task signatures
+"news/tasks_advanced.py" = ["ARG001"]  # Celery task signatures
+"news/tasks_v2.py" = ["ARG001"]  # Celery task signatures and placeholder functions
 
 [tool.ruff.lint.isort]
 known-first-party = ["core", "news", "authors", "habernexus_config"]

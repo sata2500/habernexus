@@ -1,2 +1,1 @@
-# HaberNexus API Module
-# Version: 10.0
+"""HaberNexus API Module - Version 10.0."""

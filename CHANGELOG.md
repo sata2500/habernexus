@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [11.0.1] - 2025-12-23
+
+### 🔧 Improved
+- **Code Quality:** Comprehensive Ruff linting configuration updated
+  - Added Turkish character ignore rules (RUF001, RUF002, RUF003)
+  - Added Django/DRF pattern ignores (RUF012, PLC0415)
+  - Added pathlib migration placeholders (PTH118, PTH123, etc.)
+  - Added per-file-ignores for Django standard patterns
+- **Exception Handling:** Applied `raise ... from err` pattern for proper exception chaining
+- **Code Cleanup:** Removed commented-out code blocks and converted to TODO comments where appropriate
+- **Code Formatting:** Applied `ruff format` to entire codebase
+
+### 📝 Documentation
+- **DEVELOPMENT_ROADMAP.md:** Updated with completed tasks and new status
+- **KNOWN_ISSUES.md:** Updated with resolved issues and current status
+
+### 🐛 Fixed
+- Fixed `super()` call in `news/documents.py` (UP008)
+- Fixed invalid environment variable default type in `config/production_settings.py` (PLW1508)
+- Fixed exception handling in `news/tasks.py`, `news/tasks_advanced.py`, `news/tasks_v2.py`, `news/media_processor.py` (B904)
+
+---
+
 ## [10.7.0] - 2025-12-18
 
 ### 🆕 Added

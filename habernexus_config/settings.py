@@ -154,15 +154,8 @@ else:
             "PORT": os.getenv("DB_PORT", "5432"),
             "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "60")),  # Persistent connections
             "CONN_HEALTH_CHECKS": True,  # Connection health checks
-            # NOT: Connection pooling psycopg2 ile çalışmıyor, psycopg3 gerekiyor
-            # Gelecekte psycopg3'e geçildiğinde aşağıdaki yapılandırma aktif edilebilir:
-            # "OPTIONS": {
-            #     "pool": {
-            #         "min_size": 2,
-            #         "max_size": 10,
-            #         "timeout": 10,
-            #     }
-            # },
+            # NOT: Connection pooling psycopg2 ile çalışmıyor, psycopg3 gerekiyor.
+            # Gelecekte psycopg3'e geçildiğinde pool yapılandırması eklenebilir.
         }
     }
 

@@ -50,8 +50,8 @@ def get_genai_client():
     try:
         api_key_setting = Setting.objects.get(key="GOOGLE_GEMINI_API_KEY")
         api_key = api_key_setting.value
-    except Setting.DoesNotExist:
-        raise ValueError("Google Gemini API anahtarı bulunamadı. Admin panelinden ayarlayın.")
+    except Setting.DoesNotExist as err:
+        raise ValueError("Google Gemini API anahtarı bulunamadı. Admin panelinden ayarlayın.") from err
 
     if not api_key:
         raise ValueError("Google Gemini API anahtarı boş. Admin panelinden ayarlayın.")
@@ -328,7 +328,7 @@ def fetch_single_rss(source: RssSource) -> int:
         return fetched_count
 
     except Exception as e:
-        raise Exception(f"RSS tarama hatası ({source.name}): {e!s}")
+        raise Exception(f"RSS tarama hatası ({source.name}): {e!s}") from e
 
 
 def download_article_image(article: Article, image_url: str) -> None:

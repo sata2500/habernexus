@@ -4,32 +4,38 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Author',
+            name="Author",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='Yazarın tam adı', max_length=255)),
-                ('slug', models.SlugField(help_text="URL'de kullanılacak slug (örn: salih-tanriseven)", unique=True)),
-                ('bio', models.TextField(blank=True, help_text='Yazarın biyografisi')),
-                ('expertise', models.CharField(help_text='Yazarın uzmanlık alanı (örn: Teknoloji, Spor, Siyaset)', max_length=255)),
-                ('profile_image', models.ImageField(blank=True, help_text='Yazarın profil resmi', null=True, upload_to='authors/')),
-                ('email', models.EmailField(blank=True, help_text='Yazarın e-posta adresi', max_length=254)),
-                ('website', models.URLField(blank=True, help_text='Yazarın web sitesi')),
-                ('is_active', models.BooleanField(default=True, help_text='Yazar aktif mi?')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(help_text="Yazarın tam adı", max_length=255)),
+                ("slug", models.SlugField(help_text="URL'de kullanılacak slug (örn: salih-tanriseven)", unique=True)),
+                ("bio", models.TextField(blank=True, help_text="Yazarın biyografisi")),
+                (
+                    "expertise",
+                    models.CharField(
+                        help_text="Yazarın uzmanlık alanı (örn: Teknoloji, Spor, Siyaset)", max_length=255
+                    ),
+                ),
+                (
+                    "profile_image",
+                    models.ImageField(blank=True, help_text="Yazarın profil resmi", null=True, upload_to="authors/"),
+                ),
+                ("email", models.EmailField(blank=True, help_text="Yazarın e-posta adresi", max_length=254)),
+                ("website", models.URLField(blank=True, help_text="Yazarın web sitesi")),
+                ("is_active", models.BooleanField(default=True, help_text="Yazar aktif mi?")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Yazar',
-                'verbose_name_plural': 'Yazarlar',
-                'ordering': ['name'],
+                "verbose_name": "Yazar",
+                "verbose_name_plural": "Yazarlar",
+                "ordering": ["name"],
             },
         ),
     ]

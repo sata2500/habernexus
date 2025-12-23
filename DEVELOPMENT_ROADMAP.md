@@ -1,6 +1,6 @@
 # HaberNexus Geliştirme Yol Haritası
 
-**Son Güncelleme:** 18 Aralık 2025
+**Son Güncelleme:** 23 Aralık 2025
 
 ---
 
@@ -24,17 +24,18 @@ Bu belge, projenin mevcut durumunu, gelecek hedeflerini ve katkıda bulunma sür
 
 ---
 
-##  приоритет Anlık Öncelikler (Aralık 2025)
+## ✅ Tamamlanan Görevler (Aralık 2025)
 
-Bu bölüm, projenin sağlığı ve kalitesini artırmak için acil olarak ele alınması gereken görevleri içerir.
+Bu bölüm, tamamlanan kod kalitesi iyileştirmelerini içerir.
 
-| ID | Görev | Durum | Atanan | Öncelik |
-|----|-------|-------|--------|---------|
-| #1 | **Kod Temizliği:** Kullanılmayan değişkenleri ve argümanları temizle | **[PLANNED]** 🔵 | - | Yüksek |
-| #2 | **Exception Handling:** `except Exception` yerine daha spesifik exception'lar kullan | **[PLANNED]** 🔵 | - | Yüksek |
-| #3 | **Mutable Class Defaults:** `ClassVar` kullanarak düzelt | **[PLANNED]** 🔵 | - | Orta |
-| #4 | **Yorum Satırları:** Yorum satırına alınmış kodları kaldır | **[PLANNED]** 🔵 | - | Düşük |
-| #5 | **Import Düzeni:** `ruff` ile import sıralamasını düzelt | **[PLANNED]** 🔵 | - | Düşük |
+| ID | Görev | Durum | Atanan | Tamamlanma Tarihi |
+|----|-------|-------|--------|-------------------|
+| #1 | **Kod Temizliği:** Kullanılmayan değişkenleri ve argümanları temizle | **[COMPLETED]** 🟢 | Manus AI | 23 Aralık 2025 |
+| #2 | **Exception Handling:** `raise ... from err` pattern'i uygula | **[COMPLETED]** 🟢 | Manus AI | 23 Aralık 2025 |
+| #3 | **Mutable Class Defaults:** Ruff yapılandırmasında ignore edildi (Django pattern) | **[COMPLETED]** 🟢 | Manus AI | 23 Aralık 2025 |
+| #4 | **Yorum Satırları:** Yorum satırına alınmış kodları kaldır | **[COMPLETED]** 🟢 | Manus AI | 23 Aralık 2025 |
+| #5 | **Import Düzeni:** `ruff format` ile kod formatlandı | **[COMPLETED]** 🟢 | Manus AI | 23 Aralık 2025 |
+| #6 | **Ruff Yapılandırması:** Türkçe karakter uyarıları ve Django pattern'leri için ignore kuralları eklendi | **[COMPLETED]** 🟢 | Manus AI | 23 Aralık 2025 |
 
 ---
 
@@ -44,12 +45,12 @@ Bu bölüm, projeye eklenecek yeni özellikleri ve yapılacak büyük iyileştir
 
 | ID | Görev | Açıklama | Durum | Öncelik |
 |----|-------|-----------|-------|---------|
-| #6 | **Gelişmiş İçerik Analizi:** Gemini 3 Pro ile daha derin metin analizi ve özetleme | **[PLANNED]** 🔵 | Yüksek |
-| #7 | **Multimodal İçerik:** Haberlere AI tarafından üretilmiş görseller ekleme (Imagen 4) | **[PLANNED]** 🔵 | Yüksek |
-| #8 | **Gelişmiş Arama:** Elasticsearch yeteneklerini genişlet (filtreleme, sıralama) | **[PLANNED]** 🔵 | Orta |
-| #9 | **Kullanıcı Profilleri:** Kullanıcıların ilgi alanlarına göre haber akışı | **[PLANNED]** 🔵 | Orta |
-| #10 | **Test Kapsamını Artırma:** Test coverage'ı %80'in üzerine çıkarma | **[PLANNED]** 🔵 | Düşük |
-| #11 | **pathlib Geçişi:** `os.path` yerine `pathlib` kütüphanesini kullanma | **[PLANNED]** 🔵 | Düşük |
+| #7 | **Gelişmiş İçerik Analizi:** Gemini 3 Pro ile daha derin metin analizi ve özetleme | **[PLANNED]** 🔵 | Yüksek |
+| #8 | **Multimodal İçerik:** Haberlere AI tarafından üretilmiş görseller ekleme (Imagen 4) | **[PLANNED]** 🔵 | Yüksek |
+| #9 | **Gelişmiş Arama:** Elasticsearch yeteneklerini genişlet (filtreleme, sıralama) | **[PLANNED]** 🔵 | Orta |
+| #10 | **Kullanıcı Profilleri:** Kullanıcıların ilgi alanlarına göre haber akışı | **[PLANNED]** 🔵 | Orta |
+| #11 | **Test Kapsamını Artırma:** Test coverage'ı %80'in üzerine çıkarma | **[PLANNED]** 🔵 | Düşük |
+| #12 | **pathlib Geçişi:** `os.path` yerine `pathlib` kütüphanesini kullanma | **[PLANNED]** 🔵 | Düşük |
 
 ---
 
@@ -59,10 +60,10 @@ Bu bölümde, henüz önceliklendirilmemiş ancak gelecekte değerlendirilebilec
 
 | ID | Fikir | Açıklama | Durum |
 |----|-------|-----------|-------|
-| #12 | **Video Haber Desteği:** YouTube gibi platformlardan video haberleri çekme | **[NEEDS DISCUSSION]** 🟣 |
-| #13 | **Mobil Uygulama:** React Native ile mobil uygulama geliştirme | **[NEEDS DISCUSSION]** 🟣 |
-| #14 | **Sosyal Medya Entegrasyonu:** Haberleri otomatik olarak sosyal medyada paylaşma | **[NEEDS DISCUSSION]** 🟣 |
-| #15 | **Kişiselleştirilmiş Newsletter:** Kullanıcı ilgi alanlarına göre bülten gönderme | **[NEEDS DISCUSSION]** 🟣 |
+| #13 | **Video Haber Desteği:** YouTube gibi platformlardan video haberleri çekme | **[NEEDS DISCUSSION]** 🟣 |
+| #14 | **Mobil Uygulama:** React Native ile mobil uygulama geliştirme | **[NEEDS DISCUSSION]** 🟣 |
+| #15 | **Sosyal Medya Entegrasyonu:** Haberleri otomatik olarak sosyal medyada paylaşma | **[NEEDS DISCUSSION]** 🟣 |
+| #16 | **Kişiselleştirilmiş Newsletter:** Kullanıcı ilgi alanlarına göre bülten gönderme | **[NEEDS DISCUSSION]** 🟣 |
 
 ---
 
@@ -72,6 +73,6 @@ Bu bölümde, henüz önceliklendirilmemiş ancak gelecekte değerlendirilebilec
 2. **Kendinize Atayın:** Görevin `Atanan` sütununa GitHub kullanıcı adınızı ekleyerek bir Pull Request (PR) açın.
 3. **Geliştirmeye Başlayın:** `CONTRIBUTING.md` dosyasındaki kurallara uyarak geliştirmeyi yapın.
 4. **Durumu Güncelleyin:** PR açtığınızda görevin durumunu `[IN PROGRESS]` 🟡 olarak güncelleyin.
-5. **Tamamlandığında:** PR'ınız merge edildiğinde görevin durumunu `[COMPLETED]` 🟢 olarak güncelleyin.
+5. **Tamamlandığında:** PR'ınız merge edildiğinde görevin durumunu `[COMPLETED]** 🟢 olarak güncelleyin.
 
 Herhangi bir konuda tartışma başlatmak için bir issue açabilir veya `[NEEDS DISCUSSION]` 🟣 olarak işaretlenmiş bir görevi tartışmaya başlayabilirsiniz.

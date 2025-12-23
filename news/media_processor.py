@@ -355,8 +355,8 @@ class VideoProcessor:
             if result.returncode != 0:
                 raise Exception(f"FFmpeg error: {result.stderr}")
 
-        except subprocess.TimeoutExpired:
-            raise Exception(f"FFmpeg timeout for {output_path}")
+        except subprocess.TimeoutExpired as timeout_err:
+            raise Exception(f"FFmpeg timeout for {output_path}") from timeout_err
 
     def _create_hls_manifest(self, encoded_videos: dict, article_id: str) -> str:
         """

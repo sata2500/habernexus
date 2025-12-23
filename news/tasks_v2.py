@@ -101,7 +101,7 @@ def fetch_single_rss_v2(source):
         return fetched_count
 
     except Exception as e:
-        raise Exception(f"RSS tarama hatası ({source.name}): {e!s}")
+        raise Exception(f"RSS tarama hatası ({source.name}): {e!s}") from e
 
 
 # ============================================================================

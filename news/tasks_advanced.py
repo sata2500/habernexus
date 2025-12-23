@@ -112,7 +112,7 @@ def check_duplicate_task(self, article_data: dict) -> dict:
 
     except Exception as exc:
         logger.error(f"Duplicate check failed: {exc!s}")
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=60) from exc
 
 
 # ============================================================================
@@ -152,7 +152,7 @@ def filter_quality_task(self, article_data: dict) -> dict:
 
     except Exception as exc:
         logger.error(f"Quality filtering failed: {exc!s}")
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=60) from exc
 
 
 # ============================================================================
@@ -186,7 +186,7 @@ def classify_article_task(self, article_data: dict) -> dict:
 
     except Exception as exc:
         logger.error(f"Classification failed: {exc!s}")
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=60) from exc
 
 
 # ============================================================================
@@ -222,7 +222,7 @@ def select_author_style_task(self, article_data: dict) -> dict:
 
     except Exception as exc:
         logger.error(f"Author selection failed: {exc!s}")
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=60) from exc
 
 
 # ============================================================================
@@ -285,7 +285,7 @@ def generate_content_task(self, article_data: dict) -> dict:
 
     except Exception as exc:
         logger.error(f"Content generation failed: {exc!s}")
-        raise self.retry(exc=exc, countdown=120)
+        raise self.retry(exc=exc, countdown=120) from exc
 
 
 # ============================================================================
@@ -346,14 +346,7 @@ def generate_featured_image_task(self, article_data: dict) -> dict:
         # Imagen 3 ile görsel üret
         genai.Client()
 
-        # Imagen 3 API çağrısı (placeholder - gerçek implementasyon gerekli)
-        # response = client.models.generate_images(
-        #     model="imagen-3-generate-001",
-        #     prompt=image_prompt,
-        #     number_of_images=1,
-        #     size="1920x1080"
-        # )
-
+        # TODO: Imagen 3 API entegrasyonu yapılacak
         # Şimdilik placeholder
         article_data["featured_image_generated"] = True
         article_data["featured_image_url"] = None  # Gerçek URL'ye güncellenecek
@@ -422,7 +415,7 @@ def optimize_seo_task(self, article_data: dict) -> dict:
 
     except Exception as exc:
         logger.error(f"SEO optimization failed: {exc!s}")
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=60) from exc
 
 
 # ============================================================================
@@ -480,7 +473,7 @@ def quality_assurance_task(self, article_data: dict) -> dict:
 
     except Exception as exc:
         logger.error(f"Quality assurance failed: {exc!s}")
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=60) from exc
 
 
 # ============================================================================
@@ -544,7 +537,7 @@ def publish_article_task(self, article_data: dict) -> dict:
 
     except Exception as exc:
         logger.error(f"Publishing failed: {exc!s}")
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=60) from exc
 
 
 # ============================================================================

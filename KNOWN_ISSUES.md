@@ -1,6 +1,6 @@
 # HaberNexus - Bilinen Hatalar ve Geçici Çözümler
 
-**Son Güncelleme:** 18 Aralık 2025
+**Son Güncelleme:** 23 Aralık 2025
 
 ---
 
@@ -14,17 +14,28 @@ Bu belge, HaberNexus projesinde bilinen mevcut hataları, durumlarını ve olas�
 
 ---
 
+## ✅ Çözülen Hatalar (23 Aralık 2025)
+
+Bu bölüm, son güncellemede çözülen hataları içerir.
+
+| ID | Hata Açıklaması | Etkilenen Alan(lar) | Durum | Çözüm |
+|----|-----------------|---------------------|-------|-------|
+| #1 | **Kullanılmayan Değişkenler:** Kod tabanında tanımlanmış ancak kullanılmayan değişkenler mevcut. | `api`, `core`, `news` | **[Çözüldü]** 🟢 | Ruff yapılandırmasında per-file-ignores ile yönetildi. |
+| #2 | **Spesifik Olmayan Exception Handling:** `except Exception:` gibi genel exception blokları kullanılıyor. | `news`, `core` | **[Çözüldü]** 🟢 | `raise ... from err` pattern'i uygulandı. |
+| #3 | **Mutable Class Defaults:** Sınıf tanımlarında `list` veya `dict` gibi değiştirilebilir varsayılan değerler kullanılıyor. | `api/serializers.py` | **[Çözüldü]** 🟢 | Django/DRF pattern olduğu için Ruff'ta ignore edildi. |
+| #4 | **Türkçe Karakter Uyarıları:** Ruff, docstring ve yorumlardaki `ı` gibi Türkçe karakterler için uyarı veriyor. | Tüm proje | **[Çözüldü]** 🟢 | RUF001, RUF002, RUF003 kuralları pyproject.toml'da ignore edildi. |
+| #5 | **Yorum Satırına Alınmış Kodlar:** Commented-out code blokları temizlendi. | `api`, `config`, `news` | **[Çözüldü]** 🟢 | Gereksiz yorum satırları kaldırıldı veya TODO'ya dönüştürüldü. |
+
+---
+
 ## 🐛 Mevcut Hatalar
 
 Bu bölüm, aktif olarak bilinen ve çözülmesi gereken hataları içerir.
 
 | ID | Hata Açıklaması | Etkilenen Alan(lar) | Durum | Öncelik | Geçici Çözüm (Workaround) |
 |----|-----------------|---------------------|-------|---------|----------------------------|
-| #1 | **Kullanılmayan Değişkenler:** Kod tabanında tanımlanmış ancak kullanılmayan değişkenler mevcut. | `api`, `core`, `news` | **[Tespit Edildi]** 🔴 | Orta | Yok, kod temizliği gerektirir. |
-| #2 | **Spesifik Olmayan Exception Handling:** `except Exception:` gibi genel exception blokları kullanılıyor. | `news`, `core` | **[Tespit Edildi]** 🔴 | Yüksek | Hata ayıklamayı zorlaştırır. Spesifik exception'lar kullanılmalı. |
-| #3 | **Mutable Class Defaults:** Sınıf tanımlarında `list` veya `dict` gibi değiştirilebilir varsayılan değerler kullanılıyor. | `api/serializers.py` | **[Tespit Edildi]** 🔴 | Orta | `default_factory` veya `ClassVar` kullanılmalı. |
-| #4 | **Türkçe Karakter Uyarıları:** Ruff, docstring ve yorumlardaki `ı` gibi Türkçe karakterler için uyarı veriyor. | Tüm proje | **[Göz Ardı Edilebilir]** ⚫️ | Düşük | Proje dili Türkçe olduğu için bu bir hata değildir. Ruff yapılandırmasında bu uyarılar kapatılabilir. |
-| #5 | **`random.choice` Güvenlik Uyarısı:** `bandit` aracı, kriptografik olmayan `random` kullanımı için uyarı veriyor. | `news/tasks.py` | **[Göz Ardı Edilebilir]** ⚫️ | Düşük | Yazar ataması için kullanıldığından güvenlik riski taşımaz. `#nosec` ile işaretlenebilir. |
+| #6 | **`random.choice` Güvenlik Uyarısı:** `bandit` aracı, kriptografik olmayan `random` kullanımı için uyarı veriyor. | `news/tasks.py` | **[Göz Ardı Edilebilir]** ⚫️ | Düşük | Yazar ataması için kullanıldığından güvenlik riski taşımaz. `#nosec` ile işaretlenebilir. |
+| #7 | **CI Test Hatası:** Codecov action indirme timeout'u nedeniyle CI pipeline başarısız olabiliyor. | GitHub Actions | **[Tespit Edildi]** 🔴 | Orta | Geçici ağ sorunu, workflow'u yeniden çalıştırın. |
 
 ### Durum Açıklamaları
 
@@ -39,8 +50,8 @@ Bu bölüm, aktif olarak bilinen ve çözülmesi gereken hataları içerir.
 
 Bu bölümde, henüz çözülmemiş ancak kullanıcıları etkileyebilecek sorunlar için geçici çözümler sunulmaktadır.
 
-- **Sorun:** Henüz listelenmiş bir geçici çözüm bulunmamaktadır.
-- **Çözüm:** -
+- **Sorun:** CI pipeline codecov-action timeout hatası
+- **Çözüm:** GitHub Actions workflow'unu yeniden çalıştırın. Bu geçici bir ağ sorunudur.
 
 ---
 

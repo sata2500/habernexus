@@ -35,8 +35,8 @@ group = None  # Systemd service tarafından yönetiliyor
 tmp_upload_dir = None
 
 # SSL (Nginx tarafından handle edilir, burada gerekli değil)
-# keyfile = None
-# certfile = None
+keyfile = None
+certfile = None
 
 # Application
 wsgi_app = "habernexus_config.wsgi:application"

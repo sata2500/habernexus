@@ -113,7 +113,7 @@ SESSION_CACHE_ALIAS = "default"
 # Email ayarları (SMTP)
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
@@ -145,10 +145,4 @@ CELERY_TIMEZONE = "UTC"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 dakika
 
-# Gunicorn ayarları (bu dosyada değil, gunicorn_config.py'de)
-# Ama referans olarak:
-# workers = 4
-# worker_class = 'sync'
-# worker_connections = 1000
-# timeout = 30
-# keepalive = 2
+# Gunicorn ayarları gunicorn_config.py dosyasında tanımlanmıştır.

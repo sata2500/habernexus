@@ -4,46 +4,68 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Setting',
+            name="Setting",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('key', models.CharField(help_text='Ayar anahtarı (örn: GOOGLE_API_KEY)', max_length=255, unique=True)),
-                ('value', models.TextField(help_text='Ayar değeri')),
-                ('description', models.TextField(blank=True, help_text='Ayarın açıklaması')),
-                ('is_secret', models.BooleanField(default=False, help_text='Gizli bilgi mi? (Yönetim panelinde maskelenecek)')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("key", models.CharField(help_text="Ayar anahtarı (örn: GOOGLE_API_KEY)", max_length=255, unique=True)),
+                ("value", models.TextField(help_text="Ayar değeri")),
+                ("description", models.TextField(blank=True, help_text="Ayarın açıklaması")),
+                (
+                    "is_secret",
+                    models.BooleanField(default=False, help_text="Gizli bilgi mi? (Yönetim panelinde maskelenecek)"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Sistem Ayarı',
-                'verbose_name_plural': 'Sistem Ayarları',
-                'ordering': ['key'],
+                "verbose_name": "Sistem Ayarı",
+                "verbose_name_plural": "Sistem Ayarları",
+                "ordering": ["key"],
             },
         ),
         migrations.CreateModel(
-            name='SystemLog',
+            name="SystemLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('level', models.CharField(choices=[('DEBUG', 'Debug'), ('INFO', 'Bilgi'), ('WARNING', 'Uyarı'), ('ERROR', 'Hata'), ('CRITICAL', 'Kritik')], default='INFO', help_text='Log seviyesi', max_length=10)),
-                ('task_name', models.CharField(help_text="Görevi tetikleyen Celery task'ının adı", max_length=255)),
-                ('message', models.TextField(help_text='Hata veya olay mesajı')),
-                ('traceback', models.TextField(blank=True, help_text="Hata stack trace'i (varsa)")),
-                ('related_id', models.IntegerField(blank=True, help_text="İlgili nesnenin ID'si (örn: Article ID)", null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "level",
+                    models.CharField(
+                        choices=[
+                            ("DEBUG", "Debug"),
+                            ("INFO", "Bilgi"),
+                            ("WARNING", "Uyarı"),
+                            ("ERROR", "Hata"),
+                            ("CRITICAL", "Kritik"),
+                        ],
+                        default="INFO",
+                        help_text="Log seviyesi",
+                        max_length=10,
+                    ),
+                ),
+                ("task_name", models.CharField(help_text="Görevi tetikleyen Celery task'ının adı", max_length=255)),
+                ("message", models.TextField(help_text="Hata veya olay mesajı")),
+                ("traceback", models.TextField(blank=True, help_text="Hata stack trace'i (varsa)")),
+                (
+                    "related_id",
+                    models.IntegerField(blank=True, help_text="İlgili nesnenin ID'si (örn: Article ID)", null=True),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'verbose_name': 'Sistem Günlüğü',
-                'verbose_name_plural': 'Sistem Günlükleri',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['-created_at'], name='core_system_created_19c977_idx'), models.Index(fields=['task_name'], name='core_system_task_na_d9db58_idx'), models.Index(fields=['level'], name='core_system_level_bf5286_idx')],
+                "verbose_name": "Sistem Günlüğü",
+                "verbose_name_plural": "Sistem Günlükleri",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(fields=["-created_at"], name="core_system_created_19c977_idx"),
+                    models.Index(fields=["task_name"], name="core_system_task_na_d9db58_idx"),
+                    models.Index(fields=["level"], name="core_system_level_bf5286_idx"),
+                ],
             },
         ),
     ]
