@@ -7,7 +7,7 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Builder - Install dependencies
 # -----------------------------------------------------------------------------
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 
@@ -29,7 +29,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # -----------------------------------------------------------------------------
 # Stage 2: Production - Final image
 # -----------------------------------------------------------------------------
-FROM python:3.11-slim AS production
+FROM python:3.14-slim AS production
 
 # Labels
 LABEL maintainer="Salih TANRISEVEN <salihtanriseven25@gmail.com>"
