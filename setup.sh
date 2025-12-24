@@ -1097,7 +1097,7 @@ create_environment_file() {
 # Django Settings
 DEBUG=$debug_value
 DJANGO_SECRET_KEY=${SECRET_KEY}
-ALLOWED_HOSTS=${DOMAIN},www.${DOMAIN},localhost,127.0.0.1
+ALLOWED_HOSTS=${DOMAIN},www.${DOMAIN},$(get_public_ip),localhost,127.0.0.1
 
 # Database
 DB_ENGINE=django.db.backends.postgresql
@@ -1113,10 +1113,15 @@ CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
 
 # Domain & SSL
+# Note: SSL redirect is disabled by default to allow health checks inside containers
+# Caddy handles SSL termination and redirects at the edge
 DOMAIN=${DOMAIN}
-SECURE_SSL_REDIRECT=${ssl_redirect}
+SECURE_SSL_REDIRECT=False
 SESSION_COOKIE_SECURE=${cookie_secure}
 CSRF_COOKIE_SECURE=${cookie_secure}
+SECURE_HSTS_SECONDS=0
+SECURE_HSTS_INCLUDE_SUBDOMAINS=False
+SECURE_HSTS_PRELOAD=False
 
 # Admin User
 ADMIN_USERNAME=${ADMIN_USERNAME}
