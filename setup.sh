@@ -1150,6 +1150,11 @@ ENVEOF
 :80 {
     encode gzip
     
+    # Health check endpoint for Caddy
+    handle /health {
+        respond "OK" 200
+    }
+    
     handle_path /static/* {
         root * /app/staticfiles
         file_server
@@ -1181,6 +1186,11 @@ $DOMAIN {
         X-Frame-Options DENY
         X-XSS-Protection "1; mode=block"
         Referrer-Policy strict-origin-when-cross-origin
+    }
+    
+    # Health check endpoint for Caddy
+    handle /health {
+        respond "OK" 200
     }
     
     handle_path /static/* {

@@ -169,11 +169,11 @@ services:
     networks:
       - habernexus-network
     healthcheck:
-      test: ["CMD", "celery", "-A", "habernexus_config", "inspect", "ping", "-d", "celery@$$HOSTNAME"]
+      test: ["CMD-SHELL", "celery -A habernexus_config inspect ping --timeout 10 || exit 1"]
       interval: 60s
       timeout: 30s
-      retries: 3
-      start_period: 30s
+      retries: 5
+      start_period: 120s
     labels:
       com.habernexus.service: "celery_worker"
       com.habernexus.environment: "production"
@@ -222,6 +222,12 @@ services:
     restart: unless-stopped
     networks:
       - habernexus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery.*beat' || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     labels:
       com.habernexus.service: "celery_beat"
       com.habernexus.environment: "production"
@@ -232,7 +238,7 @@ services:
         max-file: "5"
 
   # ============================================================================
-  # CADDY - REVERSE PROXY WITH AUTOMATIC HTTPS
+  # CADDY - REVERSE PROXY WITH AUTOMATIC HTTPSS
   # ============================================================================
   caddy:
     image: caddy:2.8-alpine
